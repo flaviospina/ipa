@@ -63,6 +63,43 @@ Engine.calcular = function (answers) {
 /* ---------- Helpers de render ---------- */
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/* Gráfico de pizza (rosca) em SVG — fatias em ordem decrescente, separador
+   branco entre fatias, rótulo de % dentro das fatias maiores e legenda com
+   nome + pontos + % (a identidade nunca depende só da cor). */
+function pieChart(ranking, total) {
+    const cx = 110, cy = 110, r1 = 92, r0 = 52;
+    const rad = (deg) => (deg - 90) * Math.PI / 180;
+    const pt = (r, deg) => `${(cx + r * Math.cos(rad(deg))).toFixed(2)},${(cy + r * Math.sin(rad(deg))).toFixed(2)}`;
+    let ang = 0, paths = '', labels = '';
+    ranking.forEach(s => {
+        const sweep = (s.pontos / total) * 360;
+        const a0 = ang, a1 = ang + sweep;
+        ang = a1;
+        const large = sweep > 180 ? 1 : 0;
+        paths += `<path d="M${pt(r1, a0)} A${r1},${r1} 0 ${large} 1 ${pt(r1, a1)} L${pt(r0, a1)} A${r0},${r0} 0 ${large} 0 ${pt(r0, a0)} Z"
+            fill="${s.cor}" stroke="#ffffff" stroke-width="2"><title>${esc(s.curto)}: ${s.pontos} pts (${s.pct.toFixed(1)}%)</title></path>`;
+        if (s.pct >= 8) {
+            const mid = (a0 + a1) / 2, rm = (r1 + r0) / 2;
+            labels += `<text x="${(cx + rm * Math.cos(rad(mid))).toFixed(1)}" y="${(cy + rm * Math.sin(rad(mid))).toFixed(1)}"
+                text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="700" fill="#ffffff">${s.pct.toFixed(0)}%</text>`;
+        }
+    });
+    const legenda = ranking.map(s => `
+        <div class="pie-leg-row">
+            <span class="chart-swatch" style="background:${s.cor}"></span>
+            <span class="pie-leg-name">${esc(s.curto)}</span>
+            <span class="pie-leg-val">${s.pontos} pts · ${s.pct.toFixed(1)}%</span>
+        </div>`).join('');
+    return `<div class="rp-pie-wrap">
+        <svg viewBox="0 0 220 220" width="220" height="220" role="img" aria-label="Distribuição dos estilos">
+            ${paths}${labels}
+            <text x="${cx}" y="${cy - 7}" text-anchor="middle" font-size="20" font-weight="800" fill="#16213a">${total}</text>
+            <text x="${cx}" y="${cy + 13}" text-anchor="middle" font-size="10" font-weight="600" fill="#8a94ab">PONTOS</text>
+        </svg>
+        <div class="pie-legend">${legenda}</div>
+    </div>`;
+}
+
 function barRow(label, cor, valor, max, sufixo) {
     const pctW = max > 0 ? (valor / max) * 100 : 0;
     return `<div class="chart-row">
@@ -80,7 +117,6 @@ Engine.renderRelatorio = function (dados, r) {
     const dataFmt = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     /* Fase 3 — tabela + gráfico geral */
-    const maxPts = pred.pontos;
     const tabela = r.ranking.map((s, i) => {
         const gap = i === 0 ? '—' : `−${r.difs[i - 1]}`;
         const classif = ['Predominante (1ª preferência)', 'Secundário (2ª preferência)', '3º estilo', '4º estilo'][i];
@@ -93,9 +129,7 @@ Engine.renderRelatorio = function (dados, r) {
         </tr>`;
     }).join('');
 
-    const graficoGeral = r.ranking.map(s =>
-        barRow(s.curto, s.cor, s.pontos, maxPts, `${s.pontos} pts · ${s.pct.toFixed(1)}%`)
-    ).join('');
+    const graficoGeral = pieChart(r.ranking, r.total);
 
     /* Fase 5 — pequenos múltiplos por momento (máx. 30 pts por estilo/momento) */
     const momentos = ACP.QUADROS.map(q => {
@@ -194,8 +228,8 @@ Engine.renderRelatorio = function (dados, r) {
             <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Diferença</th><th>Classificação</th></tr></thead>
             <tbody>${tabela}</tbody>
         </table>
-        <div class="chart">${graficoGeral}</div>
-        <p class="chart-note">Distribuição dos ${r.total} pontos entre os quatro estilos, em ordem decrescente.</p>
+        ${graficoGeral}
+        <p class="chart-note">Participação de cada estilo no total de ${r.total} pontos, em ordem decrescente.</p>
     </section>
 
     <!-- FASE 4 -->
@@ -248,8 +282,24 @@ Engine.renderRelatorio = function (dados, r) {
     </section>`;
 };
 
+/* ---------- Relatório autônomo (arquivo para download/arquivo no Drive) ---------- */
+Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
+    let css = '';
+    try {
+        // inline do CSS quando servido via http(s); em file:// segue sem estilo externo
+        const res = await fetch('css/app.css');
+        if (res.ok) css = await res.text();
+    } catch (e) { /* segue sem css */ }
+    return `<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Relatório IPA — ${esc(dados.nome)}</title>
+<style>${css}
+body { background:#fff; } .report-sheet { border:0; box-shadow:none; max-width:800px; padding:24px; }</style>
+</head><body><div class="report-sheet">${reportInnerHtml}</div></body></html>`;
+};
+
 /* ---------- Payload para o backend ---------- */
-Engine.montarPayload = function (dados, answers, r, consent) {
+Engine.montarPayload = function (dados, answers, r, consent, relatorioHtml) {
     const respostas = {};
     ACP.QUADROS.forEach(q => {
         answers[q.id].forEach((wordId, i) => { respostas[wordId] = Engine.pesoDaPosicao(i); });
@@ -265,6 +315,7 @@ Engine.montarPayload = function (dados, answers, r, consent) {
         total: r.total,
         predominante: r.ranking[0].curto,
         regra: r.regra,
+        relatorio: relatorioHtml || '',   // HTML autônomo arquivado no Drive
         enviadoEm: new Date().toISOString(),
         website: ''                   // honeypot — deve chegar vazio
     };

@@ -78,29 +78,68 @@ function doPost(e) {
     }
     const total = scores.A + scores.C + scores.P + scores.E; // = 198 garantido pela validação
 
-    gravar(SHEET_PROD, data, respostas, scores, total);
+    // arquiva o relatório individual no Drive (PDF; HTML como plano B)
+    const linkRelatorio = salvarRelatorio(data);
+
+    gravar(SHEET_PROD, data, respostas, scores, total, linkRelatorio);
     return reply(true, 'saved');
   } catch (err) {
     return reply(false, 'error');
   }
 }
 
-function gravar(sheetName, data, respostas, scores, total) {
+/**
+ * Salva o relatório enviado pelo webapp numa pasta do Drive
+ * ("IPA - Relatórios") e devolve a URL do arquivo. O arquivo fica
+ * PRIVADO (visível só para a conta dona da planilha) — adequado à
+ * LGPD; baixe ou compartilhe individualmente quando necessário.
+ */
+function salvarRelatorio(data) {
+  try {
+    const html = String(data.relatorio || '');
+    if (!html || html.length > 800000) return ''; // sem relatório ou grande demais
+
+    const folderName = 'IPA - Relatórios';
+    const it = DriveApp.getFoldersByName(folderName);
+    const folder = it.hasNext() ? it.next() : DriveApp.createFolder(folderName);
+
+    const stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HHmm');
+    const base = 'IPA - ' + clean(data.nome) + ' - ' + stamp;
+    const htmlBlob = Utilities.newBlob(html, 'text/html', base + '.html');
+
+    let file;
+    try {
+      // converte para PDF (mantém o arquivo pronto para download)
+      file = folder.createFile(htmlBlob.getAs('application/pdf').setName(base + '.pdf'));
+    } catch (e) {
+      // plano B: guarda o HTML (abre no navegador e imprime em PDF)
+      file = folder.createFile(htmlBlob);
+    }
+    return file.getUrl();
+  } catch (e) {
+    return '';
+  }
+}
+
+function gravar(sheetName, data, respostas, scores, total, linkRelatorio) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sh = ss.getSheetByName(sheetName);
   const header = ['Data/Hora', 'Consentimento LGPD', 'Organização', 'Nome', 'Função']
     .concat(EXPECTED[1], EXPECTED[2], EXPECTED[3])
-    .concat(['Score A', 'Score C', 'Score P', 'Score E', 'Total IPA']);
+    .concat(['Score A', 'Score C', 'Score P', 'Score E', 'Total IPA', 'Relatório (link)']);
   if (!sh) {
     sh = ss.insertSheet(sheetName);
     sh.appendRow(header);
     sh.setFrozenRows(1);
+  } else if (sh.getLastColumn() < header.length) {
+    // planilha criada por versão anterior: completa o cabeçalho novo
+    sh.getRange(1, 1, 1, header.length).setValues([header]);
   }
   const row = [new Date(), data.consentimento, clean(data.organizacao), clean(data.nome), clean(data.funcao)]
     .concat(EXPECTED[1].map(id => Number(respostas[id])))
     .concat(EXPECTED[2].map(id => Number(respostas[id])))
     .concat(EXPECTED[3].map(id => Number(respostas[id])))
-    .concat([scores.A, scores.C, scores.P, scores.E, total]);
+    .concat([scores.A, scores.C, scores.P, scores.E, total, linkRelatorio || '']);
   sh.appendRow(row);
 }
 

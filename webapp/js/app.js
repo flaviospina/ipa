@@ -201,9 +201,11 @@ const App = {
             return;
         }
 
-        document.getElementById('report').innerHTML = Engine.renderRelatorio(this.state.dados, r);
+        const reportHtml = Engine.renderRelatorio(this.state.dados, r);
+        document.getElementById('report').innerHTML = reportHtml;
 
-        const payload = Engine.montarPayload(this.state.dados, this.state.selecoes, r, this.state.consent);
+        const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
+        const payload = Engine.montarPayload(this.state.dados, this.state.selecoes, r, this.state.consent, standalone);
         this.goTo('report');
         localStorage.removeItem(IPA_CONFIG.STORAGE_KEY);
         this.sync(payload);

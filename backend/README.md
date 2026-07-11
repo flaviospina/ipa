@@ -25,6 +25,24 @@
       base de produção).
 - [ ] **Limpar da planilha antiga** os registros de teste ("Simulado ...", "TESTE LAB").
 
+## Atualizando o script (quando o código mudar)
+
+Se você já tem uma implantação ativa e o arquivo `apps-script.gs` foi atualizado:
+
+1. Cole o novo código por cima do antigo no editor e salve.
+2. **Implantar → Gerenciar implantações → ✏️ (editar) → Versão: "Nova versão" → Implantar.**
+   A URL `/exec` continua a mesma — não precisa mexer no `config.js`.
+3. Na primeira execução após a atualização o Google pode pedir novas permissões
+   (o arquivamento de relatórios usa o Google Drive) — autorize normalmente.
+
+## Arquivo do relatório de cada participante
+
+A cada envio, o backend salva o relatório individual na pasta **"IPA - Relatórios"**
+do Drive da conta dona da planilha (PDF; se a conversão falhar, HTML) e grava o
+link na coluna **"Relatório (link)"** da aba `RESPOSTAS`. Os arquivos ficam
+**privados** — só a conta dona da planilha acessa, adequado à LGPD. Para entregar
+a um participante, baixe o arquivo ou compartilhe individualmente pelo Drive.
+
 ## O que o novo backend garante
 
 | Proteção | Como funciona |
