@@ -19,7 +19,7 @@
    ============================================================ */
 const IPA_CONFIG = {
     // URL da implantação do Apps Script (termina em /exec)
-    ENDPOINT: 'COLE_AQUI_A_NOVA_URL_DO_APPS_SCRIPT/exec',
+    ENDPOINT: 'https://script.google.com/macros/s/AKfycbxWRIWK5wX2PZqf6_hjMfykBhxk8-9UGQdX6Pa-Td90qAs8g8KmrDHB2mNN8SeN60EP0w/exec',
 
     // Versão do esquema de dados enviado ao backend
     SCHEMA_VERSION: 2,
