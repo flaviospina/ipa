@@ -153,10 +153,61 @@ function reply(ok, code) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-/* GET não expõe nada */
-function doGet() {
-  return ContentService.createTextOutput(JSON.stringify({ ok: false, code: 'method_not_allowed' }))
-    .setMimeType(ContentService.MimeType.JSON);
+/**
+ * GET — usado apenas pelo Painel do Consultor, protegido por chave.
+ * 1) Rode configurarChavePainel() uma vez no editor para gerar a chave.
+ * 2) Informe a chave na tela de acesso do painel (painel/index.html).
+ * Sem chave válida, nada é exposto.
+ */
+function doGet(e) {
+  try {
+    const key = (e && e.parameter && e.parameter.key) || '';
+    const action = (e && e.parameter && e.parameter.action) || '';
+    const stored = PropertiesService.getScriptProperties().getProperty('PANEL_KEY');
+    if (action !== 'list' || !stored || key !== stored) {
+      return reply(false, 'method_not_allowed');
+    }
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(SHEET_PROD);
+    if (!sh || sh.getLastRow() < 2) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, rows: [] }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    const values = sh.getDataRange().getValues();
+    const header = values[0];
+    const idx = {};
+    header.forEach(function (h, i) { idx[h] = i; });
+    const col = (row, name) => (idx[name] !== undefined ? row[idx[name]] : '');
+    const rows = values.slice(1).map(function (row) {
+      return {
+        data: col(row, 'Data/Hora'),
+        org: col(row, 'Organização'),
+        nome: col(row, 'Nome'),
+        funcao: col(row, 'Função'),
+        A: Number(col(row, 'Score A')) || 0,
+        C: Number(col(row, 'Score C')) || 0,
+        P: Number(col(row, 'Score P')) || 0,
+        E: Number(col(row, 'Score E')) || 0,
+        link: col(row, 'Relatório (link)') || ''
+      };
+    });
+    return ContentService.createTextOutput(JSON.stringify({ ok: true, rows: rows }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return reply(false, 'error');
+  }
+}
+
+/**
+ * Execute UMA VEZ no editor (Executar > configurarChavePainel).
+ * Gera a chave de acesso do Painel do Consultor e a exibe no log
+ * (Ver > Registro de execução). Guarde-a com segurança.
+ * Para trocar a chave, basta executar novamente.
+ */
+function configurarChavePainel() {
+  const key = Utilities.getUuid().replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('PANEL_KEY', key);
+  Logger.log('Chave do Painel do Consultor: ' + key);
 }
 
 /**

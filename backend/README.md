@@ -43,6 +43,23 @@ link na coluna **"Relatório (link)"** da aba `RESPOSTAS`. Os arquivos ficam
 **privados** — só a conta dona da planilha acessa, adequado à LGPD. Para entregar
 a um participante, baixe o arquivo ou compartilhe individualmente pelo Drive.
 
+## Painel do Consultor (`painel/index.html`)
+
+Dashboard com KPIs, distribuição de estilos predominantes, médias por organização
+e tabela de participantes (busca, filtros, exportação CSV e link do relatório de
+cada um). Para ativar o acesso aos dados reais:
+
+1. No editor do Apps Script (com o código atualizado), execute **uma vez** a função
+   `configurarChavePainel` (menu suspenso ao lado de "Executar").
+2. Abra **Registro de execução** e copie a chave exibida.
+3. Publique a pasta `painel/` no servidor (ex.: `.../vipedia/painel/`) e entre com
+   essa chave na tela de acesso. A chave fica só na sessão do navegador.
+4. Para trocar a chave (ex.: consultor desligado), execute `configurarChavePainel`
+   novamente — a anterior deixa de valer na hora.
+
+Sem a chave, o endpoint GET não expõe nenhum dado. O botão
+**"Ver demonstração"** carrega dados fictícios, sem tocar na planilha.
+
 ## O que o novo backend garante
 
 | Proteção | Como funciona |

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Painel do Consultor — IPA · VIPEDia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink:#16213a; --ink-2:#4b5772; --ink-3:#8a94ab;
+            --surface:#f6f7f9; --card:#fff; --line:#e4e8ef;
+            --brand:#1e3a8a; --accent:#2952cc; --accent-soft:#eaf0fe;
+            --acp-a:#d9a400; --acp-c:#e8401a; --acp-p:#2952cc; --acp-e:#0e9f6e;
+            --warn:#b45309; --radius:14px; --radius-lg:20px;
+            --shadow:0 1px 2px rgba(22,33,58,.05),0 8px 24px rgba(22,33,58,.07);
+        }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--surface); color:var(--ink); line-height:1.5; -webkit-font-smoothing:antialiased; }
+        .topbar { position:sticky; top:0; z-index:40; background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+        .topbar-in { max-width:1200px; margin:0 auto; padding:0 20px; height:60px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .brand { display:flex; align-items:center; gap:8px; font-weight:800; color:var(--brand); }
+        .brand-mark { background:var(--brand); color:#fff; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; }
+        .brand small { color:var(--ink-3); font-weight:600; }
+        main { max-width:1200px; margin:0 auto; padding:26px 20px 70px; }
+        .btn { font:inherit; font-weight:700; border:0; cursor:pointer; border-radius:11px; padding:11px 20px; transition:.16s; text-decoration:none; display:inline-block; }
+        .btn-primary { background:var(--brand); color:#fff; } .btn-primary:hover { background:var(--accent); }
+        .btn-ghost { background:#fff; color:var(--ink-2); border:1px solid var(--line); } .btn-ghost:hover { color:var(--ink); }
+        .btn-sm { padding:8px 14px; font-size:13px; border-radius:9px; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:22px; }
+        .muted { color:var(--ink-2); } .muted-sm { color:var(--ink-3); font-size:12px; }
+        .hidden { display:none !important; }
+
+        /* ---------- login ---------- */
+        .login { max-width:460px; margin:60px auto; text-align:center; }
+        .login h1 { font-size:24px; letter-spacing:-.02em; margin:14px 0 6px; }
+        .login input { width:100%; font:inherit; padding:13px 16px; border:1.5px solid var(--line); border-radius:11px; background:var(--surface); outline:none; margin:16px 0 12px; text-align:center; }
+        .login input:focus { border-color:var(--accent); background:#fff; }
+        .demo-note { background:var(--accent-soft); color:var(--brand); border-radius:10px; font-size:12.5px; padding:10px 14px; margin-top:18px; }
+
+        /* ---------- dashboard ---------- */
+        .dash-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+        .dash-head h1 { font-size:22px; letter-spacing:-.02em; margin:0; }
+        .demo-badge { background:#fef3c7; color:#92400e; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; padding:5px 12px; border-radius:999px; }
+
+        .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin-bottom:18px; }
+        .kpi { background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg); padding:18px 20px; box-shadow:var(--shadow); }
+        .kpi .k-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-3); }
+        .kpi .k-value { font-size:30px; font-weight:900; letter-spacing:-.02em; margin-top:4px; display:flex; align-items:baseline; gap:8px; }
+        .kpi .k-sub { font-size:12px; color:var(--ink-2); font-weight:600; }
+
+        .row-2 { display:grid; grid-template-columns:1fr 1.4fr; gap:14px; margin-bottom:18px; }
+        @media (max-width:900px){ .row-2 { grid-template-columns:1fr; } }
+        .card h3 { margin:0 0 14px; font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-2); }
+
+        .pie-wrap { display:flex; align-items:center; gap:22px; flex-wrap:wrap; justify-content:center; }
+        .pie-legend { display:grid; gap:9px; }
+        .leg-row { display:flex; align-items:center; gap:8px; font-size:13px; }
+        .swatch { width:11px; height:11px; border-radius:3px; flex:0 0 11px; }
+        .leg-name { font-weight:700; min-width:110px; }
+        .leg-val { color:var(--ink-2); font-variant-numeric:tabular-nums; }
+
+        .chart-row { display:grid; grid-template-columns:110px 1fr 84px; align-items:center; gap:10px; margin-bottom:9px; }
+        .chart-label { font-size:12px; font-weight:700; display:flex; align-items:center; gap:7px; }
+        .chart-track { height:14px; background:var(--surface); border-radius:0 4px 4px 0; }
+        .chart-bar { height:100%; border-radius:0 4px 4px 0; min-width:2px; }
+        .chart-value { font-size:12px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+
+        .orgs { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+        .org-card { border:1px solid var(--line); border-radius:var(--radius); padding:16px; }
+        .org-card h4 { margin:0 0 3px; font-size:14px; }
+        .org-card .muted-sm { margin-bottom:12px; display:block; }
+        .org-card .chart-row { grid-template-columns:26px 1fr 34px; margin-bottom:7px; }
+        .org-card .chart-track { height:11px; }
+
+        /* ---------- tabela ---------- */
+        .table-tools { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+        .table-tools input, .table-tools select { font:inherit; font-size:13.5px; padding:9px 13px; border:1.5px solid var(--line); border-radius:10px; background:#fff; outline:none; }
+        .table-tools input:focus, .table-tools select:focus { border-color:var(--accent); }
+        .table-tools input { flex:1; min-width:170px; }
+        .tbl-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; font-size:13px; min-width:820px; }
+        th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); border-bottom:2px solid var(--line); padding:9px 10px; white-space:nowrap; }
+        td { border-bottom:1px solid var(--line); padding:10px; vertical-align:middle; }
+        td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+        .chip { display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:12px; }
+        .chip .swatch { width:9px; height:9px; }
+        .flex-badge { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; padding:4px 9px; border-radius:999px; white-space:nowrap; }
+        .b-apego { background:#fde8e4; color:#9a2c14; }
+        .b-flex { background:#e7f6ef; color:#0b6b4c; }
+        .b-adapt { background:#eaf0fe; color:#1e3a8a; }
+        .b-mod { background:#f4ecd7; color:#7a5c00; }
+        .link-rel { color:var(--accent); font-weight:700; text-decoration:none; }
+        .empty-state { text-align:center; color:var(--ink-3); padding:40px 0; }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-in">
+            <div class="brand"><span class="brand-mark">V</span> VIPEDia <small>· Painel do Consultor</small></div>
+            <div>
+                <button id="btn-refresh" class="btn btn-ghost btn-sm hidden" onclick="Painel.carregar()">Atualizar</button>
+                <button id="btn-sair" class="btn btn-ghost btn-sm hidden" onclick="Painel.sair()">Sair</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- ACESSO -->
+        <section id="tela-login" class="login card">
+            <div class="brand" style="justify-content:center"><span class="brand-mark">V</span></div>
+            <h1>Painel do Consultor</h1>
+            <p class="muted" style="margin:0">Acompanhe os diagnósticos IPA da sua base: participantes, estilos e relatórios.</p>
+            <input type="password" id="in-key" placeholder="Chave de acesso" autocomplete="off">
+            <button class="btn btn-primary" style="width:100%" onclick="Painel.entrar()">Entrar</button>
+            <p id="login-erro" class="muted-sm hidden" style="color:#c22b1a; margin-top:10px">Chave inválida ou sem conexão com a planilha.</p>
+            <div class="demo-note">Quer só conhecer? <a href="#" onclick="Painel.demo(); return false;" style="font-weight:800; color:var(--brand)">Ver demonstração com dados fictícios →</a></div>
+            <p class="muted-sm" style="margin-top:16px">A chave é gerada pela função <strong>configurarChavePainel()</strong> no Apps Script (ver backend/README.md).</p>
+        </section>
+
+        <!-- DASHBOARD -->
+        <section id="tela-dash" class="hidden">
+            <div class="dash-head">
+                <h1>Visão geral</h1>
+                <span id="demo-badge" class="demo-badge hidden">Demonstração · dados fictícios</span>
+            </div>
+
+            <div class="kpis" id="kpis"></div>
+
+            <div class="row-2">
+                <div class="card">
+                    <h3>Estilo predominante — distribuição</h3>
+                    <div class="pie-wrap" id="pie"></div>
+                </div>
+                <div class="card">
+                    <h3>Média de pontos por estilo (todos os participantes)</h3>
+                    <div id="medias"></div>
+                    <p class="muted-sm" style="margin-top:10px">Máximo teórico por estilo: 99 pontos (de 198 totais).</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom:18px">
+                <h3>Estilos por organização</h3>
+                <div class="orgs" id="orgs"></div>
+            </div>
+
+            <div class="card">
+                <h3>Participantes</h3>
+                <div class="table-tools">
+                    <input type="search" id="f-busca" placeholder="Buscar por nome ou função…" oninput="Painel.renderTabela()">
+                    <select id="f-org" onchange="Painel.renderTabela()"><option value="">Todas as organizações</option></select>
+                    <select id="f-estilo" onchange="Painel.renderTabela()">
+                        <option value="">Todos os estilos</option>
+                        <option value="A">Atenção</option><option value="C">Comunicação</option>
+                        <option value="P">Procedimento</option><option value="E">Equilibrado</option>
+                    </select>
+                    <button class="btn btn-ghost btn-sm" onclick="Painel.exportCsv()">Exportar CSV</button>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Nome</th><th>Organização</th><th>Função</th><th>Data</th>
+                            <th class="num">A</th><th class="num">C</th><th class="num">P</th><th class="num">E</th>
+                            <th>Predominante</th><th>Flexibilidade</th><th>Relatório</th>
+                        </tr></thead>
+                        <tbody id="tbody"></tbody>
+                    </table>
+                </div>
+                <p id="tbl-vazio" class="empty-state hidden">Nenhum participante encontrado com os filtros atuais.</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxWRIWK5wX2PZqf6_hjMfykBhxk8-9UGQdX6Pa-Td90qAs8g8KmrDHB2mNN8SeN60EP0w/exec';
+        const ESTILOS = {
+            A: { nome:'Atenção',      cor:'#d9a400' },
+            C: { nome:'Comunicação',  cor:'#e8401a' },
+            P: { nome:'Procedimento', cor:'#2952cc' },
+            E: { nome:'Equilibrado',  cor:'#0e9f6e' }
+        };
+
+        /* Dados fictícios para demonstração (somam 198 cada) */
+        const DEMO = [
+            ['Ana Souza','Clínica Vida','Recepcionista','2026-06-02',68,50,42,38],
+            ['Bruno Lima','Clínica Vida','Enfermeiro','2026-06-02',52,47,61,38],
+            ['Carla Nogueira','Clínica Vida','Fisioterapeuta','2026-06-03',60,54,40,44],
+            ['Diego Ramos','Clínica Vida','Técnico de Raio-X','2026-06-03',38,44,72,44],
+            ['Elisa Martins','Clínica Vida','Atendente','2026-06-04',49,52,46,51],
+            ['Fábio Cardoso','Clínica Vida','Biomédico','2026-06-05',41,45,67,45],
+            ['Gabriela Pinto','TechStore','Vendedora','2026-06-09',47,66,41,44],
+            ['Henrique Alves','TechStore','Vendedor','2026-06-09',44,58,48,48],
+            ['Isabela Freitas','TechStore','Caixa','2026-06-10',42,44,63,49],
+            ['João Pedro Reis','TechStore','Suporte Técnico','2026-06-10',36,49,70,43],
+            ['Karina Duarte','TechStore','Gerente de Loja','2026-06-11',50,53,44,51],
+            ['Lucas Teixeira','TechStore','Vendedor','2026-06-12',59,62,37,40],
+            ['Marina Costa','Banco Azul','Gerente de Contas','2026-06-16',48,64,45,41],
+            ['Nelson Prado','Banco Azul','Caixa','2026-06-16',39,42,68,49],
+            ['Olívia Santana','Banco Azul','Atendente','2026-06-17',55,49,43,51],
+            ['Paulo Vieira','Banco Azul','Assessor','2026-06-18',46,51,49,52],
+            ['Renata Borges','Banco Azul','Recepcionista','2026-06-18',66,48,40,44],
+            ['Sérgio Tavares','Banco Azul','Suporte','2026-06-19',43,46,58,51]
+        ].map(r => ({ nome:r[0], org:r[1], funcao:r[2], data:r[3], A:r[4], C:r[5], P:r[6], E:r[7], link:'' }));
+
+        const Painel = {
+            rows: [], demoMode: false,
+
+            /* ---------- classificação ---------- */
+            analise(r) {
+                const ord = ['A','C','P','E'].map(k => ({ k, v:r[k] })).sort((a,b) => b.v-a.v);
+                const difs = [ord[0].v-ord[1].v, ord[1].v-ord[2].v, ord[2].v-ord[3].v];
+                let regra, badge;
+                if (ord[0].k === 'E') { regra = 'Equilibrado (modelo)'; badge = 'b-mod'; }
+                else if (difs.every(d => d < 15)) { regra = 'Adaptativo'; badge = 'b-adapt'; }
+                else if (difs[0] >= 15) { regra = 'Forte apego'; badge = 'b-apego'; }
+                else { regra = 'Flexível'; badge = 'b-flex'; }
+                return { pred: ord[0].k, difs, regra, badge };
+            },
+
+            /* ---------- acesso ---------- */
+            async entrar() {
+                const key = document.getElementById('in-key').value.trim();
+                if (!key) return;
+                document.getElementById('login-erro').classList.add('hidden');
+                try {
+                    const res = await fetch(`${ENDPOINT}?action=list&key=${encodeURIComponent(key)}`);
+                    const out = await res.json();
+                    if (!out.ok) throw new Error('unauthorized');
+                    sessionStorage.setItem('ipa_panel_key', key);
+                    this.demoMode = false;
+                    this.setRows(out.rows);
+                } catch (e) {
+                    document.getElementById('login-erro').classList.remove('hidden');
+                }
+            },
+
+            async carregar() {
+                if (this.demoMode) return;
+                const key = sessionStorage.getItem('ipa_panel_key');
+                if (!key) return;
+                const res = await fetch(`${ENDPOINT}?action=list&key=${encodeURIComponent(key)}`);
+                const out = await res.json();
+                if (out.ok) this.setRows(out.rows);
+            },
+
+            demo() {
+                this.demoMode = true;
+                document.getElementById('demo-badge').classList.remove('hidden');
+                this.setRows(DEMO);
+            },
+
+            sair() {
+                sessionStorage.removeItem('ipa_panel_key');
+                location.reload();
+            },
+
+            /* ---------- render ---------- */
+            setRows(rows) {
+                this.rows = rows.map(r => ({ ...r, ...this.analise(r) }));
+                document.getElementById('tela-login').classList.add('hidden');
+                document.getElementById('tela-dash').classList.remove('hidden');
+                document.getElementById('btn-sair').classList.remove('hidden');
+                if (!this.demoMode) document.getElementById('btn-refresh').classList.remove('hidden');
+
+                const orgs = [...new Set(this.rows.map(r => r.org))].sort();
+                const sel = document.getElementById('f-org');
+                sel.innerHTML = '<option value="">Todas as organizações</option>' +
+                    orgs.map(o => `<option>${o}</option>`).join('');
+
+                this.renderKpis(); this.renderPie(); this.renderMedias(); this.renderOrgs(); this.renderTabela();
+            },
+
+            renderKpis() {
+                const n = this.rows.length;
+                const orgs = new Set(this.rows.map(r => r.org)).size;
+                const apego = this.rows.filter(r => r.regra === 'Forte apego').length;
+                const counts = { A:0, C:0, P:0, E:0 };
+                this.rows.forEach(r => counts[r.pred]++);
+                const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+                document.getElementById('kpis').innerHTML = `
+                    <div class="kpi"><div class="k-label">Participantes</div><div class="k-value">${n}</div><div class="k-sub">${orgs} organização(ões)</div></div>
+                    <div class="kpi"><div class="k-label">Estilo mais comum</div><div class="k-value" style="font-size:20px; color:${ESTILOS[top[0]].cor}">${ESTILOS[top[0]].nome}</div><div class="k-sub">${top[1]} de ${n} participantes</div></div>
+                    <div class="kpi"><div class="k-label">Com forte apego</div><div class="k-value">${n ? Math.round(apego/n*100) : 0}%</div><div class="k-sub">${apego} participante(s) · foco prioritário de desenvolvimento</div></div>
+                    <div class="kpi"><div class="k-label">Perfil adaptativo / equilibrado</div><div class="k-value">${n ? Math.round(this.rows.filter(r => r.regra !== 'Forte apego' && r.regra !== 'Flexível').length/n*100) : 0}%</div><div class="k-sub">adaptativos + equilibrado do modelo</div></div>`;
+            },
+
+            renderPie() {
+                const counts = { A:0, C:0, P:0, E:0 };
+                this.rows.forEach(r => counts[r.pred]++);
+                const total = this.rows.length || 1;
+                const ordem = Object.entries(counts).map(([k,v]) => ({ k, v })).sort((a,b) => b.v-a.v);
+                const cx=90, cy=90, r1=78, r0=45;
+                const rad = d => (d-90)*Math.PI/180;
+                const pt = (r,d) => `${(cx+r*Math.cos(rad(d))).toFixed(2)},${(cy+r*Math.sin(rad(d))).toFixed(2)}`;
+                let ang=0, paths='', labels='';
+                ordem.forEach(({k,v}) => {
+                    if (!v) return;
+                    const sweep = v/total*360, a0=ang, a1=ang+sweep; ang=a1;
+                    const large = sweep>180?1:0;
+                    paths += `<path d="M${pt(r1,a0)} A${r1},${r1} 0 ${large} 1 ${pt(r1,a1)} L${pt(r0,a1)} A${r0},${r0} 0 ${large} 0 ${pt(r0,a0)} Z" fill="${ESTILOS[k].cor}" stroke="#fff" stroke-width="2"></path>`;
+                    const pc = v/total*100;
+                    if (pc >= 9) {
+                        const mid=(a0+a1)/2, rm=(r1+r0)/2;
+                        labels += `<text x="${(cx+rm*Math.cos(rad(mid))).toFixed(1)}" y="${(cy+rm*Math.sin(rad(mid))).toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="700" fill="#fff">${pc.toFixed(0)}%</text>`;
+                    }
+                });
+                const leg = ordem.map(({k,v}) => `
+                    <div class="leg-row"><span class="swatch" style="background:${ESTILOS[k].cor}"></span>
+                    <span class="leg-name">${ESTILOS[k].nome}</span><span class="leg-val">${v} · ${(v/total*100).toFixed(0)}%</span></div>`).join('');
+                document.getElementById('pie').innerHTML = `
+                    <svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label="Distribuição dos estilos predominantes">${paths}${labels}
+                        <text x="${cx}" y="${cy-5}" text-anchor="middle" font-size="17" font-weight="800" fill="#16213a">${this.rows.length}</text>
+                        <text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="8.5" font-weight="600" fill="#8a94ab">PESSOAS</text>
+                    </svg>
+                    <div class="pie-legend">${leg}</div>`;
+            },
+
+            barra(label, cor, val, max, sufixo) {
+                return `<div class="chart-row">
+                    <span class="chart-label"><span class="swatch" style="background:${cor}"></span>${label}</span>
+                    <div class="chart-track"><div class="chart-bar" style="width:${max?(val/max*100).toFixed(1):0}%;background:${cor}"></div></div>
+                    <span class="chart-value">${sufixo}</span></div>`;
+            },
+
+            renderMedias() {
+                const n = this.rows.length || 1;
+                const media = k => this.rows.reduce((a,r) => a+r[k], 0) / n;
+                const dados = ['A','C','P','E'].map(k => ({ k, v: media(k) })).sort((a,b) => b.v-a.v);
+                document.getElementById('medias').innerHTML =
+                    dados.map(d => this.barra(ESTILOS[d.k].nome, ESTILOS[d.k].cor, d.v, 99, d.v.toFixed(1) + ' pts')).join('');
+            },
+
+            renderOrgs() {
+                const orgs = {};
+                this.rows.forEach(r => { (orgs[r.org] = orgs[r.org] || []).push(r); });
+                document.getElementById('orgs').innerHTML = Object.entries(orgs).map(([org, rs]) => {
+                    const media = k => rs.reduce((a,r) => a+r[k], 0) / rs.length;
+                    const dados = ['A','C','P','E'].map(k => ({ k, v: media(k) })).sort((a,b) => b.v-a.v);
+                    const bars = dados.map(d => this.barra(d.k, ESTILOS[d.k].cor, d.v, 99, d.v.toFixed(0))).join('');
+                    return `<div class="org-card"><h4>${org}</h4><span class="muted-sm">${rs.length} participante(s) · média por estilo</span>${bars}</div>`;
+                }).join('');
+            },
+
+            filtrados() {
+                const busca = (document.getElementById('f-busca').value || '').toLowerCase();
+                const org = document.getElementById('f-org').value;
+                const estilo = document.getElementById('f-estilo').value;
+                return this.rows.filter(r =>
+                    (!org || r.org === org) &&
+                    (!estilo || r.pred === estilo) &&
+                    (!busca || r.nome.toLowerCase().includes(busca) || (r.funcao||'').toLowerCase().includes(busca)));
+            },
+
+            renderTabela() {
+                const rows = this.filtrados();
+                document.getElementById('tbl-vazio').classList.toggle('hidden', rows.length > 0);
+                document.getElementById('tbody').innerHTML = rows.map(r => {
+                    const d = r.data ? String(r.data).slice(0,10).split('-').reverse().join('/') : '—';
+                    return `<tr>
+                        <td style="font-weight:700">${r.nome}</td>
+                        <td>${r.org}</td><td>${r.funcao||'—'}</td><td>${d}</td>
+                        <td class="num">${r.A}</td><td class="num">${r.C}</td><td class="num">${r.P}</td><td class="num">${r.E}</td>
+                        <td><span class="chip"><span class="swatch" style="background:${ESTILOS[r.pred].cor}"></span>${ESTILOS[r.pred].nome}</span></td>
+                        <td><span class="flex-badge ${r.badge}">${r.regra}</span></td>
+                        <td>${r.link ? `<a class="link-rel" href="${r.link}" target="_blank" rel="noopener">Abrir ↗</a>` : '<span class="muted-sm">—</span>'}</td>
+                    </tr>`;
+                }).join('');
+            },
+
+            exportCsv() {
+                const rows = this.filtrados();
+                const head = ['Nome','Organização','Função','Data','Score A','Score C','Score P','Score E','Predominante','Flexibilidade','Relatório'];
+                const csv = [head.join(';')].concat(rows.map(r =>
+                    [r.nome, r.org, r.funcao, r.data, r.A, r.C, r.P, r.E, ESTILOS[r.pred].nome, r.regra, r.link]
+                        .map(v => '"' + String(v ?? '').replace(/"/g,'""') + '"').join(';')
+                )).join('\r\n');
+                const blob = new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'ipa-participantes.csv';
+                a.click();
+            },
+
+            init() {
+                const key = sessionStorage.getItem('ipa_panel_key');
+                if (key) { document.getElementById('in-key').value = key; this.entrar(); }
+                document.getElementById('in-key').addEventListener('keydown', e => { if (e.key === 'Enter') this.entrar(); });
+            }
+        };
+        window.addEventListener('DOMContentLoaded', () => Painel.init());
+    </script>
+</body>
+</html>
