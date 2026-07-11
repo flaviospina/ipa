@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VIPEDia — Escala humanizada na educação digital. IA segura, governança rigorosa de dados e a Abordagem ACP para o desenvolvimento de equipes de atendimento.">
+    <title>VIPEDia — Escala Humanizada & Governança de Dados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #16213a; --ink-2: #4b5772; --ink-3: #8a94ab;
+            --surface: #f6f7f9; --card: #ffffff; --line: #e4e8ef;
+            --brand: #1e3a8a; --accent: #2952cc; --accent-soft: #eaf0fe;
+            --acp-a: #d9a400; --acp-c: #e8401a; --acp-p: #2952cc; --acp-e: #0e9f6e;
+            --radius: 16px; --radius-lg: 24px;
+            --shadow: 0 1px 2px rgba(22,33,58,.05), 0 8px 24px rgba(22,33,58,.07);
+        }
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+        body { margin: 0; font-family: 'Inter', system-ui, sans-serif; color: var(--ink); background: #fff; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+        img { max-width: 100%; }
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+        /* ---------- Navegação ---------- */
+        nav { position: sticky; top: 0; z-index: 50; background: rgba(255,255,255,.9); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+        .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+        .brand { display: flex; align-items: center; gap: 9px; font-weight: 800; text-decoration: none; color: var(--brand); }
+        .brand-mark { background: var(--brand); color: #fff; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; font-size: 17px; }
+        .brand-name { text-transform: uppercase; letter-spacing: .03em; font-size: 18px; }
+        .nav-links { display: flex; gap: 26px; align-items: center; }
+        .nav-links a { text-decoration: none; color: var(--ink-2); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+        .nav-links a:hover { color: var(--accent); }
+        .nav-cta { background: var(--brand); color: #fff !important; padding: 10px 20px; border-radius: 999px; }
+        .nav-cta:hover { background: var(--accent); }
+        .nav-toggle { display: none; background: none; border: 0; cursor: pointer; padding: 8px; }
+        .nav-toggle span { display: block; width: 22px; height: 2.5px; background: var(--ink); margin: 4.5px 0; border-radius: 2px; transition: .2s; }
+        @media (max-width: 860px) {
+            .nav-toggle { display: block; }
+            .nav-links { display: none; position: absolute; top: 64px; left: 0; right: 0; background: #fff; border-bottom: 1px solid var(--line); flex-direction: column; padding: 18px 20px 22px; gap: 16px; align-items: flex-start; box-shadow: var(--shadow); }
+            .nav-links.open { display: flex; }
+        }
+
+        /* ---------- Hero ---------- */
+        .hero { background: radial-gradient(1100px 500px at 50% -80px, var(--accent-soft), #fff 65%); padding: 84px 0 70px; text-align: center; }
+        .badge { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .14em; padding: 8px 16px; border-radius: 999px; }
+        .hero h1 { font-size: clamp(36px, 6vw, 62px); line-height: 1.05; letter-spacing: -.03em; font-weight: 900; margin: 26px 0 18px; }
+        .hero h1 em { font-style: normal; color: var(--accent); }
+        .hero p { font-size: clamp(16px, 2.2vw, 19px); color: var(--ink-2); max-width: 680px; margin: 0 auto 34px; }
+        .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .btn { display: inline-block; text-decoration: none; font-weight: 800; border-radius: 14px; padding: 15px 32px; font-size: 15px; transition: .18s; }
+        .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 8px 24px rgba(30,58,138,.25); }
+        .btn-primary:hover { background: var(--accent); transform: translateY(-2px); }
+        .btn-outline { border: 1.5px solid var(--line); color: var(--ink); background: #fff; }
+        .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ---------- Seções ---------- */
+        section { padding: 72px 0; }
+        .sec-head { text-align: center; max-width: 640px; margin: 0 auto 46px; }
+        .sec-head .kicker { color: var(--accent); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .2em; }
+        .sec-head h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -.02em; margin: 10px 0 12px; font-weight: 900; }
+        .sec-head p { color: var(--ink-2); margin: 0; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        .pillar { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--shadow); transition: .2s; }
+        .pillar:hover { transform: translateY(-4px); }
+        .pillar .ico { width: 48px; height: 48px; border-radius: 14px; background: var(--accent-soft); display: grid; place-items: center; font-size: 22px; margin-bottom: 18px; }
+        .pillar h3 { margin: 0 0 8px; font-size: 18px; }
+        .pillar p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+
+        /* ---------- Soluções ---------- */
+        .solutions { background: var(--surface); }
+        .sol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+        @media (max-width: 860px) { .sol-grid { grid-template-columns: 1fr; } }
+        .sol-card { border-radius: var(--radius-lg); padding: 40px 36px; position: relative; overflow: hidden; }
+        .sol-b2c { background: linear-gradient(145deg, #101a35, #1e3a8a); color: #fff; }
+        .sol-b2b { background: var(--card); border: 1px solid var(--line); box-shadow: var(--shadow); }
+        .tag { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .16em; padding: 6px 12px; border-radius: 999px; }
+        .sol-b2c .tag { background: var(--accent); color: #fff; }
+        .sol-b2b .tag { background: var(--brand); color: #fff; }
+        .sol-card h3 { font-size: clamp(24px, 3vw, 30px); letter-spacing: -.02em; margin: 20px 0 12px; font-weight: 900; }
+        .sol-card p { margin: 0 0 26px; font-size: 15.5px; }
+        .sol-b2c p { color: #c6d2ee; }
+        .sol-b2b p { color: var(--ink-2); }
+        .sol-link { font-weight: 800; text-decoration: none; font-size: 15px; }
+        .sol-b2c .sol-link { color: #fff; }
+        .sol-b2b .sol-link { color: var(--accent); }
+        .sol-link::after { content: ' →'; transition: .15s; }
+        .sol-link:hover::after { padding-left: 6px; }
+
+        /* ---------- Governança ---------- */
+        .gov-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 44px; align-items: center; }
+        @media (max-width: 860px) { .gov-grid { grid-template-columns: 1fr; } }
+        .gov-grid h2 { font-size: clamp(28px, 4vw, 42px); letter-spacing: -.02em; font-weight: 900; margin: 10px 0 16px; }
+        .gov-grid h2 em { font-style: normal; color: var(--accent); }
+        .gov-grid > div > p { color: var(--ink-2); font-size: 16.5px; margin: 0 0 26px; }
+        .gov-feats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 520px) { .gov-feats { grid-template-columns: 1fr; } }
+        .gov-feat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+        .gov-feat h4 { margin: 8px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+        .gov-feat p { margin: 0; font-size: 13px; color: var(--ink-2); }
+        .gov-quote { background: linear-gradient(155deg, #1e3a8a, #2952cc); color: #fff; border-radius: var(--radius-lg); padding: 44px 38px; box-shadow: var(--shadow); }
+        .gov-quote .q-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .2em; font-weight: 800; opacity: .8; }
+        .gov-quote h3 { font-size: 26px; margin: 12px 0 18px; font-weight: 900; letter-spacing: -.01em; }
+        .gov-quote p { font-size: 17px; font-style: italic; color: #f2f5fe; margin: 0; line-height: 1.65; }
+
+        /* ---------- ACP ---------- */
+        .acp { background: #101a35; color: #fff; }
+        .acp .sec-head h2, .acp .sec-head .kicker { color: #fff; }
+        .acp .sec-head .kicker { color: #7fa0f2; }
+        .acp .sec-head p { color: #aebadd; }
+        .acp-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 44px; align-items: center; }
+        @media (max-width: 860px) { .acp-grid { grid-template-columns: 1fr; } }
+        .acp-copy p { color: #c6d2ee; font-size: 16.5px; }
+        .acp-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0 30px; }
+        @media (max-width: 520px) { .acp-checks { grid-template-columns: 1fr; } }
+        .acp-check { display: flex; gap: 10px; align-items: center; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #9db8f5; }
+        .acp-check::before { content: '✓'; color: var(--acp-e); font-weight: 900; }
+        .acp-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .acp-tile { border-radius: 20px; padding: 26px 20px; text-align: center; border: 1.5px solid; background: rgba(255,255,255,.04); }
+        .acp-tile .t-ico { font-size: 26px; }
+        .acp-tile h4 { margin: 10px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; }
+        .acp-tile p { margin: 0; font-size: 11.5px; color: #aebadd; }
+        .t-a { border-color: var(--acp-a); } .t-a h4 { color: var(--acp-a); }
+        .t-c { border-color: var(--acp-c); } .t-c h4 { color: #ff7a5c; }
+        .t-p { border-color: #6f8fea; } .t-p h4 { color: #8fa9f5; }
+        .t-e { border-color: var(--acp-e); } .t-e h4 { color: #3fd0a0; }
+
+        /* ---------- Contato / Rodapé ---------- */
+        .contact { text-align: center; }
+        .contact .card-cta { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 50px 30px; }
+        footer { background: #101a35; color: #aebadd; padding: 54px 0 34px; }
+        .foot-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 36px; margin-bottom: 40px; }
+        @media (max-width: 720px) { .foot-grid { grid-template-columns: 1fr; } }
+        footer .brand { color: #fff; margin-bottom: 14px; }
+        footer .brand-mark { background: #fff; color: var(--brand); }
+        footer p { font-size: 14px; margin: 0; max-width: 340px; }
+        footer h5 { color: #7fa0f2; font-size: 11px; text-transform: uppercase; letter-spacing: .2em; margin: 0 0 16px; }
+        footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+        footer a { color: #aebadd; text-decoration: none; font-size: 13px; font-weight: 600; }
+        footer a:hover { color: #fff; }
+        .foot-base { border-top: 1px solid rgba(255,255,255,.08); padding-top: 22px; text-align: center; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6b7aa3; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="wrap nav-inner">
+            <a class="brand" href="#inicio">
+                <span class="brand-mark">V</span><span class="brand-name">VIPEDia</span>
+            </a>
+            <button class="nav-toggle" aria-label="Abrir menu" onclick="document.getElementById('nav-links').classList.toggle('open')">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a href="#inicio">Início</a>
+                <a href="#solucoes">Soluções</a>
+                <a href="#governanca">Governança</a>
+                <a href="#acp">Abordagem ACP</a>
+                <a href="#contato" class="nav-cta">Fale Conosco</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- INÍCIO -->
+    <header class="hero" id="inicio">
+        <div class="wrap">
+            <span class="badge">⚡ High Tech · High Touch</span>
+            <h1>Escala <em>humanizada</em><br>na educação digital.</h1>
+            <p>Unimos Inteligência Artificial segura à governança rigorosa de dados para potencializar a
+               evolução moral, cognitiva e emocional de equipes e indivíduos.</p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="#solucoes">Explorar Soluções</a>
+                <a class="btn btn-outline" href="#governanca">Nossa Governança</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- PILARES -->
+    <section>
+        <div class="wrap grid-3">
+            <div class="pillar">
+                <div class="ico">🤝</div>
+                <h3>Escala Humanizada</h3>
+                <p>Provedor que não abdica do toque humano, focando na elevação moral e emocional dos
+                   participantes através da educação integral sistêmica.</p>
+            </div>
+            <div class="pillar">
+                <div class="ico">🛡️</div>
+                <h3>IA Segura</h3>
+                <p>Utilizamos modelos treinados em material próprio, garantindo segurança e conformidade
+                   absoluta com a estratégia da VIPEDia.</p>
+            </div>
+            <div class="pillar">
+                <div class="ico">🧠</div>
+                <h3>Desenvolvimento</h3>
+                <p>Metodologias sistêmicas que contextualizam o aprendizado no ambiente real de trabalho,
+                   equilibrando o técnico e o humano.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOLUÇÕES -->
+    <section class="solutions" id="solucoes">
+        <div class="wrap">
+            <div class="sec-head">
+                <span class="kicker">Ecossistema</span>
+                <h2>Ecossistema de Soluções</h2>
+                <p>Do desenvolvimento individual à gestão do capital humano nas organizações.</p>
+            </div>
+            <div class="sol-grid">
+                <div class="sol-card sol-b2c">
+                    <span class="tag">B2C</span>
+                    <h3>Navegação de Carreira</h3>
+                    <p>Capacitação, reskilling e upskilling com suporte de mentoria IA 24/7 focada no
+                       crescimento moral e técnico do indivíduo.</p>
+                    <a class="sol-link" href="#contato">Conhecer Planos</a>
+                </div>
+                <div class="sol-card sol-b2b">
+                    <span class="tag">B2B</span>
+                    <h3>Capital Humano 4.0</h3>
+                    <p>Treinamentos in-company e licenciamento de IA institucional para viabilizar a gestão
+                       e operacionalização com escala humanizada.</p>
+                    <a class="sol-link" href="#acp">Conhecer a Abordagem ACP</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GOVERNANÇA -->
+    <section id="governanca">
+        <div class="wrap gov-grid">
+            <div>
+                <span class="badge">⚖️ O diferencial estratégico</span>
+                <h2>Governança <em>rigorosa.</em></h2>
+                <p>O fosso competitivo da VIPEDia reside na nossa governança rigorosa. Nossa IA é treinada
+                   exclusivamente com material próprio e curadoria especializada, eliminando erros
+                   conceituais e alucinações de dados públicos.</p>
+                <div class="gov-feats">
+                    <div class="gov-feat">🔒<h4>IA Segura</h4><p>Arquitetura de dados protegida para uso corporativo exclusivo.</p></div>
+                    <div class="gov-feat">✅<h4>Compliance</h4><p>Conformidade total com a LGPD e a ética organizacional.</p></div>
+                </div>
+            </div>
+            <div class="gov-quote">
+                <span class="q-kicker">Filosofia</span>
+                <h3>Inovação Calma</h3>
+                <p>"A tecnologia não substitui o humano; ela liberta as equipes das tarefas operacionais
+                   para que se foquem na sua elevação moral e cognitiva."</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ABORDAGEM ACP -->
+    <section class="acp" id="acp">
+        <div class="wrap">
+            <div class="sec-head">
+                <span class="kicker">Produto âncora B2B</span>
+                <h2>Abordagem ACP · Diagnóstico IPA</h2>
+                <p>Atenção, Comunicação e Procedimento — uma nova maneira de entender, operacionalizar e
+                   desenvolver as práticas comportamentais de atendimento.</p>
+            </div>
+            <div class="acp-grid">
+                <div class="acp-copy">
+                    <p>O <strong>IPA — Indicador do Perfil de Atendimento</strong> revela como o profissional
+                       equilibra Atenção, Comunicação e Procedimento nos momentos críticos do atendimento ao
+                       cliente — Início, Durante e Término — e gera, na hora, um relatório individual completo
+                       de desenvolvimento em 8 fases.</p>
+                    <div class="acp-checks">
+                        <span class="acp-check">Precisão de 198 pontos</span>
+                        <span class="acp-check">Análise de GAP</span>
+                        <span class="acp-check">Relatório em 8 fases</span>
+                        <span class="acp-check">Consentimento LGPD</span>
+                    </div>
+                    <!-- Ajuste o caminho conforme a pasta publicada da ferramenta -->
+                    <a class="btn btn-primary" href="../ipa/index.html">Acessar a Ferramenta IPA →</a>
+                </div>
+                <div class="acp-tiles">
+                    <div class="acp-tile t-a"><div class="t-ico">👥</div><h4>Atenção</h4><p>Presença e escuta sensível · necessidade de autoestima</p></div>
+                    <div class="acp-tile t-c"><div class="t-ico">💬</div><h4>Comunicação</h4><p>Diálogo e escuta ativa · necessidade de segurança</p></div>
+                    <div class="acp-tile t-p"><div class="t-ico">⚙️</div><h4>Procedimento</h4><p>Protocolos técnicos · tratamento justo</p></div>
+                    <div class="acp-tile t-e"><div class="t-ico">⚡</div><h4>Equilibrado</h4><p>Integração das três variáveis · referência do modelo</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTATO -->
+    <section class="contact" id="contato">
+        <div class="wrap">
+            <div class="card-cta">
+                <div class="sec-head" style="margin-bottom:26px">
+                    <span class="kicker">Fale conosco</span>
+                    <h2>Vamos conversar?</h2>
+                    <p>Conheça os planos de Navegação de Carreira ou leve a Abordagem ACP para a sua organização.</p>
+                </div>
+                <a class="btn btn-primary" href="mailto:contato@itthrive.com.br?subject=Contato%20VIPEDia">Enviar mensagem</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="wrap">
+            <div class="foot-grid">
+                <div>
+                    <a class="brand" href="#inicio"><span class="brand-mark">V</span><span class="brand-name">VIPEDia</span></a>
+                    <p>Escala humanizada focada na evolução cognitiva, emocional e moral através da educação digital.</p>
+                </div>
+                <div>
+                    <h5>Navegação</h5>
+                    <ul>
+                        <li><a href="#inicio">Início</a></li>
+                        <li><a href="#solucoes">Soluções</a></li>
+                        <li><a href="#governanca">Governança</a></li>
+                        <li><a href="#acp">Abordagem ACP</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5>Auditoria</h5>
+                    <ul>
+                        <li><a href="#governanca">Segurança IA</a></li>
+                        <li><a href="#governanca">LGPD</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="foot-base">© 2026 VIPEDia · Valorizar e Integrar Pessoas pela Educação Digital</div>
+        </div>
+    </footer>
+
+    <script>
+        // fecha o menu mobile ao navegar
+        document.querySelectorAll('#nav-links a').forEach(a =>
+            a.addEventListener('click', () => document.getElementById('nav-links').classList.remove('open')));
+    </script>
+</body>
+</html>
