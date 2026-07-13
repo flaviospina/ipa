@@ -43,6 +43,36 @@ link na coluna **"Relatório (link)"** da aba `RESPOSTAS`. Os arquivos ficam
 **privados** — só a conta dona da planilha acessa, adequado à LGPD. Para entregar
 a um participante, baixe o arquivo ou compartilhe individualmente pelo Drive.
 
+## Relatório enriquecido por IA (opcional)
+
+Com uma chave do Google AI Studio configurada, cada relatório passa a incluir
+**6 blocos de análise personalizada** (interpretação do perfil, momentos,
+talentos, desenvolvimento, recomendações e conclusão) escritos pelo Gemini
+segundo as regras da metodologia ACP (tom encorajador, "pontos a desenvolver",
+fidelidade terminológica). Para ativar:
+
+1. Gere uma chave gratuita em <https://aistudio.google.com/apikey>.
+2. No editor do Apps Script: **⚙️ Configurações do projeto → Propriedades do
+   script → Adicionar propriedade**: chave `GEMINI_API_KEY`, valor = sua chave.
+3. Pronto — não precisa reimplantar. Sem a propriedade, o relatório continua
+   funcionando apenas com os textos padrão da metodologia (a IA nunca bloqueia
+   o diagnóstico: qualquer falha é silenciosa).
+
+A chave fica **somente no servidor** (Script Properties) — nunca no site.
+
+## IPA 360° (`webapp/360.html`)
+
+Avaliação externa e **anônima**: gestor, colegas e clientes avaliam como
+percebem o atendimento do profissional, com os mesmos 3 quadros de 12 palavras.
+
+- O consultor gera o link de convite na aba **IPA 360°** do painel
+  (ex.: `.../ipa/360.html?avaliado=Ana%20Souza&org=Cl%C3%ADnica`).
+- As respostas caem na aba `RESPOSTAS_360` da planilha (com a relação
+  profissional, sem identificar o avaliador) e passam pela mesma validação
+  estrita do IPA.
+- O painel cruza autoavaliação × média das percepções externas e aponta a
+  maior divergência (ponto cego ou força subestimada).
+
 ## Painel do Consultor (`painel/index.html`)
 
 Dashboard com KPIs, distribuição de estilos predominantes, médias por organização

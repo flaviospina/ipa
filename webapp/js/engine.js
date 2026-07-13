@@ -109,8 +109,18 @@ function barRow(label, cor, valor, max, sufixo) {
     </div>`;
 }
 
-/* ---------- Relatório (8 fases) ---------- */
-Engine.renderRelatorio = function (dados, r) {
+/* Bloco de análise personalizada por IA (texto puro -> parágrafos) */
+function iaBlock(texto, titulo) {
+    if (!texto) return '';
+    const paras = String(texto).split(/\n{2,}|\r\n\r\n/).map(p => `<p>${esc(p.trim())}</p>`).join('');
+    return `<div class="rp-ia"><h4>✦ ${esc(titulo || 'Análise personalizada')}</h4>${paras}</div>`;
+}
+
+/* ---------- Relatório (8 fases) ----------
+   ia (opcional): { interpretacao, momentos, talentos, desenvolvimento,
+   recomendacoes, conclusao } — gerado pelo backend via Gemini. */
+Engine.renderRelatorio = function (dados, r, ia) {
+    ia = ia || {};
     const pred = r.ranking[0], sec = r.ranking[1], terc = r.ranking[2], quart = r.ranking[3];
     const perfilPred = ACP.PERFIS[pred.key];
     const perfilSec = ACP.PERFIS[sec.key];
@@ -243,6 +253,7 @@ Engine.renderRelatorio = function (dados, r) {
         <div class="rp-diag"><h4>Pontos de vigilância</h4><p>${esc(perfilPred.inadequado)}</p></div>
         <h3>Estilo secundário — ${esc(perfilSec.titulo)}</h3>
         <div class="rp-prose"><p>Com ${sec.pontos} pontos (${sec.pct.toFixed(1)}%), o estilo ${esc(sec.curto)} ${esc(perfilSec.comoSecundario)}</p></div>
+        ${iaBlock(ia.interpretacao, 'Análise personalizada do seu perfil')}
         <h3>Terceiro e quarto estilos</h3>
         <div class="rp-prose"><p>Os estilos <strong>${esc(terc.curto)}</strong> (${terc.pontos} pontos) e <strong>${esc(quart.curto)}</strong> (${quart.pontos} pontos) foram os menos valorizados nas suas escolhas.
         A menor prevalência dessas condutas indica que os comportamentos a elas associados tendem a aparecer menos espontaneamente no seu atendimento — vale observar os momentos em que a situação os exige.</p></div>
@@ -254,6 +265,7 @@ Engine.renderRelatorio = function (dados, r) {
         <div class="rp-prose">${analiseMomentos}</div>
         <div class="rp-moments">${momentos}</div>
         <p class="chart-note">Pontos por estilo em cada momento (A = Atenção, C = Comunicação, P = Procedimento, E = Equilibrado; máximo 30 por estilo em cada quadro).</p>
+        ${iaBlock(ia.momentos, 'Como isso tende a aparecer nos seus atendimentos')}
     </section>
 
     <!-- FASE 6 -->
@@ -262,9 +274,11 @@ Engine.renderRelatorio = function (dados, r) {
         <h3>Talentos comportamentais (pontuações 9 a 11)</h3>
         <div class="rp-prose"><p>Estas são as práticas que você mais valoriza — suas forças visíveis, que brilham quando usadas no momento certo:</p></div>
         <div class="rp-words">${talentosHtml}</div>
+        ${iaBlock(ia.talentos, 'Suas forças em ação')}
         <h3>Pontos a desenvolver (pontuações 0 a 2)</h3>
         <div class="rp-prose"><p>As pontuações baixas não são falhas de caráter — são <strong>focos primários de capacitação</strong>. Elas revelam comportamentos pouco espontâneos que, quando a situação os exige, podem virar "vazamentos de energia relacional" ou gargalos de conformidade:</p></div>
         <div class="rp-words">${desenvolverHtml}</div>
+        ${iaBlock(ia.desenvolvimento, 'O que priorizar na sua capacitação')}
     </section>
 
     <!-- FASE 7 -->
@@ -272,12 +286,14 @@ Engine.renderRelatorio = function (dados, r) {
         <h2>7 · Recomendações para o Desenvolvimento</h2>
         <div class="rp-prose">${ACP.FASE7.padrao.map(p => `<p>${esc(p)}</p>`).join('')}</div>
         ${acoes ? `<h3>Ações prioritárias para o seu perfil</h3><ol class="rp-plan">${acoes}</ol>` : ''}
+        ${iaBlock(ia.recomendacoes, 'Recomendações personalizadas para você')}
     </section>
 
     <!-- FASE 8 -->
     <section class="rp-section">
         <h2>8 · Plano de Ação Individual</h2>
         <ol class="rp-plan">${plano}</ol>
+        ${iaBlock(ia.conclusao, 'Síntese do consultor IA')}
         <p class="rp-quote">O autoconhecimento é o primeiro passo para a maestria no atendimento humano. A busca pelo equilíbrio é uma jornada constante — e ela começa no seu próximo atendimento.</p>
     </section>`;
 };
@@ -299,7 +315,7 @@ body { background:#fff; } .report-sheet { border:0; box-shadow:none; max-width:8
 };
 
 /* ---------- Payload para o backend ---------- */
-Engine.montarPayload = function (dados, answers, r, consent, relatorioHtml) {
+Engine.montarPayload = function (dados, answers, r, consent, id) {
     const respostas = {};
     ACP.QUADROS.forEach(q => {
         answers[q.id].forEach((wordId, i) => { respostas[wordId] = Engine.pesoDaPosicao(i); });
@@ -315,7 +331,7 @@ Engine.montarPayload = function (dados, answers, r, consent, relatorioHtml) {
         total: r.total,
         predominante: r.ranking[0].curto,
         regra: r.regra,
-        relatorio: relatorioHtml || '',   // HTML autônomo arquivado no Drive
+        id: id,                       // identifica a linha p/ o arquivamento posterior
         enviadoEm: new Date().toISOString(),
         website: ''                   // honeypot — deve chegar vazio
     };

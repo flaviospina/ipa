@@ -189,7 +189,7 @@ const App = {
         }
     },
 
-    /* ---------- Conclusão: cálculo, relatório e envio ---------- */
+    /* ---------- Conclusão: cálculo, relatório, IA e envio ---------- */
     async finish() {
         this.goTo('sending');
         let r;
@@ -201,33 +201,58 @@ const App = {
             return;
         }
 
-        const reportHtml = Engine.renderRelatorio(this.state.dados, r);
-        document.getElementById('report').innerHTML = reportHtml;
-
-        const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
-        const payload = Engine.montarPayload(this.state.dados, this.state.selecoes, r, this.state.consent, standalone);
+        document.getElementById('report').innerHTML = Engine.renderRelatorio(this.state.dados, r);
         this.goTo('report');
         localStorage.removeItem(IPA_CONFIG.STORAGE_KEY);
-        this.sync(payload);
+        this.sync(r);
     },
 
-    async sync(payload) {
+    async sync(r) {
         const ind = document.getElementById('sync-indicator');
+        const id = 'ipa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+        const payload = Engine.montarPayload(this.state.dados, this.state.selecoes, r, this.state.consent, id);
+
         ind.className = 'sync-indicator pending';
-        ind.textContent = 'Registrando suas respostas…';
-        const ok = await this.send(payload);
-        if (ok) {
-            ind.className = 'sync-indicator ok';
-            ind.textContent = '✓ Respostas registradas com sucesso';
-        } else {
+        ind.textContent = 'Registrando respostas e gerando análise personalizada…';
+
+        const out = await this.send(payload);
+        if (!out || out.ok !== true) {
             this.enqueue(payload);
             ind.className = 'sync-indicator err';
             ind.textContent = 'Sem conexão — suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
+            return;
+        }
+
+        // enriquece o relatório com a análise da IA, se disponível
+        let reportHtml = document.getElementById('report').innerHTML;
+        if (out.ia) {
+            reportHtml = Engine.renderRelatorio(this.state.dados, r, out.ia);
+            document.getElementById('report').innerHTML = reportHtml;
+        }
+
+        ind.textContent = out.ia
+            ? '✓ Análise personalizada incluída · arquivando relatório…'
+            : '✓ Respostas registradas · arquivando relatório…';
+
+        // passo 2: arquiva o relatório final (com IA, se houver) no Drive
+        const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
+        const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id,
+                       nome: this.state.dados.nome, relatorio: standalone, website: '' };
+        const out2 = await this.send(arch);
+        if (out2 && out2.ok === true) {
+            ind.className = 'sync-indicator ok';
+            ind.textContent = out.ia
+                ? '✓ Respostas registradas, análise personalizada incluída e relatório arquivado'
+                : '✓ Respostas registradas e relatório arquivado';
+        } else {
+            this.enqueue(arch);
+            ind.className = 'sync-indicator ok';
+            ind.textContent = '✓ Respostas registradas (o arquivamento do relatório será reenviado automaticamente)';
         }
     },
 
     async send(payload) {
-        if (!IPA_CONFIG.ENDPOINT || IPA_CONFIG.ENDPOINT.startsWith('COLE_AQUI')) return false;
+        if (!IPA_CONFIG.ENDPOINT || IPA_CONFIG.ENDPOINT.startsWith('COLE_AQUI')) return null;
         try {
             // Content-Type text/plain = requisição simples (sem preflight):
             // o Apps Script responde com CORS liberado e conseguimos LER a resposta.
@@ -236,10 +261,9 @@ const App = {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
             });
-            const out = await res.json();
-            return out && out.ok === true;
+            return await res.json();
         } catch (e) {
-            return false;
+            return null;
         }
     },
 
@@ -255,8 +279,8 @@ const App = {
         if (!q.length) return;
         const rest = [];
         for (const p of q) {
-            const ok = await this.send(p);
-            if (!ok) rest.push(p);
+            const out = await this.send(p);
+            if (!out || out.ok !== true) rest.push(p);
         }
         localStorage.setItem(IPA_CONFIG.QUEUE_KEY, JSON.stringify(rest));
     },

@@ -94,6 +94,26 @@
         .b-mod { background:#f4ecd7; color:#7a5c00; }
         .link-rel { color:var(--accent); font-weight:700; text-decoration:none; }
         .empty-state { text-align:center; color:var(--ink-3); padding:40px 0; }
+
+        /* ---------- abas ---------- */
+        .tabs { display:flex; gap:8px; }
+        .tab-btn { font:inherit; font-weight:700; font-size:13px; border:1px solid var(--line); background:#fff; color:var(--ink-2); padding:9px 18px; border-radius:999px; cursor:pointer; transition:.15s; }
+        .tab-btn.active { background:var(--brand); border-color:var(--brand); color:#fff; }
+
+        /* ---------- 360 ---------- */
+        .sel-360 { font:inherit; font-size:14px; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; background:#fff; outline:none; min-width:240px; }
+        .pair-legend { display:flex; gap:18px; margin:4px 0 14px; font-size:12px; font-weight:700; color:var(--ink-2); }
+        .pair-legend span { display:flex; align-items:center; gap:6px; }
+        .pair-group { margin-bottom:16px; }
+        .pair-group .g-title { font-size:12.5px; font-weight:800; display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+        .pair-row { display:grid; grid-template-columns:88px 1fr 46px; align-items:center; gap:10px; margin-bottom:4px; }
+        .pair-row .p-src { font-size:11px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em; }
+        .gap-note { border-radius:12px; padding:14px 18px; font-size:13.5px; margin-top:14px; background:var(--accent-soft); color:var(--brand); }
+        .gap-note strong { font-weight:800; }
+        .rel-chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+        .rel-chip { background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:5px 13px; font-size:12px; font-weight:700; color:var(--ink-2); }
+        .linkbox { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+        .linkbox input { flex:1; min-width:200px; font:inherit; font-size:12.5px; padding:10px 13px; border:1.5px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink-2); }
     </style>
 </head>
 <body>
@@ -123,9 +143,17 @@
         <!-- DASHBOARD -->
         <section id="tela-dash" class="hidden">
             <div class="dash-head">
-                <h1>Visão geral</h1>
+                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap">
+                    <h1 id="dash-title">Visão geral</h1>
+                    <div class="tabs">
+                        <button class="tab-btn active" id="tab-geral" onclick="Painel.aba('geral')">Visão geral</button>
+                        <button class="tab-btn" id="tab-360" onclick="Painel.aba('360')">IPA 360°</button>
+                    </div>
+                </div>
                 <span id="demo-badge" class="demo-badge hidden">Demonstração · dados fictícios</span>
             </div>
+
+            <div id="view-geral">
 
             <div class="kpis" id="kpis"></div>
 
@@ -170,11 +198,52 @@
                 </div>
                 <p id="tbl-vazio" class="empty-state hidden">Nenhum participante encontrado com os filtros atuais.</p>
             </div>
+            </div><!-- /view-geral -->
+
+            <!-- ===== ABA IPA 360° ===== -->
+            <div id="view-360" class="hidden">
+                <div class="card" style="margin-bottom:14px">
+                    <h3>Profissional avaliado</h3>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
+                        <select class="sel-360" id="sel-360" onchange="Painel.render360()"></select>
+                        <span class="muted-sm" id="c-360-resumo"></span>
+                    </div>
+                </div>
+
+                <div class="row-2">
+                    <div class="card">
+                        <h3>Quem avaliou</h3>
+                        <div id="c-360-avaliadores"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Autoavaliação × percepção externa (média)</h3>
+                        <div class="pair-legend">
+                            <span><span class="swatch" style="background:var(--brand)"></span> Autoavaliação (IPA)</span>
+                            <span><span class="swatch" style="background:#b9c3d8"></span> Percepção externa (360°)</span>
+                        </div>
+                        <div id="c-360-pares"></div>
+                        <div id="c-360-gap"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Convidar avaliadores</h3>
+                    <p class="muted" style="font-size:13.5px; margin:0">Envie este link para gestor, colegas e clientes do profissional selecionado.
+                       A avaliação é anônima (registra apenas a relação profissional).</p>
+                    <div class="linkbox">
+                        <input type="text" id="link-360" readonly>
+                        <button class="btn btn-primary btn-sm" onclick="Painel.copiarLink()">Copiar link</button>
+                    </div>
+                    <p class="muted-sm" id="link-copiado" style="visibility:hidden; margin-top:6px">✓ Link copiado!</p>
+                </div>
+            </div><!-- /view-360 -->
         </section>
     </main>
 
     <script>
         const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxWRIWK5wX2PZqf6_hjMfykBhxk8-9UGQdX6Pa-Td90qAs8g8KmrDHB2mNN8SeN60EP0w/exec';
+        // Caminho da página IPA 360° relativo a este painel (ajuste se publicar em outra pasta)
+        const FERRAMENTA_360 = '../ipa/360.html';
         const ESTILOS = {
             A: { nome:'Atenção',      cor:'#d9a400' },
             C: { nome:'Comunicação',  cor:'#e8401a' },
@@ -204,8 +273,21 @@
             ['Sérgio Tavares','Banco Azul','Suporte','2026-06-19',43,46,58,51]
         ].map(r => ({ nome:r[0], org:r[1], funcao:r[2], data:r[3], A:r[4], C:r[5], P:r[6], E:r[7], link:'' }));
 
+        /* Avaliações 360 fictícias para demonstração (cada linha soma 198) */
+        const DEMO360 = [
+            ['Ana Souza','Clínica Vida','Gestor(a)',54,52,50,42],
+            ['Ana Souza','Clínica Vida','Colega de equipe',58,48,48,44],
+            ['Ana Souza','Clínica Vida','Cliente',62,46,44,46],
+            ['Ana Souza','Clínica Vida','Cliente',50,54,48,46],
+            ['Gabriela Pinto','TechStore','Gestor(a)',44,58,52,44],
+            ['Gabriela Pinto','TechStore','Colega de equipe',46,60,44,48],
+            ['Gabriela Pinto','TechStore','Cliente',50,52,46,50],
+            ['Nelson Prado','Banco Azul','Gestor(a)',40,44,66,48],
+            ['Nelson Prado','Banco Azul','Cliente',46,40,60,52]
+        ].map(r => ({ avaliado:r[0], org:r[1], relacao:r[2], A:r[3], C:r[4], P:r[5], E:r[6] }));
+
         const Painel = {
-            rows: [], demoMode: false,
+            rows: [], rows360: [], demoMode: false,
 
             /* ---------- classificação ---------- */
             analise(r) {
@@ -230,6 +312,7 @@
                     if (!out.ok) throw new Error('unauthorized');
                     sessionStorage.setItem('ipa_panel_key', key);
                     this.demoMode = false;
+                    this.rows360 = await this.fetch360(key);
                     this.setRows(out.rows);
                 } catch (e) {
                     document.getElementById('login-erro').classList.remove('hidden');
@@ -242,13 +325,107 @@
                 if (!key) return;
                 const res = await fetch(`${ENDPOINT}?action=list&key=${encodeURIComponent(key)}`);
                 const out = await res.json();
+                this.rows360 = await this.fetch360(key);
                 if (out.ok) this.setRows(out.rows);
+            },
+
+            async fetch360(key) {
+                try {
+                    const res = await fetch(`${ENDPOINT}?action=list360&key=${encodeURIComponent(key)}`);
+                    const out = await res.json();
+                    return out.ok ? out.rows : [];
+                } catch (e) { return []; }
             },
 
             demo() {
                 this.demoMode = true;
                 document.getElementById('demo-badge').classList.remove('hidden');
+                this.rows360 = DEMO360;
                 this.setRows(DEMO);
+            },
+
+            /* ---------- abas ---------- */
+            aba(qual) {
+                document.getElementById('tab-geral').classList.toggle('active', qual === 'geral');
+                document.getElementById('tab-360').classList.toggle('active', qual === '360');
+                document.getElementById('view-geral').classList.toggle('hidden', qual !== 'geral');
+                document.getElementById('view-360').classList.toggle('hidden', qual !== '360');
+                document.getElementById('dash-title').textContent = qual === '360' ? 'IPA 360°' : 'Visão geral';
+                if (qual === '360') this.init360();
+            },
+
+            /* ---------- IPA 360° ---------- */
+            init360() {
+                const nomes = [...new Set([
+                    ...this.rows360.map(r => r.avaliado),
+                    ...this.rows.map(r => r.nome)
+                ])].sort();
+                const sel = document.getElementById('sel-360');
+                const atual = sel.value;
+                sel.innerHTML = nomes.map(n => `<option${n === atual ? ' selected' : ''}>${n}</option>`).join('');
+                this.render360();
+            },
+
+            render360() {
+                const nome = document.getElementById('sel-360').value;
+                const self = this.rows.filter(r => r.nome === nome).slice(-1)[0] || null;
+                const avals = this.rows360.filter(r => r.avaliado === nome);
+                const resumo = document.getElementById('c-360-resumo');
+                resumo.textContent = `${avals.length} avaliação(ões) externa(s)` + (self ? ' · autoavaliação disponível' : ' · sem autoavaliação registrada');
+
+                // quem avaliou
+                const porRel = {};
+                avals.forEach(a => porRel[a.relacao] = (porRel[a.relacao] || 0) + 1);
+                document.getElementById('c-360-avaliadores').innerHTML = avals.length
+                    ? `<div style="font-size:34px; font-weight:900">${avals.length}</div>
+                       <div class="muted-sm">avaliadores anônimos</div>
+                       <div class="rel-chips">${Object.entries(porRel).map(([r,n]) => `<span class="rel-chip">${r} · ${n}</span>`).join('')}</div>`
+                    : '<p class="empty-state" style="padding:16px 0">Nenhuma avaliação externa recebida ainda. Use o link abaixo para convidar avaliadores.</p>';
+
+                // pares auto x 360
+                const alvo = document.getElementById('c-360-pares');
+                const gapEl = document.getElementById('c-360-gap');
+                if (!avals.length || !self) {
+                    alvo.innerHTML = '<p class="empty-state" style="padding:16px 0">O comparativo aparece quando houver autoavaliação e ao menos uma avaliação externa.</p>';
+                    gapEl.innerHTML = '';
+                } else {
+                    const media = k => avals.reduce((a, r) => a + r[k], 0) / avals.length;
+                    const ordem = ['A','C','P','E'].map(k => ({ k, self: self[k], ext: media(k) }))
+                        .sort((a, b) => b.self - a.self);
+                    alvo.innerHTML = ordem.map(d => `
+                        <div class="pair-group">
+                            <div class="g-title"><span class="swatch" style="background:${ESTILOS[d.k].cor}"></span>${ESTILOS[d.k].nome}</div>
+                            <div class="pair-row"><span class="p-src">Auto</span>
+                                <div class="chart-track"><div class="chart-bar" style="width:${(d.self/99*100).toFixed(1)}%;background:var(--brand)"></div></div>
+                                <span class="chart-value">${d.self}</span></div>
+                            <div class="pair-row"><span class="p-src">360°</span>
+                                <div class="chart-track"><div class="chart-bar" style="width:${(d.ext/99*100).toFixed(1)}%;background:#b9c3d8"></div></div>
+                                <span class="chart-value">${d.ext.toFixed(1)}</span></div>
+                        </div>`).join('');
+
+                    const gaps = ordem.map(d => ({ ...d, gap: d.self - d.ext }))
+                        .sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+                    const g = gaps[0];
+                    const direcao = g.gap > 0
+                        ? `os avaliadores percebem <strong>menos ${ESTILOS[g.k].nome}</strong> do que a autoavaliação indica (${g.self} × ${g.ext.toFixed(1)}). Este é o principal ponto cego a trabalhar.`
+                        : `os avaliadores percebem <strong>mais ${ESTILOS[g.k].nome}</strong> do que a própria pessoa reconhece (${g.ext.toFixed(1)} × ${g.self}). Uma força subestimada que pode ser potencializada.`;
+                    gapEl.innerHTML = `<div class="gap-note">Maior divergência (${Math.abs(g.gap).toFixed(1)} pts): ${direcao}</div>`;
+                }
+
+                // link de convite
+                const org = (avals[0] && avals[0].org) || (self && self.org) || '';
+                const base = new URL(FERRAMENTA_360, location.href).href;
+                const url = `${base}?avaliado=${encodeURIComponent(nome)}&org=${encodeURIComponent(org)}`;
+                document.getElementById('link-360').value = url;
+            },
+
+            copiarLink() {
+                const inp = document.getElementById('link-360');
+                inp.select();
+                navigator.clipboard ? navigator.clipboard.writeText(inp.value) : document.execCommand('copy');
+                const ok = document.getElementById('link-copiado');
+                ok.style.visibility = 'visible';
+                setTimeout(() => { ok.style.visibility = 'hidden'; }, 2000);
             },
 
             sair() {
