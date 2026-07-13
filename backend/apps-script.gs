@@ -24,6 +24,8 @@
  * implantação antiga (URL AKfycbxI2...) — ela ficou exposta.
  */
 
+const VERSAO = 3; // aparece ao abrir a URL /exec no navegador — confirma qual código está no ar
+
 const SHEET_PROD = 'RESPOSTAS';
 const SHEET_360 = 'RESPOSTAS_360';
 const SHEET_TEST = 'SIMULADOS';
@@ -315,7 +317,8 @@ function doGet(e) {
     const action = (e && e.parameter && e.parameter.action) || '';
     const stored = PropertiesService.getScriptProperties().getProperty('PANEL_KEY');
     if ((action !== 'list' && action !== 'list360') || !stored || key !== stored) {
-      return reply(false, 'method_not_allowed');
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, code: 'method_not_allowed', v: VERSAO }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === 'list360') return listar360();
@@ -390,6 +393,27 @@ function configurarChavePainel() {
   const key = Utilities.getUuid().replace(/-/g, '');
   PropertiesService.getScriptProperties().setProperty('PANEL_KEY', key);
   Logger.log('Chave do Painel do Consultor: ' + key);
+}
+
+/**
+ * TESTE DE ARQUIVAMENTO + AUTORIZAÇÃO DO DRIVE.
+ * Execute UMA VEZ no editor (Executar > testarArquivamento):
+ * - dispara a tela de autorização do Google Drive (obrigatória
+ *   para o arquivamento dos relatórios funcionar via web);
+ * - cria um arquivo de teste na pasta "IPA - Relatórios" e mostra
+ *   o link no Registro de execução, provando que tudo funciona.
+ */
+function testarArquivamento() {
+  const link = salvarRelatorio({
+    nome: 'TESTE DE ARQUIVAMENTO',
+    relatorio: '<html><body><h1>Teste de arquivamento IPA</h1><p>Se você está lendo isto no Drive, o arquivamento está funcionando.</p></body></html>'
+  });
+  if (link) {
+    Logger.log('SUCESSO! Arquivo de teste criado: ' + link);
+    Logger.log('Pode apagar o arquivo de teste na pasta "IPA - Relatórios" do Drive.');
+  } else {
+    Logger.log('FALHOU: verifique se você autorizou o acesso ao Drive quando solicitado e execute novamente.');
+  }
 }
 
 /**
