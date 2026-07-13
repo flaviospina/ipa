@@ -205,7 +205,8 @@
                 <div class="card" style="margin-bottom:14px">
                     <h3>Profissional avaliado</h3>
                     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-                        <select class="sel-360" id="sel-360" onchange="Painel.render360()"></select>
+                        <select class="sel-360" id="sel-360-org" onchange="Painel.popular360()" title="Organização"></select>
+                        <select class="sel-360" id="sel-360" onchange="Painel.render360()" title="Profissional"></select>
                         <span class="muted-sm" id="c-360-resumo"></span>
                     </div>
                 </div>
@@ -356,10 +357,22 @@
 
             /* ---------- IPA 360° ---------- */
             init360() {
+                const orgs = [...new Set([
+                    ...this.rows.map(r => r.org),
+                    ...this.rows360.map(r => r.org)
+                ])].filter(Boolean).sort();
+                const selOrg = document.getElementById('sel-360-org');
+                const atual = selOrg.value;
+                selOrg.innerHTML = orgs.map(o => `<option${o === atual ? ' selected' : ''}>${o}</option>`).join('');
+                this.popular360();
+            },
+
+            popular360() {
+                const org = document.getElementById('sel-360-org').value;
                 const nomes = [...new Set([
-                    ...this.rows360.map(r => r.avaliado),
-                    ...this.rows.map(r => r.nome)
-                ])].sort();
+                    ...this.rows.filter(r => r.org === org).map(r => r.nome),
+                    ...this.rows360.filter(r => r.org === org).map(r => r.avaliado)
+                ])].filter(Boolean).sort();
                 const sel = document.getElementById('sel-360');
                 const atual = sel.value;
                 sel.innerHTML = nomes.map(n => `<option${n === atual ? ' selected' : ''}>${n}</option>`).join('');
@@ -368,8 +381,10 @@
 
             render360() {
                 const nome = document.getElementById('sel-360').value;
-                const self = this.rows.filter(r => r.nome === nome).slice(-1)[0] || null;
-                const avals = this.rows360.filter(r => r.avaliado === nome);
+                const orgSel = document.getElementById('sel-360-org').value;
+                const self = this.rows.filter(r => r.nome === nome && r.org === orgSel).slice(-1)[0]
+                    || this.rows.filter(r => r.nome === nome).slice(-1)[0] || null;
+                const avals = this.rows360.filter(r => r.avaliado === nome && r.org === orgSel);
                 const resumo = document.getElementById('c-360-resumo');
                 resumo.textContent = `${avals.length} avaliação(ões) externa(s)` + (self ? ' · autoavaliação disponível' : ' · sem autoavaliação registrada');
 
@@ -413,7 +428,7 @@
                 }
 
                 // link de convite
-                const org = (avals[0] && avals[0].org) || (self && self.org) || '';
+                const org = orgSel || (self && self.org) || '';
                 const base = new URL(FERRAMENTA_360, location.href).href;
                 const url = `${base}?avaliado=${encodeURIComponent(nome)}&org=${encodeURIComponent(org)}`;
                 document.getElementById('link-360').value = url;

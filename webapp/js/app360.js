@@ -157,19 +157,28 @@ const App360 = {
     },
 
     init() {
-        // pré-preenche pelos parâmetros do link gerado no painel
+        // Convite por link: preenche e TRAVA os dados (evita erros de digitação).
+        // Sem parâmetros, mantém a digitação manual como plano B.
         const p = new URLSearchParams(location.search);
-        const avaliado = (p.get('avaliado') || '').slice(0, 120);
-        const org = (p.get('org') || '').slice(0, 120);
-        if (avaliado) {
+        const avaliado = (p.get('avaliado') || '').slice(0, 120).trim();
+        const org = (p.get('org') || '').slice(0, 120).trim();
+        if (avaliado && org) {
             document.getElementById('f-avaliado').value = avaliado;
+            document.getElementById('f-org').value = org;
+            document.getElementById('f-avaliado').required = false;
+            document.getElementById('f-org').required = false;
+            document.getElementById('manual-fields').classList.add('hidden');
+            document.getElementById('invite-card').classList.remove('hidden');
+            document.getElementById('invite-nome').textContent = avaliado;
+            document.getElementById('invite-org').textContent = org;
             document.getElementById('w-avaliado').textContent = avaliado;
             document.getElementById('w-avaliado-2').textContent = avaliado;
         } else {
             document.getElementById('w-avaliado').textContent = 'um(a) colega';
             document.getElementById('w-avaliado-2').textContent = 'um(a) profissional';
+            if (avaliado) document.getElementById('f-avaliado').value = avaliado;
+            if (org) document.getElementById('f-org').value = org;
         }
-        if (org) document.getElementById('f-org').value = org;
     }
 };
 

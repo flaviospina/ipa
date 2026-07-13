@@ -43,8 +43,16 @@
                        relação profissional com a pessoa avaliada, para compor as médias por grupo.</p>
                 </div>
                 <form onsubmit="App360.start(event)">
-                    <div class="field"><label for="f-avaliado">Nome da pessoa avaliada</label><input type="text" id="f-avaliado" required maxlength="120"></div>
-                    <div class="field"><label for="f-org">Organização</label><input type="text" id="f-org" required maxlength="120"></div>
+                    <!-- Convite com link: dados preenchidos e travados (evita erros de digitação) -->
+                    <div id="invite-card" class="hidden" style="background:var(--accent-soft);border:1px solid #d8e3fb;border-radius:14px;padding:16px 20px;margin-bottom:18px">
+                        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:6px">Convite para avaliar</div>
+                        <div style="font-weight:800;font-size:17px" id="invite-nome">—</div>
+                        <div class="muted" style="font-size:13.5px" id="invite-org">—</div>
+                    </div>
+                    <div id="manual-fields">
+                        <div class="field"><label for="f-avaliado">Nome da pessoa avaliada</label><input type="text" id="f-avaliado" required maxlength="120"></div>
+                        <div class="field"><label for="f-org">Organização</label><input type="text" id="f-org" required maxlength="120"></div>
+                    </div>
                     <div class="field">
                         <label for="f-relacao">Qual a sua relação com essa pessoa?</label>
                         <select id="f-relacao" required style="width:100%;font:inherit;padding:13px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);outline:none">
