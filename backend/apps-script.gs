@@ -417,6 +417,29 @@ function testarArquivamento() {
 }
 
 /**
+ * TESTE DO 360°. Execute no editor (Executar > testar360):
+ * simula uma avaliação externa válida chamando o MESMO código que a
+ * web usa. Deve criar a aba RESPOSTAS_360 com a linha "TESTE 360".
+ * Se funcionar aqui mas não pelo site, o problema é a implantação
+ * (a URL /exec está servindo uma versão antiga do código).
+ */
+function testar360() {
+  const respostas = {};
+  for (const q of [1, 2, 3]) {
+    const pesos = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    EXPECTED[q].forEach(function (id, i) { respostas[id] = pesos[i]; });
+  }
+  const res = receber360({
+    avaliado: 'TESTE 360',
+    organizacao: 'TESTE LAB',
+    relacao: 'Gestor(a)',
+    respostas: respostas
+  });
+  Logger.log('Resposta do servidor: ' + res.getContent());
+  Logger.log('Verifique se a aba RESPOSTAS_360 foi criada com a linha "TESTE 360" (pode apagar depois).');
+}
+
+/**
  * SIMULAÇÃO DE TESTE (substitui o antigo "Envio em Lote" da página pública).
  * Só pode ser executada por um editor da planilha, dentro do editor do
  * Apps Script: Executar > simularRespostas. Grava APENAS na aba SIMULADOS.
