@@ -219,7 +219,7 @@ const App = {
         if (!out || out.ok !== true) {
             this.enqueue(payload);
             ind.className = 'sync-indicator err';
-            ind.textContent = 'Sem conexão — suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
+            ind.textContent = this.explicarFalha(out) + ' Suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
             return;
         }
 
@@ -252,7 +252,7 @@ const App = {
     },
 
     async send(payload) {
-        if (!IPA_CONFIG.ENDPOINT || IPA_CONFIG.ENDPOINT.startsWith('COLE_AQUI')) return null;
+        if (!IPA_CONFIG.ENDPOINT || IPA_CONFIG.ENDPOINT.startsWith('COLE_AQUI')) return { ok: false, code: 'endpoint_nao_configurado' };
         try {
             // Content-Type text/plain = requisição simples (sem preflight):
             // o Apps Script responde com CORS liberado e conseguimos LER a resposta.
@@ -261,10 +261,21 @@ const App = {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
             });
-            return await res.json();
+            const texto = await res.text();
+            try { return JSON.parse(texto); }
+            catch (e) { return { ok: false, code: 'resposta_nao_json_http_' + res.status }; }
         } catch (e) {
-            return null;
+            return { ok: false, code: 'sem_conexao' };
         }
+    },
+
+    /* traduz o código de falha em orientação prática */
+    explicarFalha(out) {
+        const code = out ? out.code : 'sem_conexao';
+        if (code === 'sem_conexao') return 'Sem conexão com o servidor.';
+        if (code === 'endpoint_nao_configurado') return 'A URL do Apps Script não foi configurada (js/config.js).';
+        if (String(code).startsWith('resposta_nao_json')) return 'O servidor devolveu uma página de login do Google em vez de dados — a implantação do Apps Script precisa estar com "Quem pode acessar: Qualquer pessoa". (código: ' + code + ')';
+        return 'O servidor recusou o envio (código: ' + code + ').';
     },
 
     /* fila de reenvio */

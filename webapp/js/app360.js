@@ -148,8 +148,15 @@ const App360 = {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(payload)
             });
-            const out = await res.json();
-            status.textContent = out && out.ok ? 'Registro confirmado.' : 'Não foi possível confirmar o registro — tente novamente mais tarde.';
+            const texto = await res.text();
+            let out;
+            try { out = JSON.parse(texto); }
+            catch (e) { out = { ok: false, code: 'resposta_nao_json_http_' + res.status }; }
+            status.textContent = out.ok
+                ? 'Registro confirmado.'
+                : (String(out.code).startsWith('resposta_nao_json')
+                    ? 'Falha: o servidor pediu login do Google — a implantação do Apps Script precisa de acesso "Qualquer pessoa". (código: ' + out.code + ')'
+                    : 'O servidor recusou o registro (código: ' + out.code + ').');
         } catch (e) {
             status.textContent = 'Sem conexão no momento — tente reenviar mais tarde.';
         }
