@@ -1,8 +1,8 @@
-# Painel VIPEDia — Fases 2 e 3
+# Painel VIPEDia — Fases 2, 3 e 4
 
-Fundação PHP: acesso com login, separação entre empresas, gestão de usuários e a
-API que grava as avaliações no banco. Roda em hospedagem compartilhada
-(HostGator, PHP 8 + MySQL), sem dependências externas.
+Fundação PHP: acesso com login, separação entre empresas, gestão de usuários,
+API que grava as avaliações no banco e ciclos 360° por convite. Roda em
+hospedagem compartilhada (HostGator, PHP 8 + MySQL), sem dependências externas.
 
 ## Instalação
 
@@ -15,7 +15,7 @@ API que grava as avaliações no banco. Roda em hospedagem compartilhada
 ```
 vipedia/new_ipa/
 ├── admin/       telas do painel   → /vipedia/new_ipa/admin/login.php
-├── api/         recebe o diagnóstico do questionário (público)
+├── api/         endpoints públicos: diagnóstico e convite 360°
 ├── setup/       instalação (apagar depois de usar)
 ├── src/         código de apoio   (bloqueado pela web)
 └── config/      senha do banco    (bloqueado pela web)
@@ -120,12 +120,44 @@ empresa Beta não vê avaliações da Alfa e recebe 404 no relatório dela. O
 relatório arquivado é exibido com CSP que bloqueia scripts (o HTML vem do
 navegador do respondente e é tratado como não confiável).
 
+## Como funciona o 360° por convite (Fase 4)
+
+O fluxo inteiro dispensa e-mail configurado — os links são copiados e
+distribuídos por quem abriu o ciclo (WhatsApp, e-mail pessoal, etc.):
+
+1. **Abrir ciclo** (painel → 360°): escolhe o avaliado e o mínimo de respostas
+   para exibir médias (padrão 3 — proteção do anonimato).
+2. **Gerar convites** na tela do ciclo, por relação (gestor, colega, liderado,
+   cliente interno, outra). Cada convite vira um link de uso único
+   `webapp/360.html?convite=TOKEN`. Os links aparecem **uma única vez** — o
+   banco guarda apenas o hash SHA-256 do token. Link perdido = cancelar o
+   convite e gerar outro.
+3. **O avaliador abre o link**: a página busca no servidor quem está sendo
+   avaliado, a empresa e a relação — nada é digitado, nada pode ser trocado.
+   Convite respondido, cancelado, expirado ou de ciclo fechado recebe uma
+   mensagem explicativa e não deixa enviar.
+4. **A resposta consome o convite** numa transação com `SELECT ... FOR UPDATE`:
+   dois cliques simultâneos não geram duas avaliações. Os scores são
+   recalculados no servidor pelo mesmo núcleo do diagnóstico (`src/Ipa.php`).
+5. **Resultado consolidado** na tela do ciclo: autoavaliação × médias externas
+   por relação; médias só aparecem quando a relação atinge o mínimo, e o
+   painel nunca mostra qual avaliador respondeu o quê.
+
+A página 360 continua enviando também para a planilha (registro paralelo da
+transição), e o modo antigo por parâmetros (`?avaliado=&org=`) segue
+funcionando como reserva enquanto a planilha existir.
+
+**Verificação feita** (servidor PHP + MariaDB reais): ciclo aberto pelo painel,
+6 convites gerados e respondidos via API, reenvio idempotente, convite
+cancelado e ciclo fechado recusando GET/POST, limiar de anonimato conferido na
+tela (1 gestor e 2 pares ocultos; 3 liderados e o geral exibidos com médias
+idênticas ao cálculo manual), scores do 360° cruzados com o `engine.js` e
+isolamento entre empresas (404 para admin de outra empresa).
+
 ## O que ainda não existe
 
-- **Envio de e-mail.** As senhas iniciais são entregues na tela, para o
-  administrador repassar. O envio automático entra junto com os convites 360°.
+- **Envio de e-mail.** Senhas iniciais e convites 360° são entregues na tela
+  para distribuição manual. Com SMTP configurado, o envio automático entra.
 - **Recuperação de senha pelo próprio usuário.** Hoje quem redefine é o
   administrador, pelo botão na lista de usuários. A tabela `usuario_tokens` já
   está pronta para o autoatendimento quando houver e-mail configurado.
-- **360° no banco.** A página 360 ainda envia só para a planilha; ela entra na
-  Fase 4, junto com ciclos e convites — o modelo de dados já existe.

@@ -41,11 +41,15 @@ function abrirPagina(string $titulo, ?array $usuario = null, string $ativo = '')
     $nav = [
         'index.php'      => 'Início',
         'avaliacoes.php' => 'Avaliações',
+        'ciclos.php'     => '360°',
         'empresas.php'   => 'Empresas',
         'usuarios.php'   => 'Usuários',
     ];
     if ($usuario !== null && $usuario['papel'] !== 'admin_geral') {
         unset($nav['empresas.php']); // administrador de empresa não gerencia empresas
+    }
+    if ($usuario !== null && $usuario['papel'] === 'gestor') {
+        unset($nav['ciclos.php']);   // gestor consulta resultados; ciclos ficam com admin/consultor
     }
     ?>
 <!DOCTYPE html>

@@ -5,7 +5,7 @@
    ============================================================ */
 
 const App360 = {
-    state: { avaliado: '', org: '', relacao: '', quadroAtual: 1, selecoes: { 1: [], 2: [], 3: [] } },
+    state: { avaliado: '', org: '', relacao: '', convite: '', quadroAtual: 1, selecoes: { 1: [], 2: [], 3: [] } },
 
     goTo(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -130,7 +130,11 @@ const App360 = {
         ACP.QUADROS.forEach(q => {
             this.state.selecoes[q.id].forEach((wordId, i) => { respostas[wordId] = Engine.pesoDaPosicao(i); });
         });
-        const payload = {
+        this.goTo('done');
+        const status = document.getElementById('done-status');
+
+        // planilha (como sempre) — no modo convite vira registro paralelo
+        const paraPlanilha = this.postJson(IPA_CONFIG.ENDPOINT, {
             schema: IPA_CONFIG.SCHEMA_VERSION,
             action: '360',
             avaliado: this.state.avaliado,
@@ -139,32 +143,98 @@ const App360 = {
             respostas,
             enviadoEm: new Date().toISOString(),
             website: ''
-        };
-        this.goTo('done');
-        const status = document.getElementById('done-status');
-        try {
-            const res = await fetch(IPA_CONFIG.ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-            });
-            const texto = await res.text();
-            let out;
-            try { out = JSON.parse(texto); }
-            catch (e) { out = { ok: false, code: 'resposta_nao_json_http_' + res.status }; }
+        });
+
+        if (this.state.convite && IPA_CONFIG.API_360_ENDPOINT) {
+            // modo convite: o banco é a fonte da verdade
+            const [db] = await Promise.all([
+                this.postJson(IPA_CONFIG.API_360_ENDPOINT, {
+                    schema: IPA_CONFIG.SCHEMA_VERSION,
+                    token: this.state.convite,
+                    respostas,
+                    website: ''
+                }),
+                paraPlanilha
+            ]);
+            status.textContent = db.ok
+                ? 'Registro confirmado. Obrigado pela sua contribuição!'
+                : (db.code === 'ja_respondido' ? 'Este convite já havia sido respondido — obrigado!'
+                  : db.code === 'ciclo_encerrado' ? 'Este ciclo de avaliação já foi encerrado.'
+                  : db.code === 'convite_expirado' ? 'Este convite expirou. Peça um novo link a quem o enviou.'
+                  : 'Não foi possível registrar agora (código: ' + db.code + '). Recarregue a página e tente de novo.');
+        } else {
+            const out = await paraPlanilha;
             status.textContent = out.ok
                 ? 'Registro confirmado.'
                 : (String(out.code).startsWith('resposta_nao_json')
                     ? 'Falha: o servidor pediu login do Google — a implantação do Apps Script precisa de acesso "Qualquer pessoa". (código: ' + out.code + ')'
                     : 'O servidor recusou o registro (código: ' + out.code + ').');
-        } catch (e) {
-            status.textContent = 'Sem conexão no momento — tente reenviar mais tarde.';
         }
         document.getElementById('progress-bar').style.width = '100%';
     },
 
-    init() {
-        // Convite por link: preenche e TRAVA os dados (evita erros de digitação).
+    async postJson(url, payload) {
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const texto = await res.text();
+            try { return JSON.parse(texto); }
+            catch (e) { return { ok: false, code: 'resposta_nao_json_http_' + res.status }; }
+        } catch (e) {
+            return { ok: false, code: 'sem_conexao' };
+        }
+    },
+
+    async init() {
+        // MODO CONVITE (Fase 4): ?convite=TOKEN identifica avaliado, empresa
+        // e relação no servidor — o avaliador não digita nada disso, e o
+        // convite aceita uma única resposta.
+        const token = (new URLSearchParams(location.search).get('convite') || '').trim();
+        if (token && IPA_CONFIG.API_360_ENDPOINT) {
+            try {
+                const res = await fetch(IPA_CONFIG.API_360_ENDPOINT + '?token=' + encodeURIComponent(token));
+                const out = await res.json();
+                if (out.ok) {
+                    this.state.convite = token;
+                    this.state.avaliado = out.avaliado;
+                    this.state.org = out.empresa;
+                    this.state.relacao = out.relacao_rotulo;
+                    ['f-avaliado', 'f-org'].forEach(id => {
+                        const f = document.getElementById(id);
+                        f.value = id === 'f-avaliado' ? out.avaliado : out.empresa;
+                        f.required = false;
+                    });
+                    const rel = document.getElementById('f-relacao');
+                    rel.innerHTML = '<option selected>' + out.relacao_rotulo + '</option>';
+                    rel.closest('div').classList.add('hidden');
+                    rel.required = false;
+                    document.getElementById('manual-fields').classList.add('hidden');
+                    document.getElementById('invite-card').classList.remove('hidden');
+                    document.getElementById('invite-nome').textContent = out.avaliado;
+                    document.getElementById('invite-org').textContent = out.empresa + ' · você avalia como: ' + out.relacao_rotulo;
+                    document.getElementById('w-avaliado').textContent = out.avaliado;
+                    document.getElementById('w-avaliado-2').textContent = out.avaliado;
+                    return;
+                }
+                // convite inválido/expirado/já usado: explica e impede o envio
+                const motivo = out.code === 'ja_respondido' ? 'Este convite já foi respondido — obrigado!'
+                    : out.code === 'ciclo_encerrado' ? 'Este ciclo de avaliação já foi encerrado.'
+                    : out.code === 'convite_expirado' ? 'Este convite expirou. Peça um novo link a quem o enviou.'
+                    : 'Este link de convite não é válido. Confira se ele foi copiado por inteiro.';
+                document.getElementById('manual-fields').classList.add('hidden');
+                document.getElementById('invite-card').classList.remove('hidden');
+                document.getElementById('invite-nome').textContent = 'Convite indisponível';
+                document.getElementById('invite-org').textContent = motivo;
+                document.querySelectorAll('#screen-welcome button[type=submit], #screen-welcome .actions button')
+                    .forEach(b => { b.disabled = true; });
+                return;
+            } catch (e) { /* sem conexão: cai no fluxo manual abaixo */ }
+        }
+
+        // Convite por parâmetros simples (modo antigo): preenche e trava.
         // Sem parâmetros, mantém a digitação manual como plano B.
         const p = new URLSearchParams(location.search);
         const avaliado = (p.get('avaliado') || '').slice(0, 120).trim();

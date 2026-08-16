@@ -23,12 +23,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../src/Db.php';
 require_once __DIR__ . '/../src/Audit.php';
+require_once __DIR__ . '/../src/Ipa.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Robots-Tag: noindex, nofollow');
 
 const VERSAO_API = 1;
-const LIMIAR_FLEXIBILIDADE = 15;   // mesmo valor de ACP.CRITERIOS.LIMIAR no engine.js
 
 function responder(bool $ok, string $code, array $extra = []): never
 {
@@ -118,14 +118,8 @@ function receberDiagnostico(array $data): never
     }
 
     // rate limit por origem (hash do IP — minimização LGPD)
-    $sal    = (string)Db::opcao('app.sal_ip', 'vipedia');
-    $ipHash = hash('sha256', ($_SERVER['REMOTE_ADDR'] ?? '') . $sal);
-    $limite = (int)Db::opcao('api.max_por_minuto', 10);
-    $recentes = (int)Db::valor(
-        'SELECT COUNT(*) FROM avaliacoes WHERE ip_hash = ? AND iniciada_em > DATE_SUB(NOW(), INTERVAL 1 MINUTE)',
-        [$ipHash]
-    );
-    if ($recentes >= $limite) {
+    $ipHash = Ipa::ipHash();
+    if (Ipa::estourouLimite($ipHash)) {
         responder(false, 'rate_limited');
     }
 
@@ -147,74 +141,13 @@ function receberDiagnostico(array $data): never
         responder(false, 'empresa_nao_identificada');
     }
 
-    // instrumento vigente e suas palavras — o estilo vem do banco
-    $inst = Db::um('SELECT * FROM instrumentos WHERE ativo = 1 ORDER BY versao DESC LIMIT 1');
-    if (!$inst) {
-        responder(false, 'instrumento_ausente');
+    // validação e cálculo no servidor — fonte única em src/Ipa.php
+    $calc = Ipa::avaliar($data['respostas'] ?? null);
+    if (isset($calc['erro'])) {
+        responder(false, $calc['erro']);
     }
-    $palavras = Db::todos(
-        'SELECT id, quadro, codigo, estilo FROM palavras WHERE instrumento_id = ? ORDER BY quadro, posicao',
-        [(int)$inst['id']]
-    );
-
-    $respostas = is_array($data['respostas'] ?? null) ? $data['respostas'] : [];
-    $porQuadro = [];
-    foreach ($palavras as $p) {
-        $porQuadro[(int)$p['quadro']][] = $p;
-    }
-
-    // validação estrita: permutação completa 0..peso_max em cada quadro
-    $scores = ['A' => 0, 'C' => 0, 'P' => 0, 'E' => 0];
-    $linhas = [];
-    foreach ($porQuadro as $q => $lista) {
-        $pesos = [];
-        foreach ($lista as $p) {
-            $v = $respostas[$p['codigo']] ?? null;
-            if (!is_numeric($v) || (string)(int)$v !== (string)$v) {
-                responder(false, 'invalid_weights_q' . $q);
-            }
-            $v = (int)$v;
-            if ($v < 0 || $v > (int)$inst['peso_max']) {
-                responder(false, 'invalid_weights_q' . $q);
-            }
-            $pesos[] = $v;
-            $scores[$p['estilo']] += $v;
-            $linhas[] = [(int)$p['id'], $q, $v];
-        }
-        if (count($pesos) !== (int)$inst['qtd_palavras_quadro']) {
-            responder(false, 'invalid_weights_q' . $q);
-        }
-        if (count(array_unique($pesos)) !== count($pesos)) {
-            responder(false, 'repeated_weights_q' . $q);
-        }
-        if (array_sum($pesos) !== 66) {
-            responder(false, 'bad_sum_q' . $q);
-        }
-    }
-    $total = array_sum($scores);
-    if ($total !== (int)$inst['total_esperado']) {
-        responder(false, 'bad_total');
-    }
-
-    // ranking e regra de flexibilidade — mesma lógica do engine.js.
-    // Desempate do engine: ordem alfabética do nome curto (Atenção,
-    // Comunicação, Equilibrado, Procedimento) = ordem ASCII de A, C, E, P.
-    $chaves = ['A', 'C', 'E', 'P'];
-    usort($chaves, fn($x, $y) => ($scores[$y] <=> $scores[$x]) ?: strcmp($x, $y));
-    $difs = [
-        $scores[$chaves[0]] - $scores[$chaves[1]],
-        $scores[$chaves[1]] - $scores[$chaves[2]],
-        $scores[$chaves[2]] - $scores[$chaves[3]],
-    ];
-    if ($chaves[0] === 'E') {
-        $regra = 'EQUILIBRADO_MODELO';
-    } elseif (max($difs) < LIMIAR_FLEXIBILIDADE) {
-        $regra = 'EQUILIBRADO_NATURAL';
-    } elseif ($difs[0] >= LIMIAR_FLEXIBILIDADE) {
-        $regra = 'FORTE_APEGO';
-    } else {
-        $regra = 'FLEXIVEL';
-    }
+    $scores = $calc['scores'];
+    $inst   = $calc['instrumento'];
 
     // sanidade: se o cliente mandou scores, divergência vira marca de auditoria
     $cli = is_array($data['scores'] ?? null) ? $data['scores'] : null;
@@ -252,16 +185,13 @@ function receberDiagnostico(array $data): never
              VALUES (?, ?, ?, ?, 'auto', 'concluida', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)",
             [
                 $uuid, (int)$empresa['id'], $partId, (int)$inst['id'],
-                $scores['A'], $scores['C'], $scores['P'], $scores['E'], $total,
-                $chaves[0], $regra, $difs[0], $difs[1], $difs[2],
+                $scores['A'], $scores['C'], $scores['P'], $scores['E'], $calc['total'],
+                $calc['pred'], $calc['regra'], $calc['difs'][0], $calc['difs'][1], $calc['difs'][2],
                 $ipHash, mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
             ]
         );
 
-        $st = $pdo->prepare('INSERT INTO avaliacao_respostas (avaliacao_id, palavra_id, quadro, peso) VALUES (?, ?, ?, ?)');
-        foreach ($linhas as $l) {
-            $st->execute([$avalId, $l[0], $l[1], $l[2]]);
-        }
+        Ipa::gravarRespostas($avalId, $calc['linhas']);
 
         $aceite = date('Y-m-d H:i:s', strtotime($consent) ?: time());
         Db::q(
@@ -284,7 +214,7 @@ function receberDiagnostico(array $data): never
     }
 
     Audit::registrar(null, (int)$empresa['id'], 'avaliacao_recebida', 'avaliacoes', $avalId,
-        ['uuid' => $uuid, 'predominante' => $chaves[0]] + ($diverge ? ['divergencia_cliente' => true] : []));
+        ['uuid' => $uuid, 'predominante' => $calc['pred']] + ($diverge ? ['divergencia_cliente' => true] : []));
 
     responder(true, 'saved');
 }

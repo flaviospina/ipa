@@ -154,6 +154,9 @@ button:hover{background:var(--accent-ink)}
 .est-E{background:#0e9f6e}
 .scores{font-variant-numeric:tabular-nums}
 .link-quest{font-size:12px;word-break:break-all}
+.links-360{width:100%;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+           border:1.5px solid var(--accent);border-radius:7px;background:var(--ground);
+           color:var(--ink);padding:12px 14px;resize:vertical;margin:0 0 10px}
 
 /* ---------- tela de login ---------- */
 .tela-login{display:flex;align-items:center;justify-content:center;min-height:100vh;

@@ -26,6 +26,10 @@ const IPA_CONFIG = {
     // para desativar temporariamente a gravação no banco.
     API_ENDPOINT: 'https://itthrive.com.br/vipedia/new_ipa/api/diagnostico.php',
 
+    // API dos convites 360° (Fase 4): valida o link de uso único e grava
+    // a avaliação externa no banco.
+    API_360_ENDPOINT: 'https://itthrive.com.br/vipedia/new_ipa/api/convite360.php',
+
     // Versão do esquema de dados enviado ao backend
     SCHEMA_VERSION: 2,
 
