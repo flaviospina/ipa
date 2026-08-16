@@ -218,50 +218,52 @@ const App = {
         ind.className = 'sync-indicator pending';
         ind.textContent = 'Registrando respostas e gerando análise personalizada…';
 
-        // transição: envia para a planilha (como hoje) E para o banco.
-        // O indicador na tela segue o resultado da planilha; a gravação no
-        // banco é silenciosa e tem fila própria de reenvio.
+        // transição: envia para o BANCO (fonte da verdade) e para a planilha
+        // (registro paralelo legado). O sucesso na tela segue o banco; a
+        // planilha indisponível não assusta mais o respondente — apenas
+        // entra na fila de reenvio.
         const [out, db] = await Promise.all([this.send(payload), this.sendApi(payload)]);
-        if (db.ok !== true && this.apiReenviavel(db.code)) this.enqueueApi(payload);
-        if (!out || out.ok !== true) {
-            this.enqueue(payload);
+        const bancoOk    = db && db.ok === true;
+        const planilhaOk = out && out.ok === true;
+        if (!bancoOk && this.apiReenviavel(db && db.code)) this.enqueueApi(payload);
+        if (!planilhaOk) this.enqueue(payload);
+
+        if (!bancoOk && !planilhaOk) {
             ind.className = 'sync-indicator err';
-            ind.textContent = this.explicarFalha(out) + ' Suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
+            const motivo = (db && db.code === 'empresa_nao_identificada')
+                ? 'A organização informada não está cadastrada no sistema. Use o link do questionário fornecido pela sua empresa (ele contém o identificador) ou avise quem administra o VIPEDia.'
+                : this.explicarFalha(out);
+            ind.textContent = motivo + ' Suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
             return;
         }
 
-        // enriquece o relatório com a análise da IA, se disponível
+        // a análise personalizada por IA vem da planilha (Apps Script + Gemini);
+        // sem ela, o relatório segue com os textos padrão da metodologia
         let reportHtml = document.getElementById('report').innerHTML;
-        if (out.ia) {
+        if (planilhaOk && out.ia) {
             reportHtml = Engine.renderRelatorio(this.state.dados, r, out.ia);
             document.getElementById('report').innerHTML = reportHtml;
         }
 
-        ind.textContent = out.ia
+        ind.textContent = (planilhaOk && out.ia)
             ? '✓ Análise personalizada incluída · arquivando relatório…'
             : '✓ Respostas registradas · arquivando relatório…';
 
-        // passo 2: arquiva o relatório final (com IA, se houver) no Drive
+        // passo 2: arquiva o relatório final no banco e no Drive (planilha)
         const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
         const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id,
                        nome: this.state.dados.nome, relatorio: standalone, website: '' };
         const [out2, db2] = await Promise.all([this.send(arch), this.sendApi(arch)]);
-        if (db2.ok !== true && this.apiReenviavel(db2.code)) this.enqueueApi(arch);
-        if (out2 && out2.ok === true) {
-            ind.className = 'sync-indicator ok';
-            ind.textContent = out.ia
+        const arquivou = (db2 && db2.ok === true) || (out2 && out2.ok === true);
+        if (!(db2 && db2.ok === true) && this.apiReenviavel(db2 && db2.code)) this.enqueueApi(arch);
+        if (!(out2 && out2.ok === true) && !(out2 && out2.code === 'row_not_found')) this.enqueue(arch);
+
+        ind.className = 'sync-indicator ok';
+        ind.textContent = arquivou
+            ? ((planilhaOk && out.ia)
                 ? '✓ Respostas registradas, análise personalizada incluída e relatório arquivado'
-                : '✓ Respostas registradas e relatório arquivado';
-        } else if (out2 && out2.code === 'row_not_found') {
-            // o PDF foi salvo, mas a linha da planilha não foi localizada para
-            // receber o link. Reenviar não resolve — a fila só repetiria a falha.
-            ind.className = 'sync-indicator ok';
-            ind.textContent = '✓ Respostas registradas e relatório arquivado (o link não pôde ser vinculado à linha da planilha)';
-        } else {
-            this.enqueue(arch);
-            ind.className = 'sync-indicator ok';
-            ind.textContent = '✓ Respostas registradas (o arquivamento do relatório será reenviado automaticamente)';
-        }
+                : '✓ Respostas registradas e relatório arquivado')
+            : '✓ Respostas registradas (o arquivamento do relatório será reenviado automaticamente)';
     },
 
     async send(payload) {
