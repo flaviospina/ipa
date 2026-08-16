@@ -14,11 +14,9 @@ de acesso restrito e ciclos de avaliação **360°** por convite.
 
 | Pasta | O que é | Guia |
 |---|---|---|
-| `webapp/` | O questionário (IPA e 360°). HTML/CSS/JS puros, sem build | este arquivo |
-| `backend/sql/` | Criação do banco: 14 tabelas + carga do instrumento | `backend/sql/README.md` |
-| `backend/php/` | Painel administrativo + APIs que gravam no banco | `backend/php/README.md` |
+| **`sistema/`** | **O sistema completo, no layout do servidor — é ESTA pasta que se publica** (home, questionário, painel, APIs, diagnóstico) | `sistema/README.md` |
+| `backend/sql/` | Criação do banco: 14 tabelas + carga do instrumento (não sobe para o servidor) | `backend/sql/README.md` |
 | `backend/apps-script.gs` | Apps Script legado (planilha) — ainda ativo na transição | `backend/README.md` |
-| `home/`, `painel/` | Página inicial e painel antigo por chave (`painel/` será desativado na Fase 5) | — |
 | `apresentacao/` | Apresentação executiva da Abordagem ACP (`.pptx`/`.pdf`) | `apresentacao/README.md` |
 | `ANALISE-SISTEMA-IPA.md` | Análise do sistema, benchmark e roadmap | — |
 
@@ -49,20 +47,26 @@ No phpMyAdmin, com o banco selecionado, importe **nesta ordem**:
 
 Conferência: `SELECT COUNT(*) FROM palavras;` deve devolver **36**.
 
-### 2. Enviar os arquivos
+### 2. Enviar os arquivos — uma pasta só
 
-Para `public_html/vipedia/new_ipa/`:
+Envie o **CONTEÚDO da pasta `sistema/`** para `public_html/vipedia/new_ipa/`
+(pode ser por zip no gerenciador de arquivos do cPanel: compacte o conteúdo de
+`sistema/`, envie e extraia dentro de `new_ipa/`). O resultado no servidor:
 
 ```
 new_ipa/
-├── home/        (já existe — página inicial)
-├── webapp/      ← conteúdo da pasta webapp/ deste repositório
-├── admin/       ┐
-├── api/         │
-├── setup/       ├─ conteúdo da pasta backend/php/
-├── src/         │
-└── config/      ┘
+├── index.php    → redireciona para home/
+├── status.php   → página de diagnóstico
+├── home/        página inicial
+├── webapp/      questionário IPA e 360°
+├── admin/       painel (login por usuário)
+├── api/         APIs que gravam no banco
+├── src/  config/  setup/  painel/
 ```
+
+Os endereços das APIs no questionário são **calculados automaticamente** a
+partir da pasta publicada — a mesma estrutura funciona em `new_ipa/`, em outro
+subdiretório ou em outro domínio, sem editar arquivo nenhum.
 
 ### 3. Configurar
 
@@ -102,7 +106,7 @@ uma **nova implantação** — a página de diagnóstico confirma a versão.
 2. Na seção **Fila local deste navegador**, os envios que falharam ficam
    guardados. Depois de corrigir a causa, clique em **Reenviar agora** — as
    respostas presas entram no banco sem refazer o questionário.
-3. Causas mais comuns, na ordem: pasta `webapp/js/` desatualizada no servidor
+3. Causas mais comuns, na ordem: pasta `webapp/` desatualizada no servidor
    (o questionário antigo não envia ao banco), PHP abaixo de 8.1 no cPanel,
    `config/config.php` ausente ou com senha errada, e empresa não cadastrada
    (o envio é recusado com `empresa_nao_identificada`).
@@ -174,10 +178,10 @@ empresa cadastrada; se não conseguir, o registro fica só na planilha.
 
 ## Desenvolvimento
 
-Sem build e sem dependências externas: `webapp/` é HTML/CSS/JS puro e
-`backend/php/` é PHP 8 padrão (PDO). Para testar localmente, suba um
-MySQL/MariaDB, aplique os dois SQLs, crie `backend/php/config/config.php`
-apontando para ele e rode `php -S 127.0.0.1:8199 -t backend/php`.
+Sem build e sem dependências externas: o questionário é HTML/CSS/JS puro e o
+painel/APIs são PHP 8 padrão (PDO). Para testar localmente, suba um
+MySQL/MariaDB, aplique os dois SQLs, crie `sistema/config/config.php`
+apontando para ele e rode `php -S 127.0.0.1:8399 -t sistema`.
 Cada README de subpasta descreve a bateria de testes já executada.
 
 ## Próximos passos

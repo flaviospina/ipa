@@ -108,18 +108,10 @@ if ($cfgJs !== false) {
         marcar($checks, 'Webapp', 'fail', 'webapp publicado é ANTERIOR à Fase 3 — não envia ao banco',
             'O js/config.js no servidor não tem API_ENDPOINT. Reenvie a pasta webapp/js/ do repositório (config.js, app.js, app360.js). Enquanto isso, cada resposta vai só para a planilha — e nada chega ao banco. Esta é a causa mais comum do sintoma "registro feito, banco vazio".');
     } else {
-        preg_match("#API_ENDPOINT:\s*'([^']*)'#", $cfgJs, $m);
-        $apiCfg = isset($m[1]) ? $m[1] : '';
-        marcar($checks, 'Webapp', 'ok', 'config.js publicado tem API_ENDPOINT (Fase 3+)', $apiCfg);
-        // o endereço configurado bate com ESTA instalação?
-        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $baseReal = $https . '://' . (isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '') .
-                    rtrim(dirname(isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '/'), '/');
-        $apiReal = $baseReal . '/api/diagnostico.php';
-        if ($apiCfg !== '' && $apiCfg !== $apiReal) {
-            marcar($checks, 'Webapp', 'warn', 'API_ENDPOINT difere do endereço real desta instalação',
-                'Configurado: ' . $apiCfg . ' · Real: ' . $apiReal . ' — se forem o mesmo servidor com outro apelido (www, http/https), está bem; senão, corrija webapp/js/config.js.');
-        }
+        $detalhe = tem('location.pathname', $cfgJs)
+            ? 'Endereços das APIs calculados automaticamente a partir da pasta publicada — funciona em qualquer caminho.'
+            : 'Endereço fixo em config.js — confirme que aponta para ESTA instalação.';
+        marcar($checks, 'Webapp', 'ok', 'config.js publicado tem API_ENDPOINT (Fase 3+)', $detalhe);
     }
     if ($appJs !== false && !tem('sendApi', $appJs)) {
         marcar($checks, 'Webapp', 'fail', 'js/app.js publicado é antigo (sem envio ao banco)',
@@ -352,12 +344,17 @@ button{font:inherit;font-weight:600;padding:8px 14px;border:0;border-radius:7px;
   });
 
   // 2. config.js publicado + Apps Script (planilha)
-  fetch('webapp/js/config.js').then(function (r) { return r.text(); }).then(function (t) {
+  fetch('webapp/js/config.js').then(function (r) {
+    if (!r.ok) { throw new Error('http ' + r.status); }
+    return r.text();
+  }).then(function (t) {
     var mEnd = t.match(/ENDPOINT:\s*'([^']+)'/);
-    var mApi = t.match(/API_ENDPOINT:\s*'([^']*)'/);
-    if (!mApi) {
+    if (t.indexOf('API_ENDPOINT') === -1) {
       add('fail', 'webapp publicado é ANTERIOR à Fase 3',
-          'js/config.js no servidor não tem API_ENDPOINT — reenvie webapp/js/ (config.js, app.js, app360.js). Sem isso, nada chega ao banco.');
+          'js/config.js no servidor não tem API_ENDPOINT — reenvie a pasta webapp/ completa. Sem isso, nada chega ao banco.');
+    } else {
+      add('ok', 'webapp publicado envia ao banco (Fase 3+)',
+          'Os endereços das APIs são calculados a partir da própria pasta publicada.');
     }
     if (mEnd) {
       fetch(mEnd[1]).then(function (r2) { return r2.text(); }).then(function (t2) {

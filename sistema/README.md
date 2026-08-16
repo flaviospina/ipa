@@ -1,29 +1,34 @@
-# Painel VIPEDia — Fases 2, 3 e 4
+# Sistema VIPEDia — a pasta que vai para o servidor
 
-Fundação PHP: acesso com login, separação entre empresas, gestão de usuários,
-API que grava as avaliações no banco e ciclos 360° por convite. Roda em
-hospedagem compartilhada (HostGator, PHP 8 + MySQL), sem dependências externas.
+Esta pasta é o **sistema completo no layout de publicação**: envie o conteúdo
+dela para o servidor e nada falta. Roda em hospedagem compartilhada
+(HostGator, PHP 8.1+ e MySQL), sem dependências externas.
 
 ## Instalação
 
 **1. Banco.** Aplicar antes `backend/sql/01-schema.sql` e `02-dados-iniciais.sql`
 (instruções em `backend/sql/README.md`).
 
-**2. Arquivos.** Enviar o conteúdo desta pasta para
-`public_html/vipedia/new_ipa/`, mantendo a estrutura:
+**2. Arquivos.** Enviar o **CONTEÚDO desta pasta** para
+`public_html/vipedia/new_ipa/`:
 
 ```
 vipedia/new_ipa/
-├── admin/       telas do painel   → /vipedia/new_ipa/admin/login.php
+├── index.php    redireciona a raiz para home/
+├── status.php   diagnóstico geral → /vipedia/new_ipa/status.php
+├── home/        página inicial (vitrine)
+├── webapp/      questionário IPA (index.html) e 360° (360.html)
+├── admin/       painel            → /vipedia/new_ipa/admin/login.php
 ├── api/         endpoints públicos: diagnóstico e convite 360°
+├── painel/      painel antigo por chave (legado — sai na Fase 5)
 ├── setup/       instalação (apagar depois de usar)
 ├── src/         código de apoio   (bloqueado pela web)
-├── config/      senha do banco    (bloqueado pela web)
-└── status.php   diagnóstico geral → /vipedia/new_ipa/status.php
+└── config/      senha do banco    (bloqueado pela web)
 ```
 
-Junto com esta pasta, reenvie também `webapp/js/config.js` e `webapp/js/app.js`
-— são eles que fazem o questionário enviar para o banco além da planilha.
+Os endereços das APIs do questionário são **calculados automaticamente** a
+partir da pasta publicada (`webapp/` chama a `api/` vizinha) — nenhum arquivo
+precisa ser editado ao trocar de pasta ou domínio.
 
 **3. Configuração.** Copiar `config/config.exemplo.php` para `config/config.php`
 e preencher a senha do banco. Conferir também `base_url`.
