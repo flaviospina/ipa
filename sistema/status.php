@@ -180,8 +180,8 @@ if ($pdo !== null) {
             'Avaliações no banco: ' . (int)$r['t'] . ' (IPA: ' . (int)$r['a'] . ' · 360°: ' . (int)$r['x'] . ')',
             $r['ult'] ? 'Última: ' . $r['ult'] : 'Nenhuma gravada ainda — veja os testes de API abaixo e a fila do navegador no fim da página.');
         $e = (int)$pdo->query("SELECT COUNT(*) FROM empresas WHERE status='ativa'")->fetchColumn();
-        marcar($checks, 'Banco', $e > 0 ? 'info' : 'warn', 'Empresas ativas: ' . $e,
-            $e > 0 ? '' : 'Sem empresa cadastrada, os envios são recusados com "empresa_nao_identificada". Cadastre no painel (Empresas) e use o link do questionário com ?empresa=SLUG.');
+        marcar($checks, 'Banco', 'info', 'Empresas ativas: ' . $e,
+            $e > 0 ? '' : 'A primeira resposta do questionário cadastra a empresa automaticamente a partir da organização digitada. Para um vínculo limpo, cadastre no painel e distribua o link com ?empresa=SLUG.');
     }
     // teste de gravação (só quando pedido, para a página não escrever sozinha)
     if (isset($_GET['teste_gravacao'])) {
@@ -411,15 +411,24 @@ button{font:inherit;font-weight:600;padding:8px 14px;border:0;border-radius:7px;
         b.nextElementSibling.textContent = feito + ' reenviado(s), ' + resto.length + ' ainda pendente(s). Recarregue a página para atualizar.';
         return;
       }
-      var url = destino;
       if (destino === 'gas') {
-        fetch('webapp/js/config.js').then(function (r) { return r.text(); }).then(function (t) {
-          var m = t.match(/ENDPOINT:\s*'([^']+)'/);
-          postar(m ? m[1] : '', i);
-        });
+        // os payloads têm o mesmo formato: tenta primeiro o BANCO (que
+        // aceita e cadastra a empresa se preciso); a planilha é o plano B
+        fetch('api/diagnostico.php', {
+          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(q[i])
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          if (j.ok) { feito++; enviar(i + 1); } else { viaPlanilha(i); }
+        }).catch(function () { viaPlanilha(i); });
         return;
       }
-      postar(url, i);
+      postar(destino, i);
+    };
+    var viaPlanilha = function (i) {
+      fetch('webapp/js/config.js').then(function (r) { return r.text(); }).then(function (t) {
+        var m = t.match(/ENDPOINT:\s*'([^']+)'/);
+        postar(m ? m[1] : '', i);
+      }).catch(function () { resto.push(q[i]); enviar(i + 1); });
     };
     var postar = function (url, i) {
       fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(q[i]) })

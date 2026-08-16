@@ -136,9 +136,30 @@ function receberDiagnostico(array $data): never
         );
     }
     if (!$empresa) {
-        // não é retryável: reenviar o mesmo texto daria o mesmo resultado.
-        // A planilha (envio paralelo) segura o registro até a empresa existir.
-        responder(false, 'empresa_nao_identificada');
+        if ($org === '') {
+            responder(false, 'missing_fields');
+        }
+        // AUTO-CADASTRO: nenhuma resposta é recusada por falta de empresa.
+        // A organização digitada vira uma empresa nova, marcada como criada
+        // automaticamente — o administrador geral pode renomear no painel e
+        // criar o acesso dela quando quiser. O caminho preferencial continua
+        // sendo o link com ?empresa=SLUG, que evita variações de digitação.
+        $slugNovo = slugificar($org);
+        if ($slugNovo === '') {
+            $slugNovo = 'organizacao';
+        }
+        $s = $slugNovo;
+        $n = 1;
+        while (Db::valor('SELECT id FROM empresas WHERE slug = ?', [$s])) {
+            $n++;
+            $s = $slugNovo . '-' . $n;
+        }
+        $novoId = Db::inserir(
+            'INSERT INTO empresas (nome, slug, observacoes) VALUES (?, ?, ?)',
+            [$org, $s, 'Criada automaticamente pelo questionário a partir da organização digitada. Revise o nome e crie o acesso do administrador quando for o caso.']
+        );
+        Audit::registrar(null, $novoId, 'empresa_autocriada', 'empresas', $novoId, ['texto' => $org]);
+        $empresa = ['id' => $novoId, 'nome' => $org];
     }
 
     // validação e cálculo no servidor — fonte única em src/Ipa.php

@@ -107,9 +107,8 @@ uma **nova implantação** — a página de diagnóstico confirma a versão.
    guardados. Depois de corrigir a causa, clique em **Reenviar agora** — as
    respostas presas entram no banco sem refazer o questionário.
 3. Causas mais comuns, na ordem: pasta `webapp/` desatualizada no servidor
-   (o questionário antigo não envia ao banco), PHP abaixo de 8.1 no cPanel,
-   `config/config.php` ausente ou com senha errada, e empresa não cadastrada
-   (o envio é recusado com `empresa_nao_identificada`).
+   (o questionário antigo não envia ao banco), PHP abaixo de 8.1 no cPanel, e
+   `config/config.php` ausente ou com senha errada.
 
 ---
 
@@ -135,8 +134,13 @@ https://itthrive.com.br/vipedia/new_ipa/webapp/?empresa=clinica-alfa
 Com esse link o campo "organização" vem preenchido e travado, e a resposta entra
 no banco já vinculada à empresa. Os resultados aparecem no painel em
 **Avaliações** (scores, estilo predominante, flexibilidade e o relatório
-arquivado). Sem o parâmetro, o sistema tenta casar o texto digitado com uma
-empresa cadastrada; se não conseguir, o registro fica só na planilha.
+arquivado).
+
+Sem o parâmetro, o sistema casa o texto digitado com uma empresa cadastrada —
+e, se não existir, **cadastra a empresa automaticamente** com o nome digitado
+(marcada como auto-criada, para o administrador revisar). Nenhuma resposta é
+recusada; o link com identificador continua sendo o caminho recomendado porque
+evita variações de digitação ("Alfa" ≠ "alfa ltda").
 
 ### Rodar um ciclo 360°
 
