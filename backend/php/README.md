@@ -1,7 +1,8 @@
-# Painel VIPEDia — Fase 2
+# Painel VIPEDia — Fases 2 e 3
 
-Fundação PHP: acesso com login, separação entre empresas e gestão de usuários.
-Roda em hospedagem compartilhada (HostGator, PHP 8 + MySQL), sem dependências externas.
+Fundação PHP: acesso com login, separação entre empresas, gestão de usuários e a
+API que grava as avaliações no banco. Roda em hospedagem compartilhada
+(HostGator, PHP 8 + MySQL), sem dependências externas.
 
 ## Instalação
 
@@ -14,10 +15,14 @@ Roda em hospedagem compartilhada (HostGator, PHP 8 + MySQL), sem dependências e
 ```
 vipedia/new_ipa/
 ├── admin/       telas do painel   → /vipedia/new_ipa/admin/login.php
+├── api/         recebe o diagnóstico do questionário (público)
 ├── setup/       instalação (apagar depois de usar)
 ├── src/         código de apoio   (bloqueado pela web)
 └── config/      senha do banco    (bloqueado pela web)
 ```
+
+Junto com esta pasta, reenvie também `webapp/js/config.js` e `webapp/js/app.js`
+— são eles que fazem o questionário enviar para o banco além da planilha.
 
 **3. Configuração.** Copiar `config/config.exemplo.php` para `config/config.php`
 e preencher a senha do banco. Conferir também `base_url`.
@@ -80,12 +85,47 @@ As duas devem devolver **403 Forbidden**. Se abrirem, o `AllowOverride` do plano
 está desligado — nesse caso mova `config/` e `src/` para fora de `public_html`
 e ajuste o caminho no topo de `src/Db.php`.
 
+## Como as avaliações chegam ao banco (Fase 3)
+
+O questionário envia para **dois destinos** durante a transição: a API
+(`api/diagnostico.php` → banco) e o Apps Script (→ planilha, como sempre).
+O indicador na tela do respondente segue a planilha; a gravação no banco é
+silenciosa e tem fila própria de reenvio no navegador.
+
+**Vínculo com a empresa.** Compartilhe o questionário pelo link com
+identificador — ele aparece pronto na tela **Empresas** do painel:
+
+```
+https://itthrive.com.br/vipedia/new_ipa/webapp/?empresa=clinica-alfa
+```
+
+Com o link, o campo "organização" vem preenchido e travado, e a resposta entra
+vinculada à empresa certa. Sem o parâmetro, a API ainda tenta casar o texto
+digitado com o nome ou o identificador de uma empresa cadastrada; se não
+encontrar, recusa (`empresa_nao_identificada`) — e a planilha, que continua
+recebendo em paralelo, segura o registro.
+
+**Confiança no resultado.** A API não aceita os scores enviados pelo
+navegador: recalcula tudo no servidor a partir da tabela `palavras` (validação
+de permutação 0–11 por quadro incluída) e grava o que ela mesma calculou. Se o
+valor do cliente divergir, fica uma marca na auditoria. Reenvios da fila local
+não duplicam nada — o `uuid` da avaliação é idempotente.
+
+**Verificação feita** (servidor PHP + MariaDB reais): 22 testes da API e do
+painel passando, e — o principal — os scores, o estilo predominante, a regra de
+flexibilidade e as diferenças calculados pelo PHP foram cruzados com o
+`engine.js` de referência em três perfis distintos: **idênticos nos três**,
+incluindo um caso Equilibrado Natural. Isolamento verificado: administrador da
+empresa Beta não vê avaliações da Alfa e recebe 404 no relatório dela. O
+relatório arquivado é exibido com CSP que bloqueia scripts (o HTML vem do
+navegador do respondente e é tratado como não confiável).
+
 ## O que ainda não existe
 
-- **Gravação das avaliações no banco.** O questionário continua enviando para o
-  Apps Script e gravando na planilha. É a próxima etapa.
 - **Envio de e-mail.** As senhas iniciais são entregues na tela, para o
   administrador repassar. O envio automático entra junto com os convites 360°.
 - **Recuperação de senha pelo próprio usuário.** Hoje quem redefine é o
   administrador, pelo botão na lista de usuários. A tabela `usuario_tokens` já
   está pronta para o autoatendimento quando houver e-mail configurado.
+- **360° no banco.** A página 360 ainda envia só para a planilha; ela entra na
+  Fase 4, junto com ciclos e convites — o modelo de dados já existe.

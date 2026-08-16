@@ -39,9 +39,10 @@ function recado(?string $texto = null, string $tipo = 'ok'): ?array
 function abrirPagina(string $titulo, ?array $usuario = null, string $ativo = ''): void
 {
     $nav = [
-        'index.php'    => 'Início',
-        'empresas.php' => 'Empresas',
-        'usuarios.php' => 'Usuários',
+        'index.php'      => 'Início',
+        'avaliacoes.php' => 'Avaliações',
+        'empresas.php'   => 'Empresas',
+        'usuarios.php'   => 'Usuários',
     ];
     if ($usuario !== null && $usuario['papel'] !== 'admin_geral') {
         unset($nav['empresas.php']); // administrador de empresa não gerencia empresas

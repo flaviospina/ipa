@@ -142,12 +142,13 @@ abrirPagina('Empresas', $eu, 'empresas.php');
 <table class="tabela">
   <thead><tr>
     <th>Empresa</th><th>Identificador</th><th class="num">Usuários</th>
-    <th class="num">Participantes</th><th>Situação</th><th>Cadastro</th>
+    <th class="num">Participantes</th><th>Situação</th><th>Link do questionário</th>
   </tr></thead>
   <tbody>
   <?php if (!$empresas): ?>
     <tr><td colspan="6" class="vazio">Nenhuma empresa cadastrada ainda.</td></tr>
   <?php endif; ?>
+  <?php $base = (string)Db::opcao('app.base_url', ''); ?>
   <?php foreach ($empresas as $emp): ?>
     <tr>
       <td><strong><?= e($emp['nome']) ?></strong></td>
@@ -155,7 +156,7 @@ abrirPagina('Empresas', $eu, 'empresas.php');
       <td class="num"><?= (int)$emp['usuarios'] ?></td>
       <td class="num"><?= (int)$emp['participantes'] ?></td>
       <td><span class="selo <?= e($emp['status']) ?>"><?= e($emp['status']) ?></span></td>
-      <td><?= dataBr($emp['criado_em'], false) ?></td>
+      <td><code class="link-quest"><?= e($base) ?>/webapp/?empresa=<?= e($emp['slug']) ?></code></td>
     </tr>
   <?php endforeach; ?>
   </tbody>

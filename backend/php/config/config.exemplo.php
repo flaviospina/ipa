@@ -27,6 +27,14 @@ return [
         'base_url'      => 'https://itthrive.com.br/vipedia/new_ipa',
         'ambiente'      => 'homologacao',   // 'homologacao' ou 'producao'
         'cookie_seguro' => true,            // exige HTTPS no cookie de sessão
+
+        // tempero do hash de IP (LGPD: guardamos hash, não o IP).
+        // Troque por qualquer frase aleatória e não mude depois.
+        'sal_ip'        => 'TROQUE-POR-UMA-FRASE-ALEATORIA',
+    ],
+
+    'api' => [
+        'max_por_minuto' => 10,             // envios de diagnóstico aceitos por origem/minuto
     ],
 
     'sessao' => [

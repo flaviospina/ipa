@@ -55,10 +55,10 @@ abrirPagina('Início', $eu, 'index.php');
     <span class="cartao-n"><?= $numeros['participantes'] ?></span>
     <span class="cartao-r">participantes</span>
   </div>
-  <div class="cartao">
+  <a class="cartao" href="avaliacoes.php">
     <span class="cartao-n"><?= $numeros['avaliacoes'] ?></span>
     <span class="cartao-r">avaliações concluídas</span>
-  </div>
+  </a>
   <div class="cartao">
     <span class="cartao-n"><?= $numeros['ciclos'] ?></span>
     <span class="cartao-r">ciclos 360° abertos</span>
@@ -68,8 +68,9 @@ abrirPagina('Início', $eu, 'index.php');
 <?php if ($numeros['avaliacoes'] === 0): ?>
   <div class="bloco vazio-guia">
     <h2>Ainda não há avaliações no banco</h2>
-    <p>A gravação das respostas do questionário no banco entra na próxima etapa. Até lá os diagnósticos
-       continuam sendo registrados na planilha, como hoje.</p>
+    <p>O questionário grava aqui automaticamente ao ser concluído. Compartilhe o link do questionário
+       com o identificador da empresa — ele aparece na tela <strong>Empresas</strong> — para que cada
+       resposta entre já vinculada à empresa certa.</p>
   </div>
 <?php endif; ?>
 

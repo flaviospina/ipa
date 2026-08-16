@@ -144,6 +144,17 @@ button:hover{background:var(--accent-ink)}
                       user-select:all}
 .obs{font-size:13px;color:var(--ink-3);margin:0}
 
+/* ---------- estilos ACP (avaliações) ---------- */
+/* cores dos estilos, as mesmas de ACP.STYLES no webapp */
+.est{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+     border-radius:50%;font-weight:700;font-size:12.5px;color:#fff}
+.est-A{background:#d9a400}
+.est-C{background:#e8401a}
+.est-P{background:#2952cc}
+.est-E{background:#0e9f6e}
+.scores{font-variant-numeric:tabular-nums}
+.link-quest{font-size:12px;word-break:break-all}
+
 /* ---------- tela de login ---------- */
 .tela-login{display:flex;align-items:center;justify-content:center;min-height:100vh;
             background:var(--panel);padding:24px}

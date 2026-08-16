@@ -211,11 +211,18 @@ const App = {
         const ind = document.getElementById('sync-indicator');
         const id = 'ipa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
         const payload = Engine.montarPayload(this.state.dados, this.state.selecoes, r, this.state.consent, id);
+        // identificador da empresa vindo do link (?empresa=slug) — permite ao
+        // banco vincular a resposta à empresa cadastrada sem digitação livre
+        payload.empresa = new URLSearchParams(location.search).get('empresa') || '';
 
         ind.className = 'sync-indicator pending';
         ind.textContent = 'Registrando respostas e gerando análise personalizada…';
 
-        const out = await this.send(payload);
+        // transição: envia para a planilha (como hoje) E para o banco.
+        // O indicador na tela segue o resultado da planilha; a gravação no
+        // banco é silenciosa e tem fila própria de reenvio.
+        const [out, db] = await Promise.all([this.send(payload), this.sendApi(payload)]);
+        if (db.ok !== true && this.apiReenviavel(db.code)) this.enqueueApi(payload);
         if (!out || out.ok !== true) {
             this.enqueue(payload);
             ind.className = 'sync-indicator err';
@@ -238,7 +245,8 @@ const App = {
         const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
         const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id,
                        nome: this.state.dados.nome, relatorio: standalone, website: '' };
-        const out2 = await this.send(arch);
+        const [out2, db2] = await Promise.all([this.send(arch), this.sendApi(arch)]);
+        if (db2.ok !== true && this.apiReenviavel(db2.code)) this.enqueueApi(arch);
         if (out2 && out2.ok === true) {
             ind.className = 'sync-indicator ok';
             ind.textContent = out.ia
@@ -274,6 +282,52 @@ const App = {
         }
     },
 
+    /* ---------- API do banco (itthri79_vipedia) ---------- */
+    async sendApi(payload) {
+        if (!IPA_CONFIG.API_ENDPOINT) return { ok: false, code: 'api_desativada' };
+        try {
+            const res = await fetch(IPA_CONFIG.API_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            const texto = await res.text();
+            try { return JSON.parse(texto); }
+            catch (e) { return { ok: false, code: 'api_resposta_invalida' }; }
+        } catch (e) {
+            return { ok: false, code: 'api_sem_conexao' };
+        }
+    },
+
+    /* falhas transitórias entram na fila; recusas definitivas (empresa não
+       cadastrada, dados inválidos) não — reenviar daria o mesmo resultado
+       e a planilha, que continua recebendo em paralelo, segura o registro */
+    apiReenviavel(code) {
+        return ['api_sem_conexao', 'api_resposta_invalida', 'rate_limited',
+                'error', 'avaliacao_nao_encontrada'].includes(String(code));
+    },
+
+    enqueueApi(payload) {
+        const q = JSON.parse(localStorage.getItem(IPA_CONFIG.QUEUE_API_KEY) || '[]');
+        q.push(payload);
+        localStorage.setItem(IPA_CONFIG.QUEUE_API_KEY, JSON.stringify(q));
+    },
+
+    /* pré-preenche a organização a partir do link (?empresa=slug) */
+    async prefillEmpresa() {
+        const slug = new URLSearchParams(location.search).get('empresa');
+        if (!slug || !IPA_CONFIG.API_ENDPOINT) return;
+        try {
+            const res = await fetch(IPA_CONFIG.API_ENDPOINT + '?action=empresa&slug=' + encodeURIComponent(slug));
+            const out = await res.json();
+            if (out.ok && out.nome) {
+                const campo = document.getElementById('f-org');
+                campo.value = out.nome;
+                campo.readOnly = true;   // veio do link: não se digita a empresa
+            }
+        } catch (e) { /* sem conexão: o campo segue editável */ }
+    },
+
     /* traduz o código de falha em orientação prática */
     explicarFalha(out) {
         const code = out ? out.code : 'sem_conexao';
@@ -292,13 +346,25 @@ const App = {
 
     async flushQueue() {
         const q = JSON.parse(localStorage.getItem(IPA_CONFIG.QUEUE_KEY) || '[]');
-        if (!q.length) return;
-        const rest = [];
-        for (const p of q) {
-            const out = await this.send(p);
-            if (!out || out.ok !== true) rest.push(p);
+        if (q.length) {
+            const rest = [];
+            for (const p of q) {
+                const out = await this.send(p);
+                if (!out || out.ok !== true) rest.push(p);
+            }
+            localStorage.setItem(IPA_CONFIG.QUEUE_KEY, JSON.stringify(rest));
         }
-        localStorage.setItem(IPA_CONFIG.QUEUE_KEY, JSON.stringify(rest));
+
+        // fila da API do banco: só ficam nela falhas transitórias
+        const qa = JSON.parse(localStorage.getItem(IPA_CONFIG.QUEUE_API_KEY) || '[]');
+        if (qa.length) {
+            const resto = [];
+            for (const p of qa) {
+                const out = await this.sendApi(p);
+                if (out.ok !== true && this.apiReenviavel(out.code)) resto.push(p);
+            }
+            localStorage.setItem(IPA_CONFIG.QUEUE_API_KEY, JSON.stringify(resto));
+        }
     },
 
     /* ---------- Persistência local (retomada) ---------- */
@@ -347,7 +413,7 @@ const App = {
             document.getElementById('btn-consent').disabled = !e.target.checked;
         });
         this.flushQueue();
-        this.restore();
+        if (!this.restore()) this.prefillEmpresa();
         this.updateProgress();
     }
 };
