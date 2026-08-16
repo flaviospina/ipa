@@ -24,7 +24,7 @@
  * implantação antiga (URL AKfycbxI2...) — ela ficou exposta.
  */
 
-const VERSAO = 3; // aparece ao abrir a URL /exec no navegador — confirma qual código está no ar
+const VERSAO = 4; // aparece ao abrir a URL /exec no navegador — confirma qual código está no ar
 
 const SHEET_PROD = 'RESPOSTAS';
 const SHEET_360 = 'RESPOSTAS_360';
@@ -93,21 +93,37 @@ function arquivarRelatorio(data) {
   // grava o link na linha correspondente (coluna ID)
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SHEET_PROD);
+  let achou = false;
   if (sh && sh.getLastRow() > 1) {
     const values = sh.getDataRange().getValues();
     const header = values[0];
     const idCol = header.indexOf('ID');
     const linkCol = header.indexOf('Relatório (link)');
     if (idCol >= 0 && linkCol >= 0) {
+      const alvo = cleanId(data.id);
+      const alvoLegado = clean(data.id); // linhas gravadas antes da correção do hífen
       for (let i = values.length - 1; i >= 1; i--) {
-        if (String(values[i][idCol]) === String(data.id)) {
+        const celula = String(values[i][idCol]).trim();
+        if (celula && (celula === alvo || celula === alvoLegado)) {
           sh.getRange(i + 1, linkCol + 1).setValue(link);
+          achou = true;
           break;
         }
       }
     }
   }
-  return reply(true, 'archived');
+
+  // o PDF está no Drive; se a linha não foi encontrada, o link ficou órfão.
+  // Reenviar não resolve — por isso devolvemos um código próprio, e não
+  // 'archive_failed', para o front-end não entrar em fila de reenvio infinita.
+  if (!achou) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, code: 'row_not_found', link: link }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, code: 'archived', link: link }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /* ---------- IPA 360°: avaliação externa (anônima) ---------- */
@@ -291,12 +307,31 @@ function gravar(sheetName, data, respostas, scores, total, linkRelatorio) {
     .concat(EXPECTED[1].map(id => Number(respostas[id])))
     .concat(EXPECTED[2].map(id => Number(respostas[id])))
     .concat(EXPECTED[3].map(id => Number(respostas[id])))
-    .concat([scores.A, scores.C, scores.P, scores.E, total, linkRelatorio || '', clean(data.id || '')]);
+    .concat([scores.A, scores.C, scores.P, scores.E, total, linkRelatorio || '', cleanId(data.id || '')]);
   sh.appendRow(row);
 }
 
 function clean(v) {
   return String(v || '').replace(/[=+\-@\t\r\n]/g, ' ').trim().slice(0, 200); // anti fórmula-injection
+}
+
+/**
+ * Sanitização do IDENTIFICADOR da linha.
+ *
+ * clean() troca "=+-@" por espaço para impedir que um texto vire fórmula
+ * ao ser aberto no Sheets/Excel. Isso está certo para nome, organização e
+ * função — mas o ID também é a CHAVE usada para reencontrar a linha no
+ * arquivamento, e ele contém hífens ("ipa-msvtr73m-sozkl3"). Passá-lo por
+ * clean() gravava "ipa msvtr73m sozkl3" e a busca posterior, feita com o
+ * ID original, nunca encontrava a linha: o link do relatório jamais era
+ * escrito na planilha.
+ *
+ * Aqui usamos uma lista de permissão (letras, números e hífen). Como o
+ * resultado nunca começa por "=", "+" ou "@", a proteção contra injeção
+ * de fórmula continua garantida — e um "-" inicial é descartado.
+ */
+function cleanId(v) {
+  return String(v || '').replace(/[^A-Za-z0-9\-]/g, '').replace(/^-+/, '').slice(0, 64);
 }
 
 function reply(ok, code) {
@@ -414,6 +449,35 @@ function testarArquivamento() {
   } else {
     Logger.log('FALHOU: verifique se você autorizou o acesso ao Drive quando solicitado e execute novamente.');
   }
+}
+
+/**
+ * TESTE DE REGRESSÃO DO VÍNCULO RELATÓRIO ↔ PLANILHA.
+ * Execute no editor (Executar > testarVinculoID). Não grava nada:
+ * apenas confere que o ID sobrevive à sanitização — que é a condição
+ * para o arquivamento reencontrar a linha e escrever o link.
+ * Se algum dia alguém voltar a passar o ID por clean(), este teste falha.
+ */
+function testarVinculoID() {
+  const id = 'ipa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+  const gravado = cleanId(id);
+
+  Logger.log('ID gerado pelo navegador : ' + id);
+  Logger.log('ID gravado na planilha   : ' + gravado);
+  Logger.log('Comportamento antigo     : ' + clean(id) + '   <- era isto que quebrava a busca');
+
+  if (gravado !== id) {
+    Logger.log('FALHOU: o ID foi alterado na gravação. O link do relatório não será vinculado.');
+    return;
+  }
+  // a proteção anti fórmula-injection precisa continuar valendo
+  const perigosos = ['=HYPERLINK("http://x")', '+1', '-1', '@SUM(A1)'];
+  const vazando = perigosos.filter(function (p) { return /^[=+@\-]/.test(cleanId(p)); });
+  if (vazando.length) {
+    Logger.log('FALHOU: entrada perigosa não neutralizada: ' + vazando.join(', '));
+    return;
+  }
+  Logger.log('SUCESSO: ID preservado na gravação e injeção de fórmula continua bloqueada.');
 }
 
 /**

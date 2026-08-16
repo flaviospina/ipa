@@ -244,6 +244,11 @@ const App = {
             ind.textContent = out.ia
                 ? '✓ Respostas registradas, análise personalizada incluída e relatório arquivado'
                 : '✓ Respostas registradas e relatório arquivado';
+        } else if (out2 && out2.code === 'row_not_found') {
+            // o PDF foi salvo, mas a linha da planilha não foi localizada para
+            // receber o link. Reenviar não resolve — a fila só repetiria a falha.
+            ind.className = 'sync-indicator ok';
+            ind.textContent = '✓ Respostas registradas e relatório arquivado (o link não pôde ser vinculado à linha da planilha)';
         } else {
             this.enqueue(arch);
             ind.className = 'sync-indicator ok';
