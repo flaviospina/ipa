@@ -1,0 +1,616 @@
+<title>Reconstrução da Base VIPEDia</title>
+<style>
+  /* ---------- tokens: tema claro ---------- */
+  :root {
+    --ground:      #FFFFFF;
+    --panel:       #F3F6F8;
+    --panel-2:     #E7EDF1;
+    --line:        #D8E1E7;
+    --line-soft:   #E7EDF1;
+    --ink:         #10191F;
+    --ink-2:       #3D4C57;
+    --ink-3:       #6B7A85;
+    --accent:      #1F6F8B;
+    --accent-ink:  #14495B;
+    --accent-wash: #E3EFF3;
+    --crit:        #A93A2A;
+    --crit-wash:   #F8E7E3;
+    --warn:        #97701F;
+    --warn-wash:   #F7EEDA;
+    --ok:          #2A7462;
+    --ok-wash:     #E1F0EA;
+    --code-bg:     #F3F6F8;
+    --code-ink:    #16323D;
+
+    --sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+
+  /* ---------- tokens: tema escuro ---------- */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0D1418;
+      --panel:       #151F25;
+      --panel-2:     #1D2A32;
+      --line:        #26353E;
+      --line-soft:   #1D2A32;
+      --ink:         #E8EFF3;
+      --ink-2:       #B3C3CD;
+      --ink-3:       #7D8F9B;
+      --accent:      #62B4CE;
+      --accent-ink:  #9AD3E6;
+      --accent-wash: #14323D;
+      --crit:        #E58D7C;
+      --crit-wash:   #3A1F1A;
+      --warn:        #D9AE5F;
+      --warn-wash:   #33280F;
+      --ok:          #6FC5AC;
+      --ok-wash:     #16332B;
+      --code-bg:     #111A1F;
+      --code-ink:    #C6D8E1;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0D1418;
+    --panel:       #151F25;
+    --panel-2:     #1D2A32;
+    --line:        #26353E;
+    --line-soft:   #1D2A32;
+    --ink:         #E8EFF3;
+    --ink-2:       #B3C3CD;
+    --ink-3:       #7D8F9B;
+    --accent:      #62B4CE;
+    --accent-ink:  #9AD3E6;
+    --accent-wash: #14323D;
+    --crit:        #E58D7C;
+    --crit-wash:   #3A1F1A;
+    --warn:        #D9AE5F;
+    --warn-wash:   #33280F;
+    --ok:          #6FC5AC;
+    --ok-wash:     #16332B;
+    --code-bg:     #111A1F;
+    --code-ink:    #C6D8E1;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- cabeçalho ---------- */
+  .head { padding: 56px 0 34px; border-bottom: 1px solid var(--line); }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(30px, 5.2vw, 42px);
+    line-height: 1.12; letter-spacing: -.015em;
+    text-wrap: balance; margin: 0 0 16px; font-weight: 700;
+  }
+  .lede { font-size: 18px; color: var(--ink-2); margin: 0; max-width: 62ch; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .chip {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em;
+    padding: 5px 11px; border-radius: 3px;
+    background: var(--panel); color: var(--ink-2); border: 1px solid var(--line);
+  }
+  .chip.crit { background: var(--crit-wash); color: var(--crit); border-color: transparent; }
+  .chip.ok   { background: var(--ok-wash);   color: var(--ok);   border-color: transparent; }
+
+  /* ---------- seções ---------- */
+  section { padding-top: 52px; }
+  .sec-label {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px;
+  }
+  h2 {
+    font-family: var(--serif); font-size: clamp(23px, 3.4vw, 29px);
+    line-height: 1.22; letter-spacing: -.012em; margin: 0 0 18px;
+    text-wrap: balance; font-weight: 700;
+  }
+  h3 {
+    font-size: 17px; font-weight: 700; letter-spacing: -.005em;
+    margin: 34px 0 10px; color: var(--ink);
+  }
+  p { margin: 0 0 15px; max-width: 68ch; }
+  strong { font-weight: 650; }
+  code {
+    font-family: var(--mono); font-size: .87em;
+    background: var(--code-bg); color: var(--code-ink);
+    padding: 1.5px 5px; border-radius: 3px;
+    border: 1px solid var(--line-soft);
+  }
+
+  /* ---------- blocos de código ---------- */
+  .code {
+    background: var(--code-bg); border: 1px solid var(--line);
+    border-radius: 5px; overflow-x: auto; margin: 18px 0;
+  }
+  .code pre {
+    font-family: var(--mono); font-size: 13px; line-height: 1.65;
+    color: var(--code-ink); margin: 0; padding: 16px 18px; white-space: pre;
+  }
+  .code-cap {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding: 9px 18px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .cm { color: var(--ink-3); }
+
+  /* ---------- achados ---------- */
+  .find {
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 20px 22px; margin: 16px 0; background: var(--panel);
+  }
+  .find-top { display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap; margin-bottom: 7px; }
+  .sev {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
+    text-transform: uppercase; padding: 3px 8px; border-radius: 3px; font-weight: 600;
+  }
+  .sev.crit { background: var(--crit-wash); color: var(--crit); }
+  .sev.warn { background: var(--warn-wash); color: var(--warn); }
+  .find-name { font-weight: 680; font-size: 16.5px; }
+  .find p { margin: 0 0 10px; font-size: 15.5px; color: var(--ink-2); }
+  .find p:last-child { margin-bottom: 0; }
+
+  /* ---------- tabelas do schema ---------- */
+  .group { margin: 30px 0 0; }
+  .group-head {
+    display: flex; align-items: baseline; gap: 12px;
+    border-bottom: 1px solid var(--line); padding-bottom: 9px; margin-bottom: 4px;
+  }
+  .group-name { font-family: var(--mono); font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .group-note { font-size: 14px; color: var(--ink-3); }
+
+  .tbl { display: flex; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line-soft); align-items: baseline; }
+  .tbl-name { font-family: var(--mono); font-size: 13.5px; color: var(--ink); font-weight: 600; flex: 0 0 190px; }
+  .tbl-desc { font-size: 15px; color: var(--ink-2); flex: 1; min-width: 0; }
+  @media (max-width: 620px) {
+    .tbl { flex-direction: column; gap: 3px; }
+    .tbl-name { flex-basis: auto; }
+  }
+
+  /* ---------- fases ---------- */
+  .phase { display: flex; gap: 20px; padding: 22px 0; border-bottom: 1px solid var(--line-soft); }
+  .phase-n {
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: var(--accent); flex: 0 0 auto; width: 46px; padding-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .phase-body { flex: 1; min-width: 0; }
+  .phase-name { font-weight: 680; font-size: 17px; margin-bottom: 3px; }
+  .phase-meta { font-family: var(--mono); font-size: 12px; color: var(--ink-3); margin-bottom: 9px; letter-spacing: .03em; }
+  .phase-body p { font-size: 15.5px; color: var(--ink-2); margin: 0 0 8px; }
+  .phase-body ul { margin: 8px 0 0; padding-left: 19px; }
+  .phase-body li { font-size: 15px; color: var(--ink-2); margin-bottom: 5px; }
+
+  /* ---------- decisões ---------- */
+  .ask {
+    border-left: 3px solid var(--accent); background: var(--accent-wash);
+    padding: 16px 20px; border-radius: 0 5px 5px 0; margin: 14px 0;
+  }
+  .ask-q { font-weight: 680; margin: 0 0 5px; font-size: 16px; }
+  .ask p { margin: 0; font-size: 15px; color: var(--ink-2); }
+
+  .note {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 18px 20px; margin: 22px 0;
+  }
+  .note p { margin: 0; font-size: 15.5px; color: var(--ink-2); }
+
+  ul.plain { padding-left: 19px; margin: 12px 0; }
+  ul.plain li { margin-bottom: 7px; color: var(--ink-2); max-width: 66ch; }
+
+  hr { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+  .foot { padding-top: 46px; color: var(--ink-3); font-size: 14px; }
+</style>
+
+<div class="wrap">
+
+  <header class="head">
+    <p class="kicker">Proposta técnica · para autorização</p>
+    <h1>Reconstrução da Base VIPEDia</h1>
+    <p class="lede">Por que o relatório não chega à planilha, e o plano para levar o IPA de uma planilha compartilhada
+      para um banco de dados com acesso separado por empresa e ciclos 360° controlados.</p>
+    <div class="chips">
+      <span class="chip crit">1 bug confirmado</span>
+      <span class="chip">4 fragilidades estruturais</span>
+      <span class="chip">14 tabelas propostas</span>
+      <span class="chip">6 fases</span>
+      <span class="chip ok">nada foi alterado ainda</span>
+    </div>
+  </header>
+
+  <!-- ============================================ 1 -->
+  <section>
+    <p class="sec-label">Diagnóstico</p>
+    <h2>O relatório é gerado, é salvo no Drive — e o link se perde no caminho</h2>
+
+    <p>O envio acontece em dois passos. Primeiro o navegador manda as respostas e o Apps Script grava a linha na aba
+      <code>RESPOSTAS</code>, junto com um identificador. Depois o navegador manda o relatório pronto, o Apps Script
+      salva o PDF no Drive e procura aquela linha pelo identificador para escrever o link na coluna
+      <code>Relatório (link)</code>.</p>
+
+    <p>A busca nunca encontra a linha. O identificador é gravado passando por uma função de limpeza que troca hífens
+      por espaço, mas a comparação é feita contra o identificador original, com os hífens.</p>
+
+    <div class="code">
+      <div class="code-cap">backend/apps-script.gs — a origem</div>
+      <pre>function clean(v) {
+  return String(v || '').replace(/[=+\-@\t\r\n]/g, ' ').trim().slice(0, 200);
+}                              <span class="cm">└── o hífen entra aqui, junto com = + @</span>
+
+<span class="cm">// na gravação (linha 294) o ID passa por clean()</span>
+.concat([..., linkRelatorio || '', clean(data.id || '')]);
+
+<span class="cm">// no arquivamento (linha 103) a comparação é com o ID cru</span>
+if (String(values[i][idCol]) === String(data.id)) { ... }</pre>
+    </div>
+
+    <div class="code">
+      <div class="code-cap">Verificação — executada agora, com a função real do sistema</div>
+      <pre>ID gerado no navegador    : "ipa-msvtr73m-sozkl3"
+ID gravado na planilha    : "ipa msvtr73m sozkl3"
+Comparação do arquivamento: NUNCA encontra a linha</pre>
+    </div>
+
+    <p>O hífen entrou nessa lista porque a função protege a planilha contra injeção de fórmula — no Excel e no Sheets,
+      um texto que começa com <code>=</code>, <code>+</code>, <code>-</code> ou <code>@</code> vira fórmula executável.
+      A proteção está certa. O erro foi aplicá-la a um campo que também serve de chave de busca.</p>
+
+    <p>E há um agravante que explica por que isso passou despercebido por tanto tempo: quando a busca falha, o Apps
+      Script ainda responde <code>{ ok: true, code: 'archived' }</code>. A tela mostra
+      <strong>“✓ relatório arquivado”</strong> e ninguém tem motivo para desconfiar. O PDF realmente está no Drive,
+      na pasta <code>IPA - Relatórios</code> — só não há como ligá-lo à pessoa pela planilha.</p>
+
+    <div class="note">
+      <p><strong>Correção imediata, independente de todo o resto:</strong> tirar o hífen da lista de caracteres
+        limpos no ID (a proteção anti-fórmula continua valendo para nome, organização e função), e fazer o
+        arquivamento responder <code>ok: false</code> quando não encontrar a linha. São duas linhas. Proponho fazer
+        isso hoje, antes de qualquer migração — assim os diagnósticos que rodarem nas próximas semanas já ficam
+        completos.</p>
+    </div>
+  </section>
+
+  <!-- ============================================ 2 -->
+  <section>
+    <p class="sec-label">Outras fragilidades</p>
+    <h2>O que mais encontrei ao ler o sistema inteiro</h2>
+
+    <div class="find">
+      <div class="find-top"><span class="sev crit">Crítico</span><span class="find-name">Uma chave só abre os dados de todas as empresas</span></div>
+      <p>O Painel do Consultor autentica com uma chave única guardada em <code>PANEL_KEY</code>. Quem tem a chave lista
+        <em>todas</em> as respostas de <em>todas</em> as organizações. Não existe separação por empresa em lugar nenhum
+        — nem no painel, nem na planilha, nem no Apps Script.</p>
+      <p>É exatamente o problema que você quer resolver, e é também uma exposição de LGPD: um cliente não pode ter
+        acesso técnico aos dados comportamentais dos funcionários de outro.</p>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="sev warn">Atenção</span><span class="find-name">A chave viaja na barra de endereço</span></div>
+      <p>O painel autentica por <code>GET ...?action=list&amp;key=SUACHAVE</code>. Chave em query string fica registrada
+        no histórico do navegador, nos logs do servidor e no cabeçalho <code>Referer</code> de qualquer link clicado a
+        partir dali. Login de verdade — POST e cookie de sessão — resolve.</p>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="sev warn">Atenção</span><span class="find-name">O 360° aceita qualquer nome digitado</span></div>
+      <p>Hoje o avaliador externo digita livremente o nome do avaliado e a organização. “Maria Silva”, “maria silva” e
+        “Maria S.” viram três pessoas diferentes na base. Não há como saber quantos convites foram enviados, quantos
+        responderam, nem impedir que a mesma pessoa responda cinco vezes.</p>
+      <p>Sem convite com identidade travada, o 360° não tem como produzir um número confiável — e é justamente o
+        número que dá valor ao 360°.</p>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="sev warn">Atenção</span><span class="find-name">O estilo de cada palavra está implícito na posição</span></div>
+      <p>O cálculo deduz o estilo pela posição da palavra dentro da lista (<code>i&lt;3?'A':i&lt;6?'C':...</code>), em
+        dois arquivos diferentes — no Apps Script e no <code>engine.js</code>. Reordenar uma palavra no questionário
+        muda silenciosamente a pontuação de todo mundo, e as duas cópias podem divergir sem que nada acuse.</p>
+    </div>
+
+    <div class="find">
+      <div class="find-top"><span class="sev warn">Atenção</span><span class="find-name">Chaves de API dentro de um script compartilhado</span></div>
+      <p><code>GEMINI_API_KEY</code> e <code>PANEL_KEY</code> vivem nas propriedades do Apps Script. Qualquer pessoa com
+        permissão de edição na planilha consegue lê-las. Na arquitetura nova elas ficam em arquivo de configuração fora
+        da pasta pública do site.</p>
+    </div>
+  </section>
+
+  <!-- ============================================ 3 -->
+  <section>
+    <p class="sec-label">Arquitetura</p>
+    <h2>De onde para onde</h2>
+
+    <p><strong>Hoje:</strong> o navegador fala direto com um Apps Script, que grava numa planilha e num Drive. O
+      controle de acesso é uma chave de texto. A separação entre empresas não existe — ela é feita a olho, filtrando
+      uma coluna.</p>
+
+    <p><strong>Proposta:</strong> o navegador fala com uma API no seu próprio servidor, que grava no MySQL. Cada
+      requisição carrega a identidade de quem está logado, e toda consulta é filtrada por <code>empresa_id</code> no
+      próprio banco. Um administrador de empresa não consegue ver dados de outra nem forçando a URL — não é uma regra
+      de tela, é uma condição de consulta.</p>
+
+    <div class="note">
+      <p><strong>Premissa que preciso confirmar:</strong> o prefixo <code>itthri79_</code> no nome do banco é padrão de
+        cPanel — o mesmo formato do seu ambiente na HostGator. Estou assumindo <strong>PHP 8 + MySQL/MariaDB em
+        hospedagem compartilhada</strong>, que é o que roda ali. Se a hospedagem for outra (VPS com Node, por
+        exemplo), o banco continua igual e só muda a linguagem da API.</p>
+    </div>
+  </section>
+
+  <!-- ============================================ 4 -->
+  <section>
+    <p class="sec-label">Banco de dados</p>
+    <h2>As 14 tabelas de <code style="font-size:.8em">itthri79_vipedia</code></h2>
+
+    <p>Agrupei por domínio. Nomes em português, minúsculas, plural — consistentes com o resto do sistema.</p>
+
+    <div class="group">
+      <div class="group-head"><span class="group-name">Acesso</span><span class="group-note">quem entra e o que enxerga</span></div>
+      <div class="tbl"><div class="tbl-name">empresas</div><div class="tbl-desc">Cada organização cliente. É a fronteira de tudo: nenhuma consulta roda sem filtrar por ela.</div></div>
+      <div class="tbl"><div class="tbl-name">usuarios</div><div class="tbl-desc">Login, senha com hash e papel. <code>empresa_id</code> nulo identifica o administrador geral; preenchido, prende o usuário à sua empresa.</div></div>
+      <div class="tbl"><div class="tbl-name">usuario_tokens</div><div class="tbl-desc">Links de primeiro acesso e de recuperação de senha, com validade. Guarda o hash do token, nunca o token.</div></div>
+      <div class="tbl"><div class="tbl-name">sessoes</div><div class="tbl-desc">Sessões ativas. Permite encerrar o acesso de alguém sem trocar a senha de todos.</div></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="group-name">Instrumento</span><span class="group-note">o questionário como dado, não como código</span></div>
+      <div class="tbl"><div class="tbl-name">instrumentos</div><div class="tbl-desc">Versão do questionário. Permite evoluir o IPA sem invalidar o histórico já coletado.</div></div>
+      <div class="tbl"><div class="tbl-name">palavras</div><div class="tbl-desc">As 36 palavras, cada uma com quadro, posição e <strong>estilo explícito</strong>. Encerra a dedução por posição duplicada em dois arquivos.</div></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="group-name">Aplicação</span><span class="group-note">quem foi avaliado e o que respondeu</span></div>
+      <div class="tbl"><div class="tbl-name">participantes</div><div class="tbl-desc">A pessoa avaliada, vinculada à empresa. Permite acompanhar a mesma pessoa ao longo do tempo e ligar autoavaliação e 360° ao mesmo registro.</div></div>
+      <div class="tbl"><div class="tbl-name">avaliacoes</div><div class="tbl-desc">Uma aplicação do instrumento: tipo (auto ou 360°), status, scores A/C/P/E, estilo predominante, regra de flexibilidade e as três diferenças.</div></div>
+      <div class="tbl"><div class="tbl-name">avaliacao_respostas</div><div class="tbl-desc">Os 36 pesos, um por linha. O banco recusa peso repetido dentro do mesmo quadro — a validação vira estrutura.</div></div>
+      <div class="tbl"><div class="tbl-name">relatorios</div><div class="tbl-desc">O relatório gerado, o JSON da análise de IA e o caminho do PDF. Ligado por chave estrangeira: <strong>o link não tem mais como se perder.</strong></div></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="group-name">360°</span><span class="group-note">o ciclo e seus convites</span></div>
+      <div class="tbl"><div class="tbl-name">ciclos_360</div><div class="tbl-desc">Um ciclo aberto para um avaliado: prazo, mínimo de avaliadores, status.</div></div>
+      <div class="tbl"><div class="tbl-name">convites_360</div><div class="tbl-desc">Um convite por avaliador, com relação (gestor, par, liderado, cliente interno) e token de uso único. Acaba o nome digitado à mão e a resposta duplicada.</div></div>
+    </div>
+
+    <div class="group">
+      <div class="group-head"><span class="group-name">Conformidade</span><span class="group-note">o que a LGPD vai pedir</span></div>
+      <div class="tbl"><div class="tbl-name">consentimentos</div><div class="tbl-desc">Aceite registrado com versão do texto, data e hash do IP. Hoje isso é uma coluna de texto na planilha.</div></div>
+      <div class="tbl"><div class="tbl-name">log_auditoria</div><div class="tbl-desc">Quem entrou, quando, e quem abriu qual relatório. É o que responde “houve vazamento?” com fato em vez de suposição.</div></div>
+    </div>
+
+    <h3>As três definições que carregam as decisões importantes</h3>
+    <p>O restante é convencional. Estas três merecem leitura, porque é nelas que os problemas de hoje deixam de ser
+      possíveis:</p>
+
+    <div class="code">
+      <div class="code-cap">1 · Separação entre empresas, garantida por estrutura</div>
+      <pre>CREATE TABLE usuarios (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  empresa_id   INT UNSIGNED NULL,        <span class="cm">-- NULL = administrador geral</span>
+  nome         VARCHAR(120)  NOT NULL,
+  email        VARCHAR(160)  NOT NULL,
+  senha_hash   VARCHAR(255)  NOT NULL,   <span class="cm">-- password_hash(), bcrypt</span>
+  papel        ENUM('admin_geral','admin_empresa','consultor','gestor') NOT NULL,
+  status       ENUM('ativo','inativo','bloqueado') NOT NULL DEFAULT 'ativo',
+  trocar_senha TINYINT(1)    NOT NULL DEFAULT 1,  <span class="cm">-- senha inicial é temporária</span>
+  ultimo_login_em   DATETIME NULL,
+  tentativas_falhas SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  bloqueado_ate     DATETIME NULL,
+  criado_por   INT UNSIGNED  NULL,
+  criado_em    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_usuarios_email (email),
+  CONSTRAINT ck_escopo CHECK (
+    (papel =  'admin_geral' AND empresa_id IS NULL) OR
+    (papel &lt;&gt; 'admin_geral' AND empresa_id IS NOT NULL)
+  ),
+  CONSTRAINT fk_usuarios_empresa FOREIGN KEY (empresa_id)
+    REFERENCES empresas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</pre>
+    </div>
+
+    <p>O <code>CHECK</code> torna impossível existir um administrador de empresa sem empresa — que seria, na prática,
+      alguém enxergando tudo. A API monta cada consulta com <code>WHERE empresa_id = :sessao_empresa</code>, e para o
+      administrador geral esse filtro é liberado explicitamente, nunca por omissão.</p>
+
+    <div class="code">
+      <div class="code-cap">2 · A validação das respostas vira regra do banco</div>
+      <pre>CREATE TABLE avaliacao_respostas (
+  avaliacao_id BIGINT   UNSIGNED NOT NULL,
+  palavra_id   SMALLINT UNSIGNED NOT NULL,
+  quadro       TINYINT  UNSIGNED NOT NULL,   <span class="cm">-- 1, 2 ou 3</span>
+  peso         TINYINT  UNSIGNED NOT NULL,   <span class="cm">-- 0 a 11</span>
+  PRIMARY KEY (avaliacao_id, palavra_id),
+  UNIQUE KEY uq_peso_por_quadro (avaliacao_id, quadro, peso),   <span class="cm">-- ← a chave da coisa</span>
+  CONSTRAINT ck_peso  CHECK (peso   BETWEEN 0 AND 11),
+  CONSTRAINT ck_quadro CHECK (quadro BETWEEN 1 AND 3),
+  CONSTRAINT fk_resp_aval FOREIGN KEY (avaliacao_id)
+    REFERENCES avaliacoes(id) ON DELETE CASCADE,
+  CONSTRAINT fk_resp_palavra FOREIGN KEY (palavra_id)
+    REFERENCES palavras(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</pre>
+    </div>
+
+    <p>Hoje a regra “cada peso de 0 a 11 aparece uma única vez por quadro” existe só como código no Apps Script. Ali,
+      <code>uq_peso_por_quadro</code> faz o próprio banco recusar a gravação. Nenhum caminho — API nova, importação de
+      histórico, correção manual — consegue furar isso.</p>
+
+    <div class="code">
+      <div class="code-cap">3 · O convite 360° com identidade travada</div>
+      <pre>CREATE TABLE convites_360 (
+  id            BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  ciclo_id      BIGINT UNSIGNED NOT NULL,
+  relacao       ENUM('gestor','par','liderado','cliente_interno','outro') NOT NULL,
+  email         VARCHAR(160) NULL,        <span class="cm">-- opcional: convite por link também serve</span>
+  token_hash    CHAR(64)     NOT NULL,    <span class="cm">-- SHA-256; o token só existe no e-mail</span>
+  status        ENUM('pendente','enviado','respondido','expirado','cancelado')
+                NOT NULL DEFAULT 'pendente',
+  enviado_em    DATETIME NULL,
+  respondido_em DATETIME NULL,
+  expira_em     DATETIME NOT NULL,
+  avaliacao_id  BIGINT UNSIGNED NULL,     <span class="cm">-- preenchido ao responder</span>
+  UNIQUE KEY uq_convite_token (token_hash),
+  UNIQUE KEY uq_convite_avaliacao (avaliacao_id),  <span class="cm">-- uma resposta por convite</span>
+  CONSTRAINT fk_convite_ciclo FOREIGN KEY (ciclo_id)
+    REFERENCES ciclos_360(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;</pre>
+    </div>
+
+    <p>O avaliador recebe um link e não digita nada além das respostas: quem está sendo avaliado e em que relação já
+      vêm no convite. <code>uq_convite_avaliacao</code> garante uma resposta por convite. E a empresa passa a ver, em
+      tempo real, quantos convites saíram e quantos voltaram.</p>
+
+    <div class="note">
+      <p>O anonimato do respondente continua preservado: o relatório 360° só mostra médias por relação, e apenas
+        quando o mínimo de respondentes daquele grupo for atingido — proponho três. O convite identifica o
+        <em>convite</em>, não expõe o autor da resposta na tela de ninguém.</p>
+    </div>
+  </section>
+
+  <!-- ============================================ 5 -->
+  <section>
+    <p class="sec-label">Execução</p>
+    <h2>Seis fases, uma de cada vez</h2>
+
+    <p>Cada fase entrega algo que funciona sozinho e pode ser conferido antes da seguinte. Em nenhum momento o
+      sistema atual sai do ar — a planilha continua recebendo em paralelo até a Fase 5.</p>
+
+    <div class="phase">
+      <div class="phase-n">00</div>
+      <div class="phase-body">
+        <div class="phase-name">Corrigir o arquivamento do relatório</div>
+        <div class="phase-meta">~30 min · sem banco · independente de todo o resto</div>
+        <p>Tirar o hífen do <code>clean()</code> aplicado ao ID e fazer o arquivamento devolver erro real quando não
+          encontrar a linha. Depois, rodar um diagnóstico de teste ponta a ponta e conferir o link na planilha.</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-n">01</div>
+      <div class="phase-body">
+        <div class="phase-name">Criar o banco e o acesso</div>
+        <div class="phase-meta">as 14 tabelas · carga inicial · login funcionando</div>
+        <ul>
+          <li>Script SQL completo, versionado no repositório, aplicável de uma vez pelo phpMyAdmin</li>
+          <li>Carga do instrumento e das 36 palavras com o estilo de cada uma</li>
+          <li>Primeiro usuário administrador geral</li>
+          <li>Tela de login, sessão, troca obrigatória de senha no primeiro acesso e bloqueio após tentativas erradas</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-n">02</div>
+      <div class="phase-body">
+        <div class="phase-name">Gravar as avaliações no banco</div>
+        <div class="phase-meta">API de recebimento · planilha segue como rede de segurança</div>
+        <p>A aplicação passa a enviar para o seu servidor. Durante duas ou três semanas o Apps Script continua
+          gravando na planilha em paralelo, e comparamos os dois lados antes de confiar só no banco.</p>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-n">03</div>
+      <div class="phase-body">
+        <div class="phase-name">Área administrativa por empresa</div>
+        <div class="phase-meta">o que você pediu · substitui o painel de chave única</div>
+        <ul>
+          <li><strong>Administrador geral:</strong> cadastra a empresa, cria o usuário administrador dela e define a senha inicial; acompanha uso e status de todos os clientes</li>
+          <li><strong>Administrador da empresa:</strong> entra com o próprio login e vê apenas a sua empresa — participantes, resultados, mapa de calor da equipe, relatórios individuais e exportação</li>
+          <li>Registro de auditoria de cada acesso a relatório</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-n">04</div>
+      <div class="phase-body">
+        <div class="phase-name">IPA 360° com ciclos e convites</div>
+        <div class="phase-meta">o 360° passa a produzir número confiável</div>
+        <ul>
+          <li>A empresa abre um ciclo para um participante e cadastra os avaliadores por relação</li>
+          <li>Cada avaliador recebe um link de uso único, sem digitar nome de ninguém</li>
+          <li>Acompanhamento de convites enviados e respondidos, com reenvio</li>
+          <li>Relatório consolidado: autoimagem × percepção externa, por relação e por momento do atendimento — a lacuna entre os dois é a leitura mais valiosa do 360°</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="phase-n">05</div>
+      <div class="phase-body">
+        <div class="phase-name">Migrar o histórico e desligar a planilha</div>
+        <div class="phase-meta">encerramento</div>
+        <p>Importar as respostas já coletadas para o banco, conferir os totais, arquivar a implantação do Apps Script
+          e desativar a chave do painel antigo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ 6 -->
+  <section>
+    <p class="sec-label">Preciso de você</p>
+    <h2>Seis definições antes da Fase 1</h2>
+
+    <p>A Fase 0 pode começar assim que você autorizar — ela não depende de nenhuma destas respostas.</p>
+
+    <div class="ask">
+      <p class="ask-q">1. A hospedagem é a HostGator, com PHP e MySQL?</p>
+      <p>É o que o prefixo <code>itthri79_</code> indica. Se sim, sigo com PHP 8. Se for VPS ou outro provedor, me diga qual.</p>
+    </div>
+
+    <div class="ask">
+      <p class="ask-q">2. Em que endereço o sistema vai ficar?</p>
+      <p>Subpasta de um domínio existente, subdomínio (<code>app.vipedia…</code>) ou domínio próprio? Isso define os caminhos e o certificado.</p>
+    </div>
+
+    <div class="ask">
+      <p class="ask-q">3. Quem é o administrador geral?</p>
+      <p>Nome e e-mail da primeira conta. Você, o Milreu, o Zuvela, ou mais de uma pessoa?</p>
+    </div>
+
+    <div class="ask">
+      <p class="ask-q">4. Como o sistema envia e-mail?</p>
+      <p>Convites 360° e links de primeiro acesso dependem disso. SMTP do cPanel funciona, mas cai em spam com mais frequência que um serviço dedicado.</p>
+    </div>
+
+    <div class="ask">
+      <p class="ask-q">5. Quantas respostas existem hoje na planilha?</p>
+      <p>Define se a migração da Fase 5 é manual ou precisa de script. Se puder me dar acesso de leitura à planilha, eu mesmo confiro.</p>
+    </div>
+
+    <div class="ask">
+      <p class="ask-q">6. A análise por IA continua no Gemini?</p>
+      <p>Funciona bem hoje. Só quero confirmar antes de mover a chave para o servidor novo.</p>
+    </div>
+
+    <div class="note">
+      <p><strong>Como eu recomendo tocar:</strong> autorizar a Fase 0 agora — é meia hora e conserta um problema que
+        está corrompendo dados a cada diagnóstico rodado. Depois responder as seis definições, e eu entrego a Fase 1
+        completa para você aplicar e conferir antes de seguirmos. Uma fase por vez, como você pediu.</p>
+    </div>
+  </section>
+
+  <hr>
+  <p class="foot">Análise feita sobre o código da branch <code>claude/ipa-system-analysis-dpw662</code> —
+    <code>backend/apps-script.gs</code>, <code>webapp/js/{app,app360,engine,config}.js</code> e
+    <code>painel/index.html</code>. Nenhum arquivo foi alterado.</p>
+
+</div>
