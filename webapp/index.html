@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IPA — Indicador do Perfil de Atendimento. Diagnóstico comportamental pela Abordagem ACP: Atenção, Comunicação e Procedimento.">
+    <title>IPA — Indicador do Perfil de Atendimento | VIPEDia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+    <!-- Barra superior -->
+    <header class="topbar no-print">
+        <div class="topbar-inner">
+            <div class="brand">
+                <span class="brand-mark">V</span>
+                <span class="brand-name">VIPEDia</span>
+                <span class="brand-sep">·</span>
+                <span class="brand-product">IPA — Abordagem ACP</span>
+            </div>
+            <div class="topbar-right">
+                <span id="save-status" class="save-status" hidden>Progresso salvo</span>
+            </div>
+        </div>
+        <div class="progress-track" aria-hidden="true"><div id="progress-bar" class="progress-fill"></div></div>
+    </header>
+
+    <main id="app">
+
+        <!-- TELA 1: BOAS-VINDAS -->
+        <section id="screen-welcome" class="screen active">
+            <div class="hero">
+                <span class="badge">Diagnóstico comportamental · Abordagem ACP</span>
+                <h1>Descubra o seu <em>Perfil de Atendimento</em></h1>
+                <p class="lead">O IPA revela como você equilibra <strong>Atenção</strong>, <strong>Comunicação</strong>
+                    e <strong>Procedimento</strong> nos três momentos do atendimento ao cliente — e gera, na hora,
+                    o seu relatório individual de desenvolvimento.</p>
+                <div class="hero-meta">
+                    <div class="meta-item"><span class="meta-num">3</span><span class="meta-label">quadros de palavras</span></div>
+                    <div class="meta-item"><span class="meta-num">~12</span><span class="meta-label">minutos</span></div>
+                    <div class="meta-item"><span class="meta-num">8</span><span class="meta-label">fases no relatório</span></div>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="App.goTo('consent')">Começar</button>
+                <p class="hint">Não há respostas certas ou erradas — apenas as que representam as suas preferências.</p>
+            </div>
+            <div class="style-cards">
+                <div class="style-card" style="--c:var(--acp-atencao)"><h3>Atenção</h3><p>Presença, escuta sensível e comunicação não verbal. Atende à necessidade de <strong>autoestima</strong> do cliente.</p></div>
+                <div class="style-card" style="--c:var(--acp-comunicacao)"><h3>Comunicação</h3><p>Diálogo, clareza e escuta ativa. Atende à necessidade de <strong>segurança</strong> do cliente.</p></div>
+                <div class="style-card" style="--c:var(--acp-procedimento)"><h3>Procedimento</h3><p>Protocolos técnicos e administrativos. Atende à necessidade de <strong>tratamento justo</strong>.</p></div>
+                <div class="style-card" style="--c:var(--acp-equilibrado)"><h3>Equilibrado</h3><p>Integração fluida das três variáveis — a referência de desenvolvimento do modelo.</p></div>
+            </div>
+        </section>
+
+        <!-- TELA 2: CONSENTIMENTO LGPD -->
+        <section id="screen-consent" class="screen">
+            <div class="card card-narrow">
+                <h2>Privacidade e consentimento</h2>
+                <p class="muted">Antes de começar, precisamos do seu consentimento para tratar os seus dados, conforme a Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
+                <div class="consent-box">
+                    <ul>
+                        <li><strong>O que coletamos:</strong> nome, organização, função e as pontuações que você atribuir às palavras do questionário.</li>
+                        <li><strong>Para que usamos:</strong> gerar o seu relatório individual de perfil de atendimento e, de forma <em>agregada e anônima</em>, aprimorar a metodologia ACP.</li>
+                        <li><strong>Quem acessa:</strong> você e o(s) consultor(es) responsável(is) pelo programa na sua organização. Seus dados não são vendidos nem compartilhados com terceiros.</li>
+                        <li><strong>Por quanto tempo:</strong> pelo período do programa de desenvolvimento; após, os dados identificados são excluídos ou anonimizados.</li>
+                        <li><strong>Seus direitos:</strong> você pode solicitar acesso, correção ou exclusão dos seus dados a qualquer momento pelo contato <span class="mono">contato@itthrive.com.br</span>.</li>
+                    </ul>
+                </div>
+                <label class="check-row">
+                    <input type="checkbox" id="consent-check">
+                    <span>Li e concordo com o tratamento dos meus dados para as finalidades descritas acima.</span>
+                </label>
+                <div class="actions">
+                    <button class="btn btn-ghost" onclick="App.goTo('welcome')">Voltar</button>
+                    <button class="btn btn-primary" id="btn-consent" disabled onclick="App.acceptConsent()">Concordo, continuar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 3: IDENTIFICAÇÃO -->
+        <section id="screen-cadastro" class="screen">
+            <div class="card card-narrow">
+                <h2>Identificação</h2>
+                <p class="muted">Esses dados aparecem no seu relatório individual.</p>
+                <form id="form-cadastro" onsubmit="App.submitCadastro(event)">
+                    <div class="field"><label for="f-org">Organização</label><input type="text" id="f-org" required maxlength="120" autocomplete="organization"></div>
+                    <div class="field"><label for="f-nome">Nome completo</label><input type="text" id="f-nome" required maxlength="120" autocomplete="name"></div>
+                    <div class="field"><label for="f-funcao">Função ou cargo</label><input type="text" id="f-funcao" required maxlength="120" autocomplete="organization-title"></div>
+                    <!-- honeypot anti-bot: invisível para humanos -->
+                    <div class="hp-field" aria-hidden="true"><label for="f-site">Site</label><input type="text" id="f-site" tabindex="-1" autocomplete="off"></div>
+                    <div class="actions">
+                        <button type="button" class="btn btn-ghost" onclick="App.goTo('consent')">Voltar</button>
+                        <button type="submit" class="btn btn-primary">Avançar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- TELA 4: INSTRUÇÕES -->
+        <section id="screen-instrucoes" class="screen">
+            <div class="card card-mid">
+                <h2>Como funciona</h2>
+                <div class="prose">
+                    <p>O <strong>IPA — Indicador do Perfil de Atendimento</strong> identifica os comportamentos preferidos
+                    do profissional de atendimento, dentro das premissas da <strong>Abordagem ACP — Atenção, Comunicação e
+                    Procedimento</strong>.</p>
+                    <p>Você passará por <strong>3 quadros</strong>, um para cada momento do atendimento —
+                    <strong>Início</strong>, <strong>Durante</strong> e <strong>Término</strong>. Em cada quadro há
+                    <strong>12 palavras</strong> que representam práticas comportamentais.</p>
+                </div>
+                <ol class="steps-list">
+                    <li><span class="step-n">1</span><div><strong>Escolha a palavra que MAIS se aproxima</strong> da sua prática habitual — ela recebe a maior pontuação (11).</div></li>
+                    <li><span class="step-n">2</span><div><strong>Escolha a palavra que MENOS se aproxima</strong> — ela recebe a menor pontuação (0).</div></li>
+                    <li><span class="step-n">3</span><div><strong>Ordene as 10 restantes</strong> em escala decrescente de intensidade (de 10 a 1). Cada pontuação é usada uma única vez.</div></li>
+                </ol>
+                <div class="callout">Leia com atenção <strong>todas</strong> as palavras antes de começar a pontuar. Somente após a leitura atenta, comece a atribuir as pontuações.</div>
+                <div class="actions">
+                    <button class="btn btn-ghost" onclick="App.goTo('cadastro')">Voltar</button>
+                    <button class="btn btn-primary btn-lg" onclick="App.startSurvey()">Iniciar o diagnóstico</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 5: QUESTIONÁRIO -->
+        <section id="screen-survey" class="screen">
+            <div class="survey-head">
+                <div>
+                    <span class="badge" id="survey-step-badge">Quadro 1 de 3</span>
+                    <h2 id="survey-title">Início do atendimento</h2>
+                    <p class="survey-guide" id="survey-guide">Escolha a palavra que <strong>MAIS</strong> se aproxima da sua prática.</p>
+                </div>
+                <div class="survey-counter" id="survey-counter" aria-live="polite">0 / 12</div>
+            </div>
+
+            <div class="survey-grid">
+                <div class="word-panel">
+                    <div id="word-grid" class="word-grid"></div>
+                    <div class="word-panel-foot no-print">
+                        <button class="btn btn-ghost btn-sm" onclick="App.resetQuadro()">Limpar quadro</button>
+                    </div>
+                </div>
+                <div class="rank-panel card">
+                    <div class="rank-head">Sua escala <span class="muted-sm">(11 = mais · 0 = menos)</span></div>
+                    <ul id="rank-list" class="rank-list"></ul>
+                    <button id="btn-quadro-next" class="btn btn-primary btn-block" disabled onclick="App.confirmQuadro()">Confirmar quadro</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 6: ENVIO / PROCESSANDO -->
+        <section id="screen-sending" class="screen">
+            <div class="card card-narrow center">
+                <div class="spinner" aria-hidden="true"></div>
+                <h2>Gerando o seu relatório…</h2>
+                <p class="muted" id="sending-status">Calculando o seu perfil e registrando as respostas.</p>
+            </div>
+        </section>
+
+        <!-- TELA 7: RESULTADO + RELATÓRIO -->
+        <section id="screen-report" class="screen">
+            <div class="report-toolbar no-print">
+                <div id="sync-indicator" class="sync-indicator" role="status"></div>
+                <div class="report-actions">
+                    <button class="btn btn-ghost" onclick="App.restart()">Novo diagnóstico</button>
+                    <button class="btn btn-primary" onclick="window.print()">Baixar em PDF</button>
+                </div>
+            </div>
+            <div id="report" class="report-sheet"></div>
+        </section>
+    </main>
+
+    <footer class="site-foot no-print">
+        <p>© 2026 VIPEDia · Valorizar e Integrar Pessoas pela Educação Digital · Metodologia ACP (base Zuvela)</p>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

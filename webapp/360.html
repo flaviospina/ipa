@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>IPA 360° — Avaliação de Percepção | VIPEDia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+    <header class="topbar no-print">
+        <div class="topbar-inner">
+            <div class="brand">
+                <span class="brand-mark">V</span>
+                <span class="brand-name">VIPEDia</span>
+                <span class="brand-sep">·</span>
+                <span class="brand-product">IPA 360° — Avaliação de Percepção</span>
+            </div>
+        </div>
+        <div class="progress-track" aria-hidden="true"><div id="progress-bar" class="progress-fill"></div></div>
+    </header>
+
+    <main id="app">
+
+        <!-- TELA 1: BOAS-VINDAS / IDENTIFICAÇÃO DO AVALIADO -->
+        <section id="screen-welcome" class="screen active">
+            <div class="card card-mid" style="margin-top:32px">
+                <span class="badge">IPA 360° · Avaliação anônima</span>
+                <h2 style="margin-top:14px">Como você percebe o atendimento de <em id="w-avaliado" style="font-style:normal;color:var(--accent)">—</em>?</h2>
+                <div class="prose">
+                    <p>Você foi convidado(a) a contribuir com o desenvolvimento profissional de
+                       <strong id="w-avaliado-2">—</strong>. Sua tarefa é avaliar <strong>como você percebe o
+                       atendimento praticado por essa pessoa</strong> — não como ela deveria atender.</p>
+                    <p>São 3 quadros com 12 palavras cada, um para cada momento do atendimento
+                       (<strong>Início · Durante · Término</strong>). Em cada quadro: escolha a palavra que
+                       <strong>MAIS</strong> representa o atendimento dela, depois a que <strong>MENOS</strong>
+                       representa, e ordene as demais em escala decrescente. Leva cerca de 10 minutos.</p>
+                    <p><strong>Sua avaliação é anônima:</strong> não coletamos o seu nome. Registramos apenas a sua
+                       relação profissional com a pessoa avaliada, para compor as médias por grupo.</p>
+                </div>
+                <form onsubmit="App360.start(event)">
+                    <!-- Convite com link: dados preenchidos e travados (evita erros de digitação) -->
+                    <div id="invite-card" class="hidden" style="background:var(--accent-soft);border:1px solid #d8e3fb;border-radius:14px;padding:16px 20px;margin-bottom:18px">
+                        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:6px">Convite para avaliar</div>
+                        <div style="font-weight:800;font-size:17px" id="invite-nome">—</div>
+                        <div class="muted" style="font-size:13.5px" id="invite-org">—</div>
+                    </div>
+                    <div id="manual-fields">
+                        <div class="field"><label for="f-avaliado">Nome da pessoa avaliada</label><input type="text" id="f-avaliado" required maxlength="120"></div>
+                        <div class="field"><label for="f-org">Organização</label><input type="text" id="f-org" required maxlength="120"></div>
+                    </div>
+                    <div class="field">
+                        <label for="f-relacao">Qual a sua relação com essa pessoa?</label>
+                        <select id="f-relacao" required style="width:100%;font:inherit;padding:13px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);outline:none">
+                            <option value="">Selecione…</option>
+                            <option>Gestor(a)</option>
+                            <option>Colega de equipe</option>
+                            <option>Cliente</option>
+                            <option>Outra</option>
+                        </select>
+                    </div>
+                    <div class="hp-field" aria-hidden="true"><label for="f-site">Site</label><input type="text" id="f-site" tabindex="-1" autocomplete="off"></div>
+                    <div class="actions">
+                        <span></span>
+                        <button type="submit" class="btn btn-primary btn-lg">Iniciar avaliação</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- TELA 2: QUESTIONÁRIO (mesma estrutura do IPA) -->
+        <section id="screen-survey" class="screen">
+            <div class="survey-head">
+                <div>
+                    <span class="badge" id="survey-step-badge">Quadro 1 de 3</span>
+                    <h2 id="survey-title">Início do atendimento</h2>
+                    <p class="survey-guide" id="survey-guide"></p>
+                </div>
+                <div class="survey-counter" id="survey-counter" aria-live="polite">0 / 12</div>
+            </div>
+            <div class="survey-grid">
+                <div class="word-panel">
+                    <div id="word-grid" class="word-grid"></div>
+                    <div class="word-panel-foot no-print">
+                        <button class="btn btn-ghost btn-sm" onclick="App360.resetQuadro()">Limpar quadro</button>
+                    </div>
+                </div>
+                <div class="rank-panel card">
+                    <div class="rank-head">Sua escala <span class="muted-sm">(11 = mais · 0 = menos)</span></div>
+                    <ul id="rank-list" class="rank-list"></ul>
+                    <button id="btn-quadro-next" class="btn btn-primary btn-block" disabled onclick="App360.confirmQuadro()">Confirmar quadro</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELA 3: AGRADECIMENTO -->
+        <section id="screen-done" class="screen">
+            <div class="card card-narrow center" style="margin-top:48px">
+                <div style="font-size:52px; margin-bottom:8px">🙏</div>
+                <h2>Avaliação enviada. Obrigado!</h2>
+                <p class="muted">Sua percepção foi registrada de forma anônima e será combinada com as demais
+                   avaliações para apoiar o desenvolvimento de <strong id="d-avaliado">—</strong>.</p>
+                <p id="done-status" class="muted-sm"></p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-foot no-print">
+        <p>© 2026 VIPEDia · IPA 360° · Abordagem ACP</p>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/app360.js"></script>
+</body>
+</html>
