@@ -1,0 +1,167 @@
+/* ============================================================
+   VIPEDia — painel administrativo
+   ============================================================ */
+
+:root {
+  --ground:#fff; --panel:#f3f6f8; --panel-2:#e8eef2;
+  --line:#d9e2e8; --line-soft:#e8eef2;
+  --ink:#121d25; --ink-2:#43535f; --ink-3:#6f818d;
+  --accent:#1f6f8b; --accent-ink:#155166; --accent-wash:#e2eff4;
+  --erro:#a93a2a; --erro-wash:#f9e8e4;
+  --ok:#2a7462; --ok-wash:#e2f0eb;
+  --aviso:#8d6a1c; --aviso-wash:#f8efd9;
+  --sombra:0 1px 2px rgba(18,29,37,.06), 0 4px 14px rgba(18,29,37,.05);
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground:#0e161b; --panel:#16232a; --panel-2:#1e2f38;
+    --line:#273a45; --line-soft:#1e2f38;
+    --ink:#e6eef3; --ink-2:#b0c1cb; --ink-3:#7b8d99;
+    --accent:#62b4ce; --accent-ink:#9ad3e6; --accent-wash:#153542;
+    --erro:#e58d7c; --erro-wash:#3a201b;
+    --ok:#6fc5ac; --ok-wash:#16332b;
+    --aviso:#d9ae5f; --aviso-wash:#33280f;
+    --sombra:0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+  }
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+     font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:var(--mono);font-size:.87em;background:var(--panel);padding:1px 5px;
+     border-radius:3px;border:1px solid var(--line-soft)}
+hr{border:0;border-top:1px solid var(--line);margin:6px 0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- topo ---------- */
+.topo{background:var(--panel);border-bottom:1px solid var(--line)}
+.topo-in{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;align-items:center;gap:26px;min-height:60px;flex-wrap:wrap}
+.marca{font-weight:700;font-size:17px;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.marca span{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+            color:var(--accent);margin-left:7px;vertical-align:2px}
+.nav{display:flex;gap:4px;flex:1}
+.nav a{padding:7px 13px;border-radius:6px;color:var(--ink-2);font-size:14.5px;text-decoration:none}
+.nav a:hover{background:var(--panel-2);text-decoration:none}
+.nav a.on{background:var(--accent-wash);color:var(--accent-ink);font-weight:600}
+.eu{text-align:right;line-height:1.25}
+.eu-nome{display:block;font-weight:600;font-size:14px}
+.eu-papel{display:block;font-size:11.5px;color:var(--ink-3)}
+.sair{font-size:13.5px;color:var(--ink-3);padding:6px 11px;border:1px solid var(--line);border-radius:6px}
+.sair:hover{color:var(--ink);text-decoration:none;background:var(--panel-2)}
+
+/* ---------- corpo ---------- */
+.corpo{max-width:1120px;margin:0 auto;padding:34px 22px 70px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h2.secao{font-size:17px;margin:38px 0 12px;letter-spacing:-.01em}
+.linha-apoio{color:var(--ink-3);margin:0 0 26px;font-size:15px;max-width:70ch}
+.rodape{max-width:1120px;margin:0 auto;padding:20px 22px 40px;color:var(--ink-3);font-size:12.5px;
+        border-top:1px solid var(--line-soft)}
+.muted{color:var(--ink-3)}
+
+/* ---------- recados ---------- */
+.recado{padding:12px 16px;border-radius:7px;margin:0 0 16px;font-size:14.5px;
+        background:var(--ok-wash);color:var(--ok)}
+.recado.erro{background:var(--erro-wash);color:var(--erro)}
+.recado.aviso{background:var(--aviso-wash);color:var(--aviso)}
+
+/* ---------- cartões de número ---------- */
+.cartoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:12px}
+.cartao{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:20px;
+        display:block;text-decoration:none;color:inherit}
+a.cartao:hover{border-color:var(--accent);text-decoration:none}
+.cartao-n{display:block;font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--accent);
+          font-variant-numeric:tabular-nums;line-height:1.1}
+.cartao-r{display:block;font-size:13px;color:var(--ink-3);margin-top:2px}
+
+/* ---------- blocos ---------- */
+.bloco{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+       padding:18px 22px;margin:0 0 24px}
+.bloco summary{cursor:pointer;font-weight:600;font-size:15.5px;list-style:none}
+.bloco summary::-webkit-details-marker{display:none}
+.bloco summary::before{content:"+ ";color:var(--accent);font-weight:700}
+.bloco[open] summary::before{content:"− "}
+.bloco[open] summary{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.vazio-guia h2{margin:0 0 6px;font-size:16px}
+.vazio-guia p{margin:0;color:var(--ink-2);font-size:14.5px}
+
+/* ---------- formulários ---------- */
+.form{display:block}
+.form label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 5px}
+.form input,.form select{width:100%;font:inherit;font-size:15px;padding:10px 13px;
+       border:1.5px solid var(--line);border-radius:7px;background:var(--ground);color:var(--ink)}
+.form input:focus,.form select:focus{border-color:var(--accent);outline:none}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}
+.form-2col .col-cheia{grid-column:1/-1}
+.form:not(.form-2col) input{margin-bottom:16px}
+.sub-form{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+          color:var(--ink-3);margin:6px 0 0}
+.opc{font-weight:400;color:var(--ink-3)}
+.dica{font-size:12.5px;color:var(--ink-3);margin:-10px 0 14px}
+.acoes{display:flex;align-items:center;gap:16px;margin-top:4px}
+button{font:inherit;font-size:15px;font-weight:600;padding:11px 20px;border:0;border-radius:7px;
+       background:var(--accent);color:#fff;cursor:pointer}
+button:hover{background:var(--accent-ink)}
+.btn-txt{background:none;border:0;color:var(--accent);padding:0;font-size:13.5px;
+         font-weight:500;cursor:pointer}
+.btn-txt:hover{background:none;text-decoration:underline}
+.estreito{max-width:520px}
+.aviso{color:var(--aviso)}
+
+/* ---------- tabelas ---------- */
+.tabela-rolagem{overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+.tabela{width:100%;border-collapse:collapse;font-size:14.5px;min-width:640px}
+.tabela th{text-align:left;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+           color:var(--ink-3);padding:12px 16px;background:var(--panel);
+           border-bottom:1px solid var(--line);white-space:nowrap}
+.tabela td{padding:12px 16px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.tabela tr:last-child td{border-bottom:0}
+.tabela .num{text-align:right;font-variant-numeric:tabular-nums}
+.tabela .vazio{text-align:center;color:var(--ink-3);padding:30px}
+.acoes-linha form{display:inline}
+.voce{font-size:11px;color:var(--ink-3);font-weight:400}
+
+.selo{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
+      background:var(--panel-2);color:var(--ink-2);text-transform:lowercase}
+.selo.ativo,.selo.ativa{background:var(--ok-wash);color:var(--ok)}
+.selo.bloqueado,.selo.suspensa,.selo.encerrada{background:var(--erro-wash);color:var(--erro)}
+.selo.aviso{background:var(--aviso-wash);color:var(--aviso)}
+
+/* ---------- cartão de senha gerada ---------- */
+.cartao-senha{background:var(--accent-wash);border:1px solid var(--accent);border-radius:9px;
+              padding:20px 24px;margin:0 0 24px}
+.cartao-senha h2{margin:0 0 8px;font-size:17px;color:var(--accent-ink)}
+.cartao-senha p{margin:0 0 14px;font-size:14.5px;color:var(--ink-2)}
+.credenciais{display:grid;grid-template-columns:auto 1fr;gap:8px 18px;margin:0 0 12px;
+             font-size:14.5px;align-items:baseline}
+.credenciais dt{font-weight:600;color:var(--ink-3);font-size:12.5px;text-transform:uppercase;
+                letter-spacing:.05em}
+.credenciais dd{margin:0;font-family:var(--mono);word-break:break-all}
+.credenciais dd.senha{font-size:19px;font-weight:700;letter-spacing:.06em;color:var(--accent-ink);
+                      user-select:all}
+.obs{font-size:13px;color:var(--ink-3);margin:0}
+
+/* ---------- tela de login ---------- */
+.tela-login{display:flex;align-items:center;justify-content:center;min-height:100vh;
+            background:var(--panel);padding:24px}
+.cartao-login{background:var(--ground);border:1px solid var(--line);border-radius:12px;
+              padding:38px 36px;width:100%;max-width:420px;box-shadow:var(--sombra)}
+.marca-login{font-weight:700;font-size:19px;letter-spacing:-.02em;margin-bottom:22px}
+.cartao-login h1{font-size:21px;margin:0 0 4px}
+.cartao-login .sub{color:var(--ink-3);font-size:13.5px;margin:0 0 26px}
+.cartao-login label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:0 0 5px}
+.cartao-login input{width:100%;font:inherit;font-size:15.5px;padding:11px 14px;margin-bottom:18px;
+       border:1.5px solid var(--line);border-radius:7px;background:var(--ground);color:var(--ink)}
+.cartao-login input:focus{border-color:var(--accent);outline:none}
+.cartao-login button{width:100%;padding:12px}
+.ajuda{font-size:12.5px;color:var(--ink-3);margin:22px 0 0;text-align:center;line-height:1.5}
+
+@media (max-width:640px){
+  .form-2col{grid-template-columns:1fr}
+  .topo-in{gap:14px}
+  .nav{order:3;width:100%;flex:auto;overflow-x:auto}
+  .corpo{padding:24px 16px 60px}
+}

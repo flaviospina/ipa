@@ -1,0 +1,12 @@
+# A pasta config/ guarda a senha do banco. Nada aqui pode ser servido pela web.
+# Duas sintaxes: Apache 2.4 (mod_authz_core) e Apache 2.2, porque a versão
+# varia entre planos da HostGator.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

@@ -1,2 +1,5 @@
 node_modules/
 apresentacao/slide-*.jpg
+
+# senha do banco: nunca versionar
+backend/php/config/config.php
