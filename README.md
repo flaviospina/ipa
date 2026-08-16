@@ -77,14 +77,35 @@ Abra **uma vez**: `https://itthrive.com.br/vipedia/new_ipa/setup/criar-admin-ger
 A senha inicial aparece **uma única vez** (o banco guarda só o hash). Depois de
 entrar, **apague a pasta `setup/`** do servidor.
 
-### 5. Verificações finais
+### 5. Verificação final — a página de diagnóstico
 
-- `.../new_ipa/config/config.exemplo.php` e `.../new_ipa/src/Db.php` devem
-  devolver **403** (proteção por `.htaccess`). Se abrirem, mova `config/` e
-  `src/` para fora de `public_html` e ajuste o caminho no topo de `src/Db.php`.
-- `.../new_ipa/api/diagnostico.php` deve devolver `{"ok":false,"code":"method_not_allowed","v":1}`.
-- No editor do Apps Script, cole o `backend/apps-script.gs` atualizado, faça uma
-  **nova implantação** e confirme `v: 4` abrindo a URL `/exec` (correção da Fase 0).
+Abra:
+
+```
+https://itthrive.com.br/vipedia/new_ipa/status.php
+```
+
+Ela testa **tudo** e diz onde corrigir cada falha: versão do PHP (o sistema
+exige 8.1+), extensões, arquivos publicados, se o webapp no ar é a versão
+atual, configuração, conexão e tabelas do banco, APIs respondendo, proteção
+da pasta `config/`, e a versão do Apps Script no ar (esperado **v4** — a
+correção da Fase 0). `status.php?teste_gravacao=1` faz um INSERT real de teste.
+
+No editor do Apps Script, cole o `backend/apps-script.gs` atualizado e faça
+uma **nova implantação** — a página de diagnóstico confirma a versão.
+
+## Quando algo der errado ("registrei e não apareceu no banco")
+
+1. Abra `status.php` **no mesmo navegador e aparelho** em que o questionário
+   foi respondido. Corrija primeiro qualquer item **FALHA** — a descrição de
+   cada um diz exatamente o que fazer.
+2. Na seção **Fila local deste navegador**, os envios que falharam ficam
+   guardados. Depois de corrigir a causa, clique em **Reenviar agora** — as
+   respostas presas entram no banco sem refazer o questionário.
+3. Causas mais comuns, na ordem: pasta `webapp/js/` desatualizada no servidor
+   (o questionário antigo não envia ao banco), PHP abaixo de 8.1 no cPanel,
+   `config/config.php` ausente ou com senha errada, e empresa não cadastrada
+   (o envio é recusado com `empresa_nao_identificada`).
 
 ---
 

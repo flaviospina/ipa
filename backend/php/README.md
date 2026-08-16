@@ -18,7 +18,8 @@ vipedia/new_ipa/
 ├── api/         endpoints públicos: diagnóstico e convite 360°
 ├── setup/       instalação (apagar depois de usar)
 ├── src/         código de apoio   (bloqueado pela web)
-└── config/      senha do banco    (bloqueado pela web)
+├── config/      senha do banco    (bloqueado pela web)
+└── status.php   diagnóstico geral → /vipedia/new_ipa/status.php
 ```
 
 Junto com esta pasta, reenvie também `webapp/js/config.js` e `webapp/js/app.js`

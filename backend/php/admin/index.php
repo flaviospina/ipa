@@ -74,6 +74,13 @@ abrirPagina('Início', $eu, 'index.php');
   </div>
 <?php endif; ?>
 
+<?php if (Auth::ehAdminGeral()): ?>
+  <p class="linha-apoio" style="margin-top:6px">
+    Algo não está gravando? Abra o <a href="../status.php">diagnóstico do sistema</a> —
+    ele testa PHP, arquivos, banco, APIs e a fila local do navegador, e diz onde corrigir.
+  </p>
+<?php endif; ?>
+
 <h2 class="secao">Atividade recente</h2>
 <div class="tabela-rolagem">
 <table class="tabela">
