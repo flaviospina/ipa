@@ -152,13 +152,20 @@ const App360 = {
             let out;
             try { out = JSON.parse(texto); }
             catch (e) { out = { ok: false, code: 'resposta_nao_json_http_' + res.status }; }
-            status.textContent = out.ok
-                ? 'Registro confirmado.'
-                : (String(out.code).startsWith('resposta_nao_json') || out.code === 'erro_fatal_php'
-                    ? 'Erro interno na API (' + out.code + ') — abra api/api.php?action=status para o diagnóstico (config.php ausente ou PHP < 7.4 são as causas comuns).'
-                    : 'O servidor recusou o registro (código: ' + out.code + ').');
+            if (out.ok) {
+                status.textContent = 'Registro confirmado.';
+                Msg.sucesso('Avaliação enviada!',
+                    `Obrigado pela sua contribuição. Sua percepção sobre o atendimento de <strong>${this.state.avaliado}</strong> foi registrada de forma anônima.`, 'Fechar');
+            } else {
+                const motivo = (String(out.code).startsWith('resposta_nao_json') || out.code === 'erro_fatal_php')
+                    ? 'Erro interno na API (' + out.code + ') — avise quem enviou o convite.'
+                    : 'O servidor recusou o registro (código: ' + out.code + ').';
+                status.textContent = motivo;
+                Msg.erro('Não foi possível registrar', motivo);
+            }
         } catch (e) {
             status.textContent = 'Sem conexão no momento — tente reenviar mais tarde.';
+            Msg.erro('Sem conexão', 'Não foi possível enviar agora. Verifique a internet e tente novamente mais tarde.');
         }
         document.getElementById('progress-bar').style.width = '100%';
     },

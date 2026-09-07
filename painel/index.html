@@ -241,6 +241,8 @@
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+    <script src="../webapp/js/msg.js"></script>
     <script>
         // Backend MySQL/PHP (pasta api/ irmã desta) — mesma origem, sem CORS.
         const ENDPOINT = '../api/api.php';
@@ -318,6 +320,7 @@
                     this.setRows(out.rows);
                 } catch (e) {
                     document.getElementById('login-erro').classList.remove('hidden');
+                    if (typeof Msg !== 'undefined') Msg.erro('Acesso negado', 'Chave inválida ou sem conexão com o banco de dados. Confira a PANEL_KEY definida no api/config.php.');
                 }
             },
 
@@ -439,6 +442,7 @@
                 const inp = document.getElementById('link-360');
                 inp.select();
                 navigator.clipboard ? navigator.clipboard.writeText(inp.value) : document.execCommand('copy');
+                if (typeof Msg !== 'undefined') Msg.toast('Link do convite copiado!');
                 const ok = document.getElementById('link-copiado');
                 ok.style.visibility = 'visible';
                 setTimeout(() => { ok.style.visibility = 'hidden'; }, 2000);

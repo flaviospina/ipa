@@ -125,7 +125,9 @@ const App = {
         if (s[i] !== undefined) { s.splice(i, 1); this.persist(); this.renderRank(); }
     },
 
-    resetQuadro() {
+    async resetQuadro() {
+        if (this.sel().length > 0 &&
+            !(await Msg.confirma('Limpar este quadro?', 'As palavras já ordenadas neste quadro serão desmarcadas.', 'Limpar', 'Manter'))) return;
         this.state.selecoes[this.state.quadroAtual] = [];
         this.persist();
         this.renderRank();
@@ -196,7 +198,7 @@ const App = {
         try {
             r = Engine.calcular(this.state.selecoes);
         } catch (e) {
-            alert('Há um problema nas respostas: ' + e.message);
+            Msg.erro('Respostas incompletas', 'Há um problema nas respostas: ' + e.message);
             this.goTo('survey');
             return;
         }
@@ -218,8 +220,13 @@ const App = {
         const out = await this.send(payload);
         if (!out || out.ok !== true) {
             this.enqueue(payload);
+            const motivo = this.explicarFalha(out);
             ind.className = 'sync-indicator err';
-            ind.textContent = this.explicarFalha(out) + ' Suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
+            ind.textContent = motivo + ' Suas respostas ficaram salvas neste navegador e serão reenviadas automaticamente.';
+            Msg.fire({ icon: 'warning', titulo: 'Envio pendente',
+                html: motivo + '<br><br><strong>Suas respostas não se perderam:</strong> ficaram salvas neste navegador e serão reenviadas automaticamente. Você já pode baixar o relatório em PDF.',
+                confirmText: '📄 Baixar em PDF', denyText: 'Ver relatório no site' })
+                .then(e => { if (e === 'confirm') window.print(); });
             return;
         }
 
@@ -249,6 +256,24 @@ const App = {
             ind.className = 'sync-indicator ok';
             ind.textContent = '✓ Respostas registradas (o arquivamento do relatório será reenviado automaticamente)';
         }
+        this.dialogoFinal(r, !!out.ia);
+    },
+
+    /* janela de conclusão: baixar o PDF dali mesmo ou ver no site */
+    async dialogoFinal(r, comIA) {
+        const pred = r.ranking[0];
+        const escolha = await Msg.fire({
+            icon: 'success',
+            titulo: 'Diagnóstico concluído!',
+            html: `Suas respostas foram registradas com sucesso.<br>
+                   Seu estilo predominante é
+                   <strong style="color:${pred.cor}">${pred.nome}</strong>
+                   (${pred.pontos} pontos · ${pred.pct.toFixed(1)}%).` +
+                  (comIA ? '<br>O relatório inclui a análise personalizada do consultor IA.' : ''),
+            confirmText: '📄 Baixar em PDF',
+            denyText: 'Ver relatório no site'
+        });
+        if (escolha === 'confirm') window.print();
     },
 
     async send(payload) {
@@ -311,7 +336,7 @@ const App = {
         } catch (e) { /* armazenamento indisponível */ }
     },
 
-    restore() {
+    async restore() {
         try {
             const raw = localStorage.getItem(IPA_CONFIG.STORAGE_KEY);
             if (!raw) return false;
@@ -319,7 +344,8 @@ const App = {
             if (!saved || !saved.consent) return false;
             const respostas = Object.values(saved.selecoes || {}).reduce((a, b) => a + b.length, 0);
             if (respostas === 0 && !saved.dados.nome) return false;
-            if (!confirm('Encontramos um diagnóstico em andamento. Deseja continuar de onde parou?')) {
+            if (!(await Msg.confirma('Continuar de onde parou?',
+                    'Encontramos um diagnóstico em andamento neste navegador.', 'Continuar', 'Começar de novo'))) {
                 localStorage.removeItem(IPA_CONFIG.STORAGE_KEY);
                 return false;
             }
@@ -335,8 +361,9 @@ const App = {
         } catch (e) { return false; }
     },
 
-    restart() {
-        if (!confirm('Iniciar um novo diagnóstico? O relatório atual deixará de ser exibido.')) return;
+    async restart() {
+        if (!(await Msg.confirma('Iniciar um novo diagnóstico?',
+                'O relatório atual deixará de ser exibido nesta tela (ele continua arquivado no sistema).', 'Novo diagnóstico', 'Voltar'))) return;
         localStorage.removeItem(IPA_CONFIG.STORAGE_KEY);
         location.reload();
     },
