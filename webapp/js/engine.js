@@ -329,7 +329,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
     </section>`;
 };
 
-/* ---------- Relatório autônomo (arquivo para download/arquivo no Drive) ---------- */
+/* ---------- Relatório autônomo (arquivado no banco, pronto para download) ---------- */
 Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
     let css = '';
     try {

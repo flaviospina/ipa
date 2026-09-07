@@ -234,7 +234,7 @@ const App = {
             ? '✓ Análise personalizada incluída · arquivando relatório…'
             : '✓ Respostas registradas · arquivando relatório…';
 
-        // passo 2: arquiva o relatório final (com IA, se houver) no Drive
+        // passo 2: arquiva o relatório final (com IA, se houver) no banco de dados
         const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
         const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id,
                        nome: this.state.dados.nome, relatorio: standalone, website: '' };
@@ -254,8 +254,8 @@ const App = {
     async send(payload) {
         if (!IPA_CONFIG.ENDPOINT || IPA_CONFIG.ENDPOINT.startsWith('COLE_AQUI')) return { ok: false, code: 'endpoint_nao_configurado' };
         try {
-            // Content-Type text/plain = requisição simples (sem preflight):
-            // o Apps Script responde com CORS liberado e conseguimos LER a resposta.
+            // Content-Type text/plain = requisição simples (sem preflight),
+            // aceita pela API na mesma origem sem cabeçalhos extras.
             const res = await fetch(IPA_CONFIG.ENDPOINT, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -273,8 +273,12 @@ const App = {
     explicarFalha(out) {
         const code = out ? out.code : 'sem_conexao';
         if (code === 'sem_conexao') return 'Sem conexão com o servidor.';
-        if (code === 'endpoint_nao_configurado') return 'A URL do Apps Script não foi configurada (js/config.js).';
-        if (String(code).startsWith('resposta_nao_json')) return 'O servidor devolveu uma página de login do Google em vez de dados — a implantação do Apps Script precisa estar com "Quem pode acessar: Qualquer pessoa". (código: ' + code + ')';
+        if (code === 'endpoint_nao_configurado') return 'A URL da API não foi configurada (js/config.js).';
+        if (code === 'config_ausente') return 'O arquivo api/config.php não existe no servidor — renomeie o config.example.php para config.php e preencha os dados do banco.';
+        if (code === 'db_error') return 'A API não conseguiu acessar o banco de dados — confira usuário, senha e nome do banco no api/config.php (e importe o schema.sql no phpMyAdmin).';
+        if (code === 'erro_fatal_php') return 'Erro interno na API (PHP): ' + (out.detalhe || '') + ' — verifique se a versão do PHP é 7.4 ou superior (cPanel → MultiPHP Manager).';
+        if (String(code).includes('http_404')) return 'A API não foi encontrada (HTTP 404) — confira se a pasta api/ com o api.php foi enviada ao servidor.';
+        if (String(code).startsWith('resposta_nao_json')) return 'A API retornou um erro interno do servidor (' + code + '). Abra api/api.php?action=status no navegador para ver o diagnóstico — as causas comuns são api/config.php ausente ou versão do PHP inferior a 7.4 (cPanel → MultiPHP Manager).';
         return 'O servidor recusou o envio (código: ' + code + ').';
     },
 

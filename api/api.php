@@ -1,8 +1,8 @@
 <?php
 /* ============================================================
-   IPA — API MySQL (substitui o Google Apps Script)
+   IPA — API MySQL (backend único do sistema)
    Hospedar na MESMA hospedagem do site (ex.: /vipedia/.../api/),
-   assim não há CORS, não há implantação, não há URL externa.
+   assim não há CORS nem URL externa. Requer PHP 7.4+.
 
    POST (JSON):
      (sem action)        -> registra um diagnóstico IPA
@@ -12,9 +12,30 @@
      action=list&key=      -> lista diagnósticos (Painel)
      action=list360&key=   -> lista avaliações 360° (Painel)
      action=relatorio&token= -> devolve o HTML do relatório arquivado
+     action=status           -> autodiagnóstico (PHP, banco, tabelas)
      (sem action)          -> {"ok":false,"code":"method_not_allowed","v":4}
    ============================================================ */
 declare(strict_types=1);
+
+/* Qualquer falha — inclusive fatal — deve sair como JSON, nunca
+   como página de erro do servidor (o site depende disso). */
+error_reporting(E_ALL);
+ini_set('display_errors', '0');
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'code' => 'erro_fatal_php',
+                          'detalhe' => mb_substr($e['message'], 0, 300)], JSON_UNESCAPED_UNICODE);
+    }
+});
+
+if (!is_file(__DIR__ . '/config.php')) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => false, 'code' => 'config_ausente',
+                      'dica' => 'Renomeie api/config.example.php para config.php e preencha os dados do banco.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 require __DIR__ . '/config.php';
 
 const VERSAO = 4;
@@ -132,9 +153,9 @@ function gerar_analise_ia(array $d, array $respostas, array $scores): ?array {
                 $palavras[] = ['p' => implode(' ', array_slice(explode('_', $id), 1)), 'st' => $st, 'm' => $mom, 'n' => (int)$respostas[$id]];
             }
         }
-        $fmt = fn($x) => $x['p'] . ' (' . $x['st'] . ', ' . $x['m'] . ', nota ' . $x['n'] . ')';
-        $altas = implode('; ', array_map($fmt, array_filter($palavras, fn($x) => $x['n'] >= 9))) ?: 'nenhuma';
-        $baixas = implode('; ', array_map($fmt, array_filter($palavras, fn($x) => $x['n'] <= 2))) ?: 'nenhuma';
+        $fmt = function ($x) { return $x['p'] . ' (' . $x['st'] . ', ' . $x['m'] . ', nota ' . $x['n'] . ')'; };
+        $altas = implode('; ', array_map($fmt, array_filter($palavras, function ($x) { return $x['n'] >= 9; }))) ?: 'nenhuma';
+        $baixas = implode('; ', array_map($fmt, array_filter($palavras, function ($x) { return $x['n'] <= 2; }))) ?: 'nenhuma';
 
         $prompt =
             'Você é um Consultor Sênior de Desenvolvimento Humano, especialista em atendimento ao cliente e mestre na Abordagem ACP (Atenção, Comunicação e Procedimento — metodologia Zuvela). ' .
@@ -190,6 +211,28 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $action = $_GET['action'] ?? '';
+
+        /* autodiagnóstico: abra api.php?action=status no navegador */
+        if ($action === 'status') {
+            $comChave = ($_GET['key'] ?? '') === PANEL_KEY && PANEL_KEY !== '';
+            $st = ['ok' => true, 'code' => 'status', 'v' => VERSAO, 'php' => PHP_VERSION,
+                   'config' => true, 'banco' => false, 'tabelas' => []];
+            try {
+                db();
+                $st['banco'] = true;
+                foreach (['ipa_respostas', 'ipa_respostas_palavras', 'ipa_360', 'ipa_360_palavras'] as $t) {
+                    try {
+                        $n = (int)db()->query("SELECT COUNT(*) FROM {$t}")->fetchColumn();
+                        $st['tabelas'][$t] = $comChave ? $n : 'ok';
+                    } catch (Throwable $e) {
+                        $st['tabelas'][$t] = 'AUSENTE - importe o schema.sql no phpMyAdmin';
+                    }
+                }
+            } catch (Throwable $e) {
+                $st['dica'] = 'Sem conexão com o banco — confira DB_NAME, DB_USER e DB_PASS no config.php e se o usuário foi associado ao banco no cPanel.';
+            }
+            out($st);
+        }
 
         if ($action === 'relatorio') {
             $token = preg_replace('/[^a-f0-9]/', '', (string)($_GET['token'] ?? ''));

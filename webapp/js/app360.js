@@ -154,8 +154,8 @@ const App360 = {
             catch (e) { out = { ok: false, code: 'resposta_nao_json_http_' + res.status }; }
             status.textContent = out.ok
                 ? 'Registro confirmado.'
-                : (String(out.code).startsWith('resposta_nao_json')
-                    ? 'Falha: o servidor pediu login do Google — a implantação do Apps Script precisa de acesso "Qualquer pessoa". (código: ' + out.code + ')'
+                : (String(out.code).startsWith('resposta_nao_json') || out.code === 'erro_fatal_php'
+                    ? 'Erro interno na API (' + out.code + ') — abra api/api.php?action=status para o diagnóstico (config.php ausente ou PHP < 7.4 são as causas comuns).'
                     : 'O servidor recusou o registro (código: ' + out.code + ').');
         } catch (e) {
             status.textContent = 'Sem conexão no momento — tente reenviar mais tarde.';
