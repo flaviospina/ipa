@@ -28,6 +28,21 @@ CREATE TABLE IF NOT EXISTS ipa_respostas (
     KEY idx_criado (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+/* Detalhe normalizado: uma linha por palavra respondida (36 por diagnóstico).
+   Permite consultas SQL diretas (médias por palavra, distribuições etc.)
+   sem depender do JSON da coluna `respostas`. */
+CREATE TABLE IF NOT EXISTS ipa_respostas_palavras (
+    id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    resposta_id INT UNSIGNED NOT NULL,
+    quadro      TINYINT UNSIGNED NOT NULL,             -- 1=Início, 2=Durante, 3=Término
+    palavra_id  VARCHAR(24) NOT NULL,                  -- ex.: Q1_ABERTO
+    estilo      CHAR(1) NOT NULL,                      -- A / C / P / E
+    peso        TINYINT UNSIGNED NOT NULL,             -- 0..11
+    CONSTRAINT fk_resp FOREIGN KEY (resposta_id) REFERENCES ipa_respostas(id) ON DELETE CASCADE,
+    KEY idx_palavra (palavra_id),
+    KEY idx_resposta (resposta_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS ipa_360 (
     id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     criado_em     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -43,4 +58,16 @@ CREATE TABLE IF NOT EXISTS ipa_360 (
     ip            VARCHAR(45)  NULL,
     KEY idx_avaliado (avaliado, organizacao),
     KEY idx_criado (criado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ipa_360_palavras (
+    id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    avaliacao_id INT UNSIGNED NOT NULL,
+    quadro       TINYINT UNSIGNED NOT NULL,
+    palavra_id   VARCHAR(24) NOT NULL,
+    estilo       CHAR(1) NOT NULL,
+    peso         TINYINT UNSIGNED NOT NULL,
+    CONSTRAINT fk_360 FOREIGN KEY (avaliacao_id) REFERENCES ipa_360(id) ON DELETE CASCADE,
+    KEY idx_palavra360 (palavra_id),
+    KEY idx_avaliacao (avaliacao_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

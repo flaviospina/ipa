@@ -9,8 +9,7 @@ questionário (3 quadros × 12 palavras) → cálculo → **relatório individua
 | Pasta | Conteúdo |
 |---|---|
 | `webapp/` | Aplicação completa (HTML/CSS/JS puros, sem build). Publicar esta pasta no servidor. |
-| `api/` | **Backend recomendado**: MySQL/PHP na própria hospedagem (`api.php` + `schema.sql` + guia). |
-| `backend/` | Backend legado em Google Apps Script (mantido como alternativa). |
+| `api/` | **Backend único**: MySQL/PHP na própria hospedagem (`api.php` + `schema.sql` + guia). Todos os dados — diagnósticos IPA, avaliações 360° e relatórios — são registrados no banco. |
 | `ANALISE-SISTEMA-IPA.md` | Análise detalhada do sistema, benchmark de mercado e roadmap de evolução. |
 
 ## Publicação rápida
@@ -19,9 +18,10 @@ questionário (3 quadros × 12 palavras) → cálculo → **relatório individua
    preencha o `config.php` e envie a pasta `api/` para o servidor.
 2. Envie `webapp/` (como `ipa/`), `painel/` e `home/` — o front-end já aponta
    para `../api/api.php` (mesma origem, sem configuração).
-4. **Execute o checklist de segurança** do `backend/README.md` (arquivar a URL antiga
-   do Apps Script, remover as páginas antigas `acp/` e `ipa/` e a aba "Configurações"
-   da home).
+3. **Checklist de segurança**: arquivar TODAS as implantações antigas do Google
+   Apps Script (Implantar → Gerenciar implantações → Arquivar) — a planilha foi
+   descontinuada; remover do servidor as páginas antigas `acp/` e `ipa/` originais
+   e a aba "Configurações" da home antiga.
 
 ## O que mudou em relação à versão anterior
 

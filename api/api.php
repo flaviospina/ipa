@@ -66,6 +66,17 @@ function validar_respostas($respostas): ?string {
     return null;
 }
 
+/* grava o detalhe normalizado (36 linhas, uma por palavra) */
+function gravar_palavras(string $tabela, string $fkCol, int $fkId, array $respostas): void {
+    $st = db()->prepare("INSERT INTO {$tabela} ({$fkCol}, quadro, palavra_id, estilo, peso) VALUES (?,?,?,?,?)");
+    foreach (EXPECTED as $q => $ids) {
+        foreach ($ids as $i => $id) {
+            $estilo = $i < 3 ? 'A' : ($i < 6 ? 'C' : ($i < 9 ? 'P' : 'E'));
+            $st->execute([$fkId, $q, $id, $estilo, (int)$respostas[$id]]);
+        }
+    }
+}
+
 function calcular_scores(array $respostas): array {
     $s = ['A' => 0, 'C' => 0, 'P' => 0, 'E' => 0];
     foreach (EXPECTED as $ids) {
@@ -252,11 +263,14 @@ try {
         $erro = validar_respostas($data['respostas'] ?? null);
         if ($erro) out(['ok' => false, 'code' => $erro]);
         $s = calcular_scores($data['respostas']);
+        db()->beginTransaction();
         $st = db()->prepare(
             'INSERT INTO ipa_360 (avaliado, organizacao, relacao, respostas, score_a, score_c, score_p, score_e, total, ip)
              VALUES (?,?,?,?,?,?,?,?,?,?)');
         $st->execute([$avaliado, $org, $relacao, json_encode($data['respostas']),
                       $s['A'], $s['C'], $s['P'], $s['E'], array_sum($s), $ip]);
+        gravar_palavras('ipa_360_palavras', 'avaliacao_id', (int)db()->lastInsertId(), $data['respostas']);
+        db()->commit();
         out(['ok' => true, 'code' => 'saved_360']);
     }
 
@@ -274,6 +288,7 @@ try {
     [$predominante, $regra] = classificar($s);
     $token = bin2hex(random_bytes(16));
 
+    db()->beginTransaction();
     $st = db()->prepare(
         'INSERT INTO ipa_respostas (cliente_id, token, organizacao, nome, funcao, consentimento, respostas,
                                     score_a, score_c, score_p, score_e, total, predominante, regra, ip)
@@ -281,14 +296,18 @@ try {
     $st->execute([$cid, $token, $org, $nome, $funcao, limpar($data['consentimento']),
                   json_encode($data['respostas']), $s['A'], $s['C'], $s['P'], $s['E'],
                   array_sum($s), $predominante, $regra, $ip]);
+    gravar_palavras('ipa_respostas_palavras', 'resposta_id', (int)db()->lastInsertId(), $data['respostas']);
+    db()->commit();
 
     $ia = gerar_analise_ia($data, $data['respostas'], $s);
     out(['ok' => true, 'code' => 'saved', 'ia' => $ia]);
 
 } catch (PDOException $e) {
+    try { if (db()->inTransaction()) db()->rollBack(); } catch (Throwable $x) {}
     /* 23000 = violação de chave única (reenvio da fila com o mesmo cliente_id) */
     if ($e->getCode() === '23000') out(['ok' => true, 'code' => 'duplicate_ignored', 'ia' => null]);
     out(['ok' => false, 'code' => 'db_error']);
 } catch (Throwable $e) {
+    try { if (db()->inTransaction()) db()->rollBack(); } catch (Throwable $x) {}
     out(['ok' => false, 'code' => 'error']);
 }

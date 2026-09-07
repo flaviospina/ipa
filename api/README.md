@@ -1,4 +1,4 @@
-# Backend MySQL (recomendado) — substitui o Google Apps Script
+# Backend MySQL — armazenamento único do sistema (planilha Google descontinuada)
 
 Roda **na mesma hospedagem do site** (HostGator): mesma origem, sem CORS, sem
 implantações, sem URL externa. Testado de ponta a ponta (14 testes de integração).
@@ -40,6 +40,18 @@ No painel, a chave de acesso é a `PANEL_KEY` do `config.php`.
 | `360` | POST | Grava a avaliação externa anônima (IPA 360°). |
 | `list` / `list360` | GET + `key` | Alimenta o Painel do Consultor (exige `PANEL_KEY`). |
 | `relatorio` | GET + `token` | Serve o relatório arquivado por link secreto (o link aparece no painel). |
+
+## Tabelas criadas pelo `schema.sql`
+
+| Tabela | Conteúdo |
+|---|---|
+| `ipa_respostas` | 1 linha por diagnóstico: identificação, consentimento LGPD, JSON das 36 notas, scores, classificação, relatório arquivado e token do link. |
+| `ipa_respostas_palavras` | 36 linhas por diagnóstico (uma por palavra): quadro, estilo e peso — pronto para análises SQL (médias por palavra, distribuições, psicometria). |
+| `ipa_360` | 1 linha por avaliação externa (anônima): avaliado, organização, relação e scores. |
+| `ipa_360_palavras` | 36 linhas por avaliação 360°, no mesmo formato normalizado. |
+
+Reimportar o `schema.sql` é seguro (usa `CREATE TABLE IF NOT EXISTS`): se você já
+tinha criado o banco antes, importe de novo que só as tabelas novas são criadas.
 
 ## Exportar para Excel
 

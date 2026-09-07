@@ -1,26 +1,18 @@
 /* ============================================================
-   Configuração do IPA
+   Configuração do IPA — armazenamento 100% em banco MySQL
    ------------------------------------------------------------
-   SEGURANÇA — leia antes de publicar:
-
-   1. ENDPOINT: aponte para a NOVA implantação do Google Apps
-      Script (backend/apps-script.gs). A URL antiga (AKfycbxI2...)
-      ficou exposta publicamente no código-fonte das páginas
-      anteriores e deve ser DESATIVADA no painel do Apps Script
-      (Implantar > Gerenciar implantações > Arquivar).
-
-   2. Não existe mais área administrativa nem senha no front-end.
-      Simulações de teste são feitas apenas pela função de teste
-      do próprio Apps Script (ver backend/README.md) e gravam em
-      aba separada, nunca na base de produção.
-
+   1. O backend é a pasta api/ (api.php + config.php), hospedada
+      junto com o site. Guia completo em api/README.md.
+   2. As implantações antigas do Google Apps Script devem ser
+      ARQUIVADAS (Implantar > Gerenciar implantações > Arquivar)
+      — as URLs ficaram expostas e a planilha foi descontinuada.
    3. O backend valida cada envio (permutação 0–11 por quadro),
       o que torna inútil a injeção de dados fabricados.
    ============================================================ */
 const IPA_CONFIG = {
     // Backend MySQL/PHP hospedado junto com o site (pasta api/ irmã desta).
-    // Mesma origem = sem CORS, sem implantação, sem URL externa.
-    // (Legado: para voltar ao Google Apps Script, cole aqui a URL /exec.)
+    // TODOS os dados são registrados no banco MySQL — a planilha Google
+    // foi descontinuada. Mesma origem = sem CORS, sem implantação.
     ENDPOINT: '../api/api.php',
 
     // Versão do esquema de dados enviado ao backend
