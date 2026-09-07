@@ -9,14 +9,16 @@ questionário (3 quadros × 12 palavras) → cálculo → **relatório individua
 | Pasta | Conteúdo |
 |---|---|
 | `webapp/` | Aplicação completa (HTML/CSS/JS puros, sem build). Publicar esta pasta no servidor. |
-| `backend/` | Google Apps Script endurecido (`apps-script.gs`) + guia de implantação e checklist de segurança (`README.md`). |
+| `api/` | **Backend recomendado**: MySQL/PHP na própria hospedagem (`api.php` + `schema.sql` + guia). |
+| `backend/` | Backend legado em Google Apps Script (mantido como alternativa). |
 | `ANALISE-SISTEMA-IPA.md` | Análise detalhada do sistema, benchmark de mercado e roadmap de evolução. |
 
 ## Publicação rápida
 
-1. Siga o `backend/README.md` para implantar o Apps Script e obter a URL `/exec`.
-2. Cole a URL em `webapp/js/config.js` (`ENDPOINT`).
-3. Envie a pasta `webapp/` para o servidor (ex.: `https://itthrive.com.br/vipedia/ipa/`).
+1. Siga o `api/README.md`: crie o banco MySQL no cPanel, importe o `schema.sql`,
+   preencha o `config.php` e envie a pasta `api/` para o servidor.
+2. Envie `webapp/` (como `ipa/`), `painel/` e `home/` — o front-end já aponta
+   para `../api/api.php` (mesma origem, sem configuração).
 4. **Execute o checklist de segurança** do `backend/README.md` (arquivar a URL antiga
    do Apps Script, remover as páginas antigas `acp/` e `ipa/` e a aba "Configurações"
    da home).

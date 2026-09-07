@@ -87,9 +87,9 @@ ACP.FASE1 = [
     'Com a identificação do estilo, o profissional pode reconhecer suas preferências, ampliar sua consciência e aprimorar sua atuação para oferecer um atendimento mais completo, eficaz e humanizado, apurado pela pontuação em cada um dos estilos, decorrente de suas escolhas no preenchimento do IPA — Indicador do Perfil de Atendimento.'
 ];
 
-ACP.FASE2 = (estiloNome) => [
+ACP.FASE2 = [
     'Apresentar o Perfil de Atendimento com base nas pontuações obtidas no IPA.',
-    `Gerar consciência comportamental sobre o estilo <strong>${estiloNome}</strong> e suas interações dinâmicas.`,
+    'Gerar consciência comportamental sobre o seu <strong>Estilo Predominante</strong> e suas interações dinâmicas.',
     'Identificar áreas de desenvolvimento e oportunidades de aprimoramento.',
     'Oferecer insights práticos para elevar a qualidade do atendimento e fortalecer a atuação profissional.'
 ];
@@ -163,4 +163,114 @@ ACP.CRITERIOS = {
     flexivel: (d) => `A diferença de <strong>${d} pontos</strong> entre o estilo predominante e o secundário é inferior a 15 pontos. Isso indica <strong>relativa flexibilidade</strong>: a tendência é transitar do primeiro para o segundo estilo sempre que a situação exigir. Não há uma preferência rígida — há o entendimento de que é preciso ajustar a conduta para melhor atender o cliente.`,
     equilibradoNatural: 'Todas as diferenças entre as pontuações dos quatro estilos são menores que 15 pontos. Este é o padrão do <strong>Equilibrado Natural (Adaptativo)</strong>: alta flexibilidade situacional, sem apego a nenhum estilo. Dependendo da percepção do comportamento do cliente e da situação, o profissional adota o estilo que melhor se adequa àquele atendimento — inclusive variando de estilo dentro de um mesmo atendimento.',
     equilibradoModelo: 'O Estilo Equilibrado é a primeira preferência do pesquisado. Nesse caso, as diferenças de pontuação perdem peso crítico: o profissional já se alinha ao padrão de referência do modelo, integrando de maneira fluida as três variáveis do atendimento.'
+};
+
+
+/* ---------- Explicação da premissa dos critérios (Fase 4) ---------- */
+ACP.CRITERIOS.premissa = 'Como ler este diagnóstico: o modelo compara as diferenças de pontuação entre os estilos consecutivos. O limiar de <strong>15 pontos</strong> (cerca de 7,5% do total de 198) marca a fronteira entre uma inclinação leve e um padrão rígido de conduta. Diferença igual ou maior que 15 entre a 1ª e a 2ª preferência indica <strong>forte apego</strong> ao estilo predominante — a crença de que aquela é a melhor forma de atender, mantida mesmo quando a situação pede outra conduta. Diferença menor que 15 indica <strong>trânsito natural</strong> entre o primeiro e o segundo estilo. Quando todas as diferenças são menores que 15, o perfil é <strong>Adaptativo (Equilibrado Natural)</strong>. E quando o Estilo Equilibrado é a 1ª preferência, o profissional já se alinha à referência do modelo.';
+
+/* ---------- Autopoliciamento detalhado por estilo (Fase 8) ---------- */
+ACP.PERFIS.A.comoFazer = [
+    'Antes de agir pelo afeto, pergunte-se: "o que o protocolo pede aqui?" — e cumpra-o antes de personalizar.',
+    'Dê um limite de tempo consciente à conversa de acolhimento e faça a transição clara para a execução técnica.',
+    'Quando sentir vontade de "resolver pelo cliente", devolva o protagonismo: pergunte o que ele prefere.'
+];
+ACP.PERFIS.C.comoFazer = [
+    'Aplique a regra dos 30 segundos: fale, pare e pergunte — transforme explicação em diálogo.',
+    'Antes de detalhar tecnicamente, pergunte ao cliente o quanto ele quer saber.',
+    'Pratique o silêncio ativo: ouça até o fim, sem preparar a resposta enquanto o outro fala.'
+];
+ACP.PERFIS.P.comoFazer = [
+    'A cada etapa técnica concluída, faça contato visual e diga uma frase de conexão com o cliente.',
+    'Traduza um termo técnico por vez para a linguagem do cliente.',
+    'Inclua no seu checklist um item não técnico: "como o cliente está se sentindo agora?".'
+];
+ACP.PERFIS.E.comoFazer = [
+    'Sob pressão, verifique se gesto e palavra continuam coerentes — é o primeiro ponto que cede.',
+    'A cada atendimento, reavalie conscientemente qual variável a situação está pedindo mais.',
+    'Compartilhe sua prática com colegas — o equilíbrio se sustenta com feedback contínuo.'
+];
+
+/* ============================================================
+   Detalhamento das 36 palavras (Fases 6 e 7):
+   baixo = o que significa a pontuação baixa (0 a 2)
+   alto  = o que significa a valorização excessiva (9 a 11)
+   A faixa de equilíbrio de referência situa-se entre 4 e 6 pontos.
+   ============================================================ */
+ACP.DETALHE = {
+    /* ---- Q1 · Início ---- */
+    Q1_ABERTO:      { baixo: 'você adota uma postura mais reservada ou defensiva no primeiro contato, o que pode bloquear o rapport e travar a fluência da comunicação inicial.',
+                      alto: 'a abertura excessiva pode dispersar o foco do atendimento, alongando conversas além do necessário e atrasando os trâmites do início.' },
+    Q1_ACOLHEDOR:   { baixo: 'a recepção tende a ser percebida como fria — o cliente sente-se "um número", o que fere a sua necessidade de autoestima logo na entrada.',
+                      alto: 'o acolhimento excessivo pode soar invasivo ou artificial (o "sorriso falso"), despertando desconfiança sobre o interesse por trás de tanta cordialidade.' },
+    Q1_ATENCIOSO:   { baixo: 'o cliente pode perceber desinteresse pela sua pessoa — o pior sentimento que um atendimento desperta: sentir-se tratado como objeto.',
+                      alto: 'o excesso de atenção incomoda com o tempo: o cliente passa a se perguntar que interesse haveria por trás de tanto zelo.' },
+    Q1_CLARO:       { baixo: 'as informações iniciais tendem a ficar confusas, gerando insegurança sobre o que vai acontecer e como o serviço será conduzido.',
+                      alto: 'a simplificação excessiva pode soar didática demais e infantilizar o cliente, além de alongar desnecessariamente o início.' },
+    Q1_EXPLICITO:   { baixo: 'regras, etapas e condições ficam subentendidas; as expectativas desalinham no início e cobram o preço no término do atendimento.',
+                      alto: 'o detalhamento excessivo de regras e condições logo na chegada pode intimidar o cliente e burocratizar o acolhimento.' },
+    Q1_ENFATICO_C:  { baixo: 'os pontos essenciais do atendimento tendem a passar despercebidos pelo cliente por falta de destaque.',
+                      alto: 'a ênfase constante em tudo soa como pressão ou alarme, gerando tensão desnecessária no primeiro contato.' },
+    Q1_CONCENTRADO: { baixo: 'a baixa concentração nos procedimentos administrativos do início tem alto potencial de desatenção: erros nos registros obrigatórios e nas anotações sobre necessidades e expectativas, comprometendo as demais etapas do ciclo e gerando retrabalho.',
+                      alto: 'a alta concentração nos procedimentos no início indica forte apego aos protocolos, com pouca ou nenhuma flexibilidade para perceber o estado emocional do cliente — dando a impressão de um tratamento desumanizado.' },
+    Q1_FORMAL:      { baixo: 'você não valoriza as formalidades e os padrões institucionais estabelecidos, o que pode comprometer a imagem de competência técnica sua e da organização.',
+                      alto: 'o excesso de formalidade pode ser percebido pelo cliente como desvalorização da sua pessoa, afastamento e frieza, despertando sentimentos de rejeição e antipatia.' },
+    Q1_IMPESSOAL:   { baixo: 'você não valoriza a impessoalidade no tratamento — pelo contrário, valoriza um atendimento pessoal e personalizado; o cuidado é não deixar a atenção à pessoa se sobrepor à isenção e aos procedimentos.',
+                      alto: 'a impessoalidade altamente valorizada pode levar o cliente a perceber um atendimento distante e desumano, como se fosse realizado por um robô.' },
+    Q1_FLEXIVEL:    { baixo: 'a tendência é usar o mesmo padrão de recepção para todos, ignorando que cada cliente tem necessidades e expectativas próprias.',
+                      alto: 'a flexibilidade excessiva vira falta de padrão — cada atendimento de um jeito — comprometendo a previsibilidade e a imagem institucional.' },
+    Q1_INTERESSADO: { baixo: 'há risco de supor ou julgar a demanda sem ouvir, levando a um diagnóstico errado do que o cliente realmente precisa.',
+                      alto: 'o interesse excessivo pode parecer invasivo, entrando em terrenos que o cliente não quis abrir.' },
+    Q1_CORDIAL_E:   { baixo: 'a aspereza no primeiro contato cria uma barreira difícil de reverter nos momentos seguintes do atendimento.',
+                      alto: 'a cordialidade excessiva pode ser lida como bajulação comercial — e o cliente passa a desconfiar da intenção.' },
+    /* ---- Q2 · Durante ---- */
+    Q2_COMPREENSIVO:{ baixo: 'as reações emocionais do cliente durante a execução tendem a ser ignoradas, transformando o atendimento em linha de produção.',
+                      alto: 'a compreensão excessiva pode deixar você refém das emoções do cliente, atrasando ou distorcendo a execução técnica.' },
+    Q2_CUIDADOSO:   { baixo: 'a execução sem zelo é percebida pelo cliente mesmo sem conhecimento técnico — e interpretada como incompetência.',
+                      alto: 'o cuidado excessivo vira lentidão e hesitação, que o cliente interpreta como insegurança técnica.' },
+    Q2_RESPEITOSO:  { baixo: 'o desrespeito, ainda que sutil, viola a necessidade de autoestima — um "pecado mortal" do atendimento.',
+                      alto: 'a reverência exagerada cria uma distância cerimoniosa que trava a naturalidade da relação.' },
+    Q2_DESCRITIVO:  { baixo: 'sem descrição do que está sendo feito, o cliente fica refém do desconhecido — e o medo cresce no silêncio.',
+                      alto: 'descrever demais cada passo vira prolixidade técnica: confunde e assusta em vez de tranquilizar.' },
+    Q2_INTERATIVO:  { baixo: 'o monólogo técnico exclui o cliente do próprio atendimento, gerando sensação de desvalorização.',
+                      alto: 'a interação constante dispersa o foco da execução e alonga o atendimento além do necessário.' },
+    Q2_OUVINTE:     { baixo: 'perde-se a informação que ajustaria o procedimento à real necessidade — a falha mais comum e mais custosa do atendimento.',
+                      alto: 'só ouvir, sem conduzir, deixa o atendimento sem direção; o cliente espera também orientação e posicionamento.' },
+    Q2_DISTANTE:    { baixo: 'você não valoriza o distanciamento — prefere proximidade com o cliente; o cuidado é que o envolvimento emocional muito forte pode comprometer a execução dos procedimentos técnicos requeridos.',
+                      alto: 'o distanciamento muito valorizado é percebido como frieza e desinteresse pela pessoa que está sendo atendida.' },
+    Q2_EFICIENTE:   { baixo: 'a baixa eficiência é percebida pelo cliente em ações que se repetem, desperdício de materiais e movimentos desnecessários — uma percepção sutil que se amplia ao longo do processo.',
+                      alto: 'a eficiência valorizada ao extremo gera percepção de rigidez, inflexibilidade e até uma certa desconfiança.' },
+    Q2_OBJETIVO:    { baixo: 'o atendimento tende a se perder em desvios, e o cliente sente que o seu tempo não é respeitado.',
+                      alto: 'a objetividade extrema atropela as reações do cliente — sensação de estar numa esteira, não num atendimento.' },
+    Q2_RAPIDO_E:    { baixo: 'indica um atendimento lento e moroso, que pode gerar impaciência e reações mais exacerbadas dos clientes.',
+                      alto: 'a rapidez excessiva é percebida como descaso ou desprezo; no momento da execução técnica, o cliente se sente inseguro e desconfiado da competência do profissional e da organização.' },
+    Q2_PRECISO:     { baixo: 'a imprecisão — no gesto ou na informação — planta a dúvida sobre a competência do profissional.',
+                      alto: 'o perfeccionismo excessivo trava decisões e alonga o processo sem ganho perceptível para o cliente.' },
+    Q2_SOLICITO:    { baixo: 'a indisponibilidade percebida faz o cliente desistir de perguntar — e, muitas vezes, de voltar.',
+                      alto: 'a solicitude excessiva soa servil e pode incomodar, tirando a naturalidade da relação.' },
+    /* ---- Q3 · Término ---- */
+    Q3_AUTENTICO:   { baixo: 'o fechamento tende a acontecer atrás de uma fachada profissional; a incoerência entre gesto e palavra invalida o discurso e gera desconfiança.',
+                      alto: 'a autenticidade sem filtro pode virar franqueza dura em momentos que pedem delicadeza — especialmente na entrega de más notícias.' },
+    Q3_CORDIAL_A:   { baixo: 'um fechamento seco apaga a boa impressão construída — pela "Regra do Pico-Fim", a memória da experiência é marcada pelo final.',
+                      alto: 'prolongar demais a despedida atrasa o encerramento e pode constranger o cliente.' },
+    Q3_EMPATICO:    { baixo: 'entregar resultados sem empatia — sobretudo notícias difíceis — pode transformar o cliente em detrator.',
+                      alto: 'a empatia excessiva pode contaminar você emocionalmente e comprometer a objetividade da informação a ser dada.' },
+    Q3_ACESSIVEL:   { baixo: 'fechar as portas ao final interrompe a jornada do cliente e impede a fidelização — o atendimento só termina quando o objetivo dele é atingido.',
+                      alto: 'a disponibilidade ilimitada gera dependência do cliente e compromete a agenda e a sustentabilidade do serviço.' },
+    Q3_ELOQUENTE:   { baixo: 'um fechamento hesitante deixa dúvidas sobre o resultado — mesmo quando o serviço foi bem executado.',
+                      alto: 'a eloquência excessiva vira discurso: o cliente quer clareza sobre o resultado, não retórica.' },
+    Q3_ESPONTANEO:  { baixo: 'o encerramento mecânico, de script, desfaz a percepção de cuidado construída ao longo da relação.',
+                      alto: 'a espontaneidade demais pode escapar do padrão institucional e gerar uma informalidade inadequada ao contexto.' },
+    Q3_DIRETO:      { baixo: 'indica comportamentos evasivos, cheios de rodeios, percebidos pelo cliente como indiretos, incompletos ou dispersos — o que alimenta desconfiança e ansiedade.',
+                      alto: 'o foco extremo no procedimento, sem considerar as reações do cliente — como se ele fosse um objeto a ser reparado — gera ansiedade, indignação e, em certos casos, reações emocionais intensas.' },
+    Q3_PROTOCOLAR:  { baixo: 'indica que você segue o mínimo necessário dos protocolos técnicos e administrativos, o que pode gerar erros procedimentais, não conformidades e a percepção de violação da equidade e do tratamento justo.',
+                      alto: 'o forte apego aos protocolos gera um comportamento excessivamente burocrático, em que a execução rigorosa das normas pode ser percebida pelo cliente como desprezo pelas suas necessidades.' },
+    Q3_RAPIDO_P:    { baixo: 'a lentidão no encerramento gera sensação de descaso e até de incompetência administrativa, despertando desconfiança inclusive do resultado técnico já entregue.',
+                      alto: 'a pressa no término pode indicar a intenção de "se livrar" do cliente, sem oferecer todas as recomendações necessárias nem criar espaço para perguntas e explicações.' },
+    Q3_CONSISTENTE: { baixo: 'a queda de padrão no final revela que o cuidado era protocolo, não valor — e o cliente percebe.',
+                      alto: 'a consistência rígida impede os ajustes finais que a situação de cada cliente pede.' },
+    Q3_PRESTATIVO:  { baixo: 'o cliente sai com o serviço feito, mas sem saber como sustentar o resultado depois da porta.',
+                      alto: 'o excesso de orientações no fechamento sobrecarrega e confunde — pouco é retido pelo cliente.' },
+    Q3_ENFATICO_E:  { baixo: 'recomendações ditas sem ênfase são esquecidas — e o resultado se perde no pós-atendimento.',
+                      alto: 'a ênfase dramática no fechamento pode assustar e gerar ansiedade desnecessária.' }
 };

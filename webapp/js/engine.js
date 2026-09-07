@@ -141,23 +141,29 @@ Engine.renderRelatorio = function (dados, r, ia) {
 
     const graficoGeral = pieChart(r.ranking, r.total);
 
-    /* Fase 5 — pequenos múltiplos por momento (máx. 30 pts por estilo/momento) */
-    const momentos = ACP.QUADROS.map(q => {
+    /* Fase 5 — matriz única estilos × momentos + implicações de desenvolvimento */
+    const matrizLinhas = ['A', 'C', 'P', 'E'].map(k => {
+        const vals = [1, 2, 3].map(q => r.porMomento[q][k]);
+        return `<tr>
+            <td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[k].cor}"></span>${ACP.STYLES[k].nome}</span></td>
+            ${vals.map((v, i) => `<td class="num${v === Math.max(...['A','C','P','E'].map(x => r.porMomento[i+1][x])) ? ' hl-cell' : ''}">${v}</td>`).join('')}
+        </tr>`;
+    }).join('');
+    const matriz = `<table class="rp-table rp-table-sm rp-matrix">
+        <thead><tr><th>Estilos / Momentos</th><th class="num">Q1 · Início</th><th class="num">Q2 · Durante</th><th class="num">Q3 · Término</th></tr></thead>
+        <tbody>${matrizLinhas}
+        <tr class="tot"><td>Total</td><td class="num">66</td><td class="num">66</td><td class="num">66</td></tr></tbody>
+    </table>`;
+
+    const implicacoes = ACP.QUADROS.map(q => {
         const m = r.porMomento[q.id];
-        const rows = ['A', 'C', 'P', 'E'].map(k =>
-            barRow(k, ACP.STYLES[k].cor, m[k], 30, String(m[k]))
-        ).join('');
         const lider = ['A', 'C', 'P', 'E'].reduce((a, b) => m[a] >= m[b] ? a : b);
         const esperado = q.enfase;
-        const ok = lider === esperado || m[lider] - m[esperado] <= 3;
-        const nota = ok
-            ? `Sua ênfase em <strong>${ACP.STYLES[lider].curto}</strong> está alinhada ao que o momento pede.`
-            : `Sua maior ênfase foi <strong>${ACP.STYLES[lider].curto}</strong>, enquanto este momento tipicamente pede destaque em <strong>${ACP.STYLES[esperado].curto}</strong> — um ponto de observação.`;
-        return `<div class="rp-moment">
-            <h4>Q${q.id} · ${esc(q.momento)}</h4>
-            ${rows}
-            <p class="chart-note">${nota}</p>
-        </div>`;
+        const alinhado = lider === esperado || m[lider] - m[esperado] <= 3;
+        if (alinhado) {
+            return `<p><strong>Q${q.id} — ${esc(q.momento)}:</strong> sua maior ênfase (${ACP.STYLES[lider].curto}, ${m[lider]} pontos) está alinhada ao que este momento tipicamente pede. <em>Implicação:</em> este é um ponto forte a preservar — a necessidade de <strong>${ACP.STYLES[esperado].necessidade.toLowerCase()}</strong> do cliente tende a ser bem atendida aqui.</p>`;
+        }
+        return `<p><strong>Q${q.id} — ${esc(q.momento)}:</strong> sua maior ênfase foi <strong>${ACP.STYLES[lider].curto}</strong> (${m[lider]} pontos), enquanto este momento tipicamente pede destaque em <strong>${ACP.STYLES[esperado].curto}</strong> (você atribuiu ${m[esperado]} pontos). <em>Implicação para o desenvolvimento:</em> quando a variável ${ACP.STYLES[esperado].curto} fica em segundo plano neste momento, a necessidade de <strong>${ACP.STYLES[esperado].necessidade.toLowerCase()}</strong> do cliente pode ficar descoberta. O caminho não é abandonar sua força em ${ACP.STYLES[lider].curto}, e sim incluir conscientemente comportamentos de ${ACP.STYLES[esperado].curto} neste momento do atendimento.</p>`;
     }).join('');
 
     const analiseMomentos = ACP.QUADROS.map(q => {
@@ -167,38 +173,57 @@ Engine.renderRelatorio = function (dados, r, ia) {
         Nas suas escolhas, a variável mais valorizada aqui foi <strong>${ACP.STYLES[lider].curto}</strong> (${m[lider]} pontos).</p>`;
     }).join('');
 
-    /* Fase 6 — talentos e pontos a desenvolver */
+    /* Fase 6 — tabelas de talentos e pontos a desenvolver */
+    const cabecaTabela = `<thead><tr><th>Palavra</th><th class="num">Pontos</th><th>Variável</th><th>Momento</th><th>Significado</th></tr></thead>`;
+    const linhaPalavra = (p, comDetalhe) => {
+        const det = ACP.DETALHE[p.id] || {};
+        const detalhe = comDetalhe && det.baixo ? `<tr class="det"><td colspan="5">
+            <strong>Pontuação baixa (0 a 2):</strong> ${esc(det.baixo)}
+            <strong>No sentido oposto, a valorização excessiva (9 a 11):</strong> ${esc(det.alto)}
+            <em>A faixa de equilíbrio situa-se entre 4 e 6 pontos.</em></td></tr>` : '';
+        return `<tr>
+            <td><strong>${esc(p.w)}</strong></td>
+            <td class="num"><span class="w-pill" style="background:${comDetalhe ? '#6b7280' : ACP.STYLES[p.st].cor}">${p.peso}</span></td>
+            <td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[p.st].cor}"></span>${ACP.STYLES[p.st].curto}</span></td>
+            <td>Q${p.quadro} · ${esc(p.momento.split(' ')[0])}</td>
+            <td class="sig">${esc(p.sig)}</td>
+        </tr>${detalhe}`;
+    };
     const talentosHtml = r.talentos.length
-        ? r.talentos.map(p => `<div class="rp-word">
-            <span class="w-score" style="background:${ACP.STYLES[p.st].cor}">${p.peso}</span>
-            <div class="w-body">
-                <span class="w-title">${esc(p.w)}<span class="w-tag">${ACP.STYLES[p.st].curto} · Q${p.quadro} ${esc(p.momento)}</span></span>
-                <p>${esc(p.sig)}</p>
-            </div>
-        </div>`).join('')
+        ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.talentos.map(p => linhaPalavra(p, false)).join('')}</tbody></table></div>`
         : '<p class="rp-prose">Nenhuma palavra recebeu pontuação 9 ou superior de forma destacada.</p>';
-
     const desenvolverHtml = r.desenvolver.length
-        ? r.desenvolver.map(p => `<div class="rp-word">
-            <span class="w-score" style="background:#6b7280">${p.peso}</span>
-            <div class="w-body">
-                <span class="w-title">${esc(p.w)}<span class="w-tag">${ACP.STYLES[p.st].curto} · Q${p.quadro} ${esc(p.momento)}</span></span>
-                <p>${esc(p.risco)}</p>
-            </div>
-        </div>`).join('')
+        ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.desenvolver.map(p => linhaPalavra(p, true)).join('')}</tbody></table></div>`
         : '<p class="rp-prose">Nenhuma palavra ficou com pontuação crítica (0 a 2).</p>';
 
-    /* Fase 7 — ações específicas para as palavras menos pontuadas */
-    const acoes = r.desenvolver.slice(0, 4).map(p =>
-        `<li><div><strong>${esc(p.w)}</strong> (${ACP.STYLES[p.st].curto}, no momento "${esc(p.momento)}"): ${esc(p.risco)} Pratique deliberadamente este comportamento nos próximos atendimentos e peça feedback a um colega ou gestor.</div></li>`
-    ).join('');
+    /* Fase 7 — Campo de Forças: moderar as práticas supervalorizadas e
+       fortalecer as negligenciadas até a faixa de equilíbrio (4 a 6) */
+    const moderar = r.talentos.filter(p => p.peso >= 10).slice(0, 4).map(p => {
+        const det = ACP.DETALHE[p.id] || {};
+        return `<li><div><strong>${esc(p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}) — força a preservar, intensidade a calibrar. ${esc(det.alto || '')} <em>Estratégia:</em> use esta força quando a situação a pedir — e reduza conscientemente sua intensidade quando o momento exigir outra variável.</div></li>`;
+    }).join('');
+    const fortalecer = r.desenvolver.slice(0, 4).map(p => {
+        const det = ACP.DETALHE[p.id] || {};
+        return `<li><div><strong>${esc(p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}). ${esc(det.baixo || p.risco)} <em>Estratégia:</em> a meta não é maximizar esta prática, e sim levá-la à faixa de equilíbrio (4 a 6): escolha um atendimento por dia para exercitá-la conscientemente no momento "${esc(p.momento)}", sem abandonar as suas forças, e registre a reação do cliente.</div></li>`;
+    }).join('');
+    const lewin = `<div class="rp-diag"><h4>O método: Campo de Forças (Kurt Lewin)</h4>
+        <p>Toda mudança de comportamento acontece dentro de um campo de forças: as <strong>forças impulsoras</strong>, que estimulam a mudança (feedbacks recebidos, situações em que o estilo atual não funcionou, o desejo de crescer), e as <strong>forças restritivas</strong>, que a impedem (o hábito, a crença de que "meu jeito sempre funcionou", o desconforto de agir diferente). Desenvolver-se é quebrar o equilíbrio atual e construir um novo: <strong>fortalecer as práticas negligenciadas</strong> (notas 0 a 2) e <strong>modular as supervalorizadas</strong> (notas 9 a 11), aproximando ambas da faixa de equilíbrio — em que cada variável é usada na intensidade que a situação pede.</p></div>`;
 
-    /* Fase 8 — plano de ação */
+    /* Fase 8 — plano de ação com o "como fazer" */
+    const alvos = r.desenvolver.slice(0, 2).map(p => `<strong>${esc(p.w)}</strong> (Q${p.quadro} · ${esc(p.momento.split(' ')[0])})`).join(' e ');
+    const comoFazer = (perfilPred.comoFazer || []).map(x => `<li>${esc(x)}</li>`).join('');
     const plano = `
-        <li><div><strong>Compromisso de versatilidade.</strong> Em cada atendimento, pergunte-se conscientemente: o que <em>esta</em> pessoa, <em>nesta</em> situação, precisa agora — Atenção, Comunicação ou Procedimento? Ajuste a conduta ao momento: acolhimento no início, escuta ativa e técnica durante, clareza e polidez no término.</div></li>
-        <li><div><strong>Foco de autopoliciamento do seu estilo predominante (${esc(perfilPred.titulo)}).</strong> ${esc(perfilPred.autopoliciamento)}</div></li>
-        <li><div><strong>Prática dos pontos a desenvolver.</strong> Escolha 1 ou 2 das palavras menos pontuadas e transforme-as em meta de prática semanal, observando a reação dos clientes.</div></li>
-        <li><div><strong>Feedback contínuo.</strong> Busque ativamente o retorno de clientes e colegas — o Estilo Equilibrado, nas pesquisas da Abordagem ACP, é quase sempre fruto de aprendizado a partir de feedbacks reais.</div></li>`;
+        <li><div><strong>Compromisso de versatilidade — como fazer, na prática:</strong>
+            <ul class="rp-sublist">
+                <li><em>Antes do atendimento (30 segundos):</em> observe o cliente e pergunte-se: o que esta pessoa, nesta situação, precisa agora — Atenção, Comunicação ou Procedimento?</li>
+                <li><em>No início:</em> acolha antes de registrar — cumprimente, olhe nos olhos e só então conduza os trâmites.</li>
+                <li><em>Durante:</em> a cada etapa técnica, faça um "checkpoint" consciente: o cliente está acompanhando? Como ele está reagindo?</li>
+                <li><em>No término:</em> informe o resultado com clareza, confirme se ficou alguma dúvida e encerre com polidez — o final define a memória da experiência.</li>
+            </ul></div></li>
+        <li><div><strong>Autopoliciamento do seu estilo predominante (${esc(perfilPred.titulo)}).</strong> ${esc(perfilPred.autopoliciamento)} Na prática:
+            <ul class="rp-sublist">${comoFazer}</ul></div></li>
+        <li><div><strong>Prática dos pontos a desenvolver.</strong> Suas metas de prática semanal são ${alvos || 'as palavras de menor pontuação identificadas na Fase 6'}: um atendimento por dia exercitando conscientemente cada uma, no momento correspondente, buscando a faixa de equilíbrio (4 a 6) — nem negligência, nem excesso.</div></li>
+        <li><div><strong>Feedback contínuo — como pedir:</strong> ao final da semana, pergunte a um colega ou gestor: "nesta semana, em que momento do atendimento você me viu mais rígido(a) no meu jeito habitual? E em que momento me viu me adaptar bem ao cliente?" Registre as respostas — o Estilo Equilibrado, nas pesquisas da Abordagem ACP, é quase sempre fruto de aprendizado a partir de feedbacks reais.</div></li>`;
 
     return `
     <!-- CAPA -->
@@ -207,7 +232,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
         <h1>Relatório do Perfil de Atendimento</h1>
         <div class="rp-sub">Abordagem ACP · Atenção, Comunicação e Procedimento</div>
         <p class="rp-nome">${esc(dados.nome)}</p>
-        <p class="rp-meta">${esc(dados.funcao)} · ${esc(dados.org)}</p>
+        <p class="rp-meta">${esc(dados.org)}</p>
         <p class="rp-date">${dataFmt}</p>
     </div>
 
@@ -223,7 +248,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
     <section class="rp-section">
         <h2>2 · Objetivos</h2>
         <div class="rp-prose"><p>Este relatório tem por objetivo:</p>
-        <ul>${ACP.FASE2(perfilPred.titulo).map(o => `<li>${o}</li>`).join('')}</ul></div>
+        <ul>${ACP.FASE2.map(o => `<li>${o}</li>`).join('')}</ul></div>
     </section>
 
     <!-- FASE 3 -->
@@ -234,7 +259,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
             <div class="h-name">${esc(perfilPred.titulo)}</div>
             <div class="h-pts">${pred.pontos} pontos · ${pred.pct.toFixed(1)}% do total de ${r.total}</div>
         </div>
-        <table class="rp-table">
+        <table class="rp-table rp-table-sm">
             <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Diferença</th><th>Classificação</th></tr></thead>
             <tbody>${tabela}</tbody>
         </table>
@@ -246,7 +271,8 @@ Engine.renderRelatorio = function (dados, r, ia) {
     <section class="rp-section">
         <h2>4 · Interpretação do Perfil</h2>
         <h3>Diagnóstico de flexibilidade</h3>
-        <div class="rp-diag"><p>${r.diagnostico}</p></div>
+        <div class="rp-diag"><h4>A premissa do modelo</h4><p>${ACP.CRITERIOS.premissa}</p></div>
+        <div class="rp-diag"><h4>O seu resultado</h4><p>${r.diagnostico}</p></div>
         <h3>Estilo predominante — ${esc(perfilPred.titulo)}</h3>
         <div class="rp-prose">${perfilPred.descricao.map(p => `<p>${esc(p)}</p>`).join('')}</div>
         <div class="rp-diag"><h4>Quando o estilo funciona bem</h4><p>${esc(perfilPred.adequado)}</p></div>
@@ -263,8 +289,11 @@ Engine.renderRelatorio = function (dados, r, ia) {
     <section class="rp-section">
         <h2>5 · Os Momentos do Atendimento</h2>
         <div class="rp-prose">${analiseMomentos}</div>
-        <div class="rp-moments">${momentos}</div>
-        <p class="chart-note">Pontos por estilo em cada momento (A = Atenção, C = Comunicação, P = Procedimento, E = Equilibrado; máximo 30 por estilo em cada quadro).</p>
+        <h3>Sua pontuação por estilo em cada momento</h3>
+        ${matriz}
+        <p class="chart-note">Cada momento distribui 66 pontos entre os quatro estilos (máximo de 30 por estilo). A célula destacada indica a maior ênfase do momento.</p>
+        <h3>O que isso significa para o seu desenvolvimento</h3>
+        <div class="rp-prose">${implicacoes}</div>
         ${iaBlock(ia.momentos, 'Como isso tende a aparecer nos seus atendimentos')}
     </section>
 
@@ -285,7 +314,9 @@ Engine.renderRelatorio = function (dados, r, ia) {
     <section class="rp-section">
         <h2>7 · Recomendações para o Desenvolvimento</h2>
         <div class="rp-prose">${ACP.FASE7.padrao.map(p => `<p>${esc(p)}</p>`).join('')}</div>
-        ${acoes ? `<h3>Ações prioritárias para o seu perfil</h3><ol class="rp-plan">${acoes}</ol>` : ''}
+        ${lewin}
+        ${moderar ? `<h3>Práticas a modular (notas 10 e 11 — forças que não podem virar excesso)</h3><ol class="rp-plan">${moderar}</ol>` : ''}
+        ${fortalecer ? `<h3>Práticas a fortalecer (notas 0 a 2 — rumo à faixa de equilíbrio)</h3><ol class="rp-plan">${fortalecer}</ol>` : ''}
         ${iaBlock(ia.recomendacoes, 'Recomendações personalizadas para você')}
     </section>
 

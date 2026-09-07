@@ -18,8 +18,10 @@
       o que torna inútil a injeção de dados fabricados.
    ============================================================ */
 const IPA_CONFIG = {
-    // URL da implantação do Apps Script (termina em /exec)
-    ENDPOINT: 'https://script.google.com/macros/s/AKfycbylZsc3U-fpSzHO9dYbtFB1dNKAsAhQCwXJ1R1IpiRJNr_074-47pmcjFRp7fvEq9W0HA/exec',
+    // Backend MySQL/PHP hospedado junto com o site (pasta api/ irmã desta).
+    // Mesma origem = sem CORS, sem implantação, sem URL externa.
+    // (Legado: para voltar ao Google Apps Script, cole aqui a URL /exec.)
+    ENDPOINT: '../api/api.php',
 
     // Versão do esquema de dados enviado ao backend
     SCHEMA_VERSION: 2,

@@ -184,6 +184,18 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
 .rp-table td { border-bottom: 1px solid var(--line); padding: 9px 10px; }
 .rp-table tr.hl td { background: var(--accent-soft); font-weight: 700; }
 .rp-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rp-table-sm { font-size: 12.5px; }
+.rp-table-sm th { font-size: 10px; padding: 6px 8px; }
+.rp-table-sm td { padding: 7px 8px; }
+.rp-matrix .hl-cell { background: var(--accent-soft); font-weight: 800; }
+.rp-matrix tr.tot td { border-top: 2px solid var(--line); font-weight: 800; color: var(--ink-3); }
+.tbl-scroll { overflow-x: auto; }
+.rp-words-tbl { min-width: 560px; }
+.rp-words-tbl td.sig { color: var(--ink-2); font-size: 12px; min-width: 220px; }
+.rp-words-tbl .w-pill { display: inline-block; min-width: 26px; text-align: center; color: #fff; font-weight: 800; border-radius: 7px; padding: 3px 6px; }
+.rp-words-tbl tr.det td { background: var(--surface); font-size: 12px; color: var(--ink-2); line-height: 1.6; padding: 10px 14px; }
+.rp-words-tbl tr.det strong { color: var(--ink); }
+.rp-sublist { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-2); display: grid; gap: 6px; }
 
 /* Gráficos (barras HTML — marcas finas, extremidade arredondada, rótulos diretos) */
 .chart { margin: 18px 0 8px; }

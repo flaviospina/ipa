@@ -137,7 +137,7 @@
             <button class="btn btn-primary" style="width:100%" onclick="Painel.entrar()">Entrar</button>
             <p id="login-erro" class="muted-sm hidden" style="color:#c22b1a; margin-top:10px">Chave inválida ou sem conexão com a planilha.</p>
             <div class="demo-note">Quer só conhecer? <a href="#" onclick="Painel.demo(); return false;" style="font-weight:800; color:var(--brand)">Ver demonstração com dados fictícios →</a></div>
-            <p class="muted-sm" style="margin-top:16px">A chave é gerada pela função <strong>configurarChavePainel()</strong> no Apps Script (ver backend/README.md).</p>
+            <p class="muted-sm" style="margin-top:16px">A chave é a <strong>PANEL_KEY</strong> definida no arquivo <strong>api/config.php</strong> do servidor.</p>
         </section>
 
         <!-- DASHBOARD -->
@@ -242,7 +242,8 @@
     </main>
 
     <script>
-        const ENDPOINT = 'https://script.google.com/macros/s/AKfycbylZsc3U-fpSzHO9dYbtFB1dNKAsAhQCwXJ1R1IpiRJNr_074-47pmcjFRp7fvEq9W0HA/exec';
+        // Backend MySQL/PHP (pasta api/ irmã desta) — mesma origem, sem CORS.
+        const ENDPOINT = '../api/api.php';
         // Caminho da página IPA 360° relativo a este painel (ajuste se publicar em outra pasta)
         const FERRAMENTA_360 = '../ipa/360.html';
         const ESTILOS = {
