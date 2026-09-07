@@ -19,9 +19,9 @@ implantações, sem URL externa. Testado de ponta a ponta (14 testes de integra�
 
    ```
    /vipedia/new_ipa/
-   ├── home/
-   ├── ipa/        <- webapp (index.html, 360.html, css/, js/)
-   ├── painel/
+   ├── home/       <- site institucional
+   ├── webapp/     <- ferramenta IPA (index.html, 360.html, css/, js/)
+   ├── painel/     <- painel do consultor
    └── api/        <- api.php, config.php   (NÃO envie o schema.sql nem o example)
    ```
 

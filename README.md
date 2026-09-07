@@ -16,8 +16,8 @@ questionário (3 quadros × 12 palavras) → cálculo → **relatório individua
 
 1. Siga o `api/README.md`: crie o banco MySQL no cPanel, importe o `schema.sql`,
    preencha o `config.php` e envie a pasta `api/` para o servidor.
-2. Envie `webapp/` (como `ipa/`), `painel/` e `home/` — o front-end já aponta
-   para `../api/api.php` (mesma origem, sem configuração).
+2. Envie `webapp/`, `painel/` e `home/` (mantendo esses nomes de pasta, lado a
+   lado com `api/`) — todos os links internos já apontam entre elas.
 3. **Checklist de segurança**: arquivar TODAS as implantações antigas do Google
    Apps Script (Implantar → Gerenciar implantações → Arquivar) — a planilha foi
    descontinuada; remover do servidor as páginas antigas `acp/` e `ipa/` originais
