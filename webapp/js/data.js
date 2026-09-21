@@ -318,3 +318,49 @@ ACP.FRASE = {
     Q3_PRESTATIVO:  'Orienta os cuidados do pós-atendimento',
     Q3_ENFATICO_E:  'Reforça as recomendações essenciais'
 };
+
+
+/* ============================================================
+   Orientações de desenvolvimento ÚNICAS por comportamento:
+   moderar    = como calibrar quando a prática é supervalorizada
+   fortalecer = como elevá-la rumo à faixa de equilíbrio (4 a 6)
+   Usadas na Fase 7 do relatório (sem repetição entre itens).
+   ============================================================ */
+ACP.ACAO = {
+    Q1_ABERTO:      { moderar: 'Defina um foco para a conversa inicial: acolha, mas conduza o diálogo de volta ao objetivo do atendimento em até dois minutos.', fortalecer: 'Comece cada atendimento com uma pergunta aberta e postura de escuta, antes de qualquer registro ou explicação.' },
+    Q1_ACOLHEDOR:   { moderar: 'Observe se o cliente retribui o calor da recepção; se ele for objetivo, encurte o acolhimento e acompanhe o ritmo dele.', fortalecer: 'Crie um ritual mínimo de boas-vindas: levantar o olhar, cumprimentar pelo nome e sorrir antes de iniciar os trâmites.' },
+    Q1_ATENCIOSO:   { moderar: 'Direcione a atenção intensa aos sinais do cliente, não a todos os detalhes — atenção demais parece vigilância.', fortalecer: 'Pratique notar e citar um detalhe trazido pelo cliente logo no início ("o senhor mencionou que...").' },
+    Q1_CLARO:       { moderar: 'Evite simplificar além do necessário: pergunte o que o cliente já sabe antes de explicar do zero.', fortalecer: 'Troque um jargão por dia por uma palavra comum e confirme com o cliente se ficou claro.' },
+    Q1_EXPLICITO:   { moderar: 'Apresente primeiro as regras essenciais e deixe os detalhes contratuais para quando forem necessários.', fortalecer: 'Liste as três condições que o cliente mais precisa saber e comunique-as de forma direta logo no início.' },
+    Q1_ENFATICO_C:  { moderar: 'Escolha um único ponto para enfatizar por conversa — ênfase em tudo é ênfase em nada.', fortalecer: 'Sinalize verbalmente o que é essencial, uma vez por atendimento: "deste ponto, não abra mão".' },
+    Q1_CONCENTRADO: { moderar: 'Intercale o registro com contato visual: uma anotação, um olhar — o cadastro não pode roubar a cena da pessoa.', fortalecer: 'Adote um checklist de três itens de registro no início e só avance quando os três estiverem confirmados.' },
+    Q1_FORMAL:      { moderar: 'Mantenha o padrão institucional, mas permita um gesto pessoal dentro dele — o nome do cliente, um comentário cordial.', fortalecer: 'Siga o padrão institucional de recepção por uma semana inteira, sem atalhos, e observe o efeito na sua imagem profissional.' },
+    Q1_IMPESSOAL:   { moderar: 'Use a isenção nos critérios e nas decisões — nunca no tom de voz nem no olhar.', fortalecer: 'Trate casos iguais de forma igual: verifique se não está dando a algum cliente atalhos que não daria a outro.' },
+    Q1_FLEXIVEL:    { moderar: 'Flexibilize o ritmo e a linguagem, mas preserve as etapas obrigatórias — flexibilidade não é improviso.', fortalecer: 'Antes de cada atendimento, pergunte-se: o que esta pessoa precisa de diferente da anterior? Ajuste um elemento.' },
+    Q1_INTERESSADO: { moderar: 'Aprofunde apenas o que o cliente abrir espontaneamente; interesse demais em detalhes pessoais soa invasivo.', fortalecer: 'Faça duas perguntas sobre a necessidade do cliente antes de propor qualquer encaminhamento.' },
+    Q1_CORDIAL_E:   { moderar: 'Dose a gentileza: uma cortesia sincera vale mais do que dez frases feitas.', fortalecer: 'Inclua uma gentileza concreta por atendimento — oferecer assento, água, uma informação extra — e observe a reação.' },
+    Q2_COMPREENSIVO:{ moderar: 'Acolha a emoção sem parar a execução: valide o sentimento em uma frase e siga com o procedimento.', fortalecer: 'Quando o cliente reagir, nomeie a emoção antes de responder tecnicamente ("entendo que isso preocupa").' },
+    Q2_CUIDADOSO:   { moderar: 'Zelo com fluidez: revise uma vez com atenção plena, em vez de conferir três vezes com hesitação.', fortalecer: 'Escolha o passo mais crítico do seu procedimento e execute-o com atenção redobrada, explicando o cuidado ao cliente.' },
+    Q2_RESPEITOSO:  { moderar: 'Respeito sem cerimônia: dispense formalidades excessivas que criam distância e travam a naturalidade.', fortalecer: 'Peça licença antes de agir sobre o espaço, o corpo ou os pertences do cliente — sempre.' },
+    Q2_DESCRITIVO:  { moderar: 'Descreva marcos, não minúcias: "agora vou fazer X, leva uns cinco minutos" costuma bastar.', fortalecer: 'Anuncie cada etapa antes de executá-la, em uma frase curta.' },
+    Q2_INTERATIVO:  { moderar: 'Permita pausas de silêncio produtivo: nem todo momento da execução precisa de conversa.', fortalecer: 'A cada etapa concluída, faça uma pergunta de checagem: "está confortável?", "faz sentido até aqui?".' },
+    Q2_OUVINTE:     { moderar: 'Ouça com direção: resuma o que ouviu e traga a conversa de volta ao que é acionável.', fortalecer: 'Adote a regra do resumo: antes de responder, repita com as suas palavras o que o cliente disse.' },
+    Q2_DISTANTE:    { moderar: 'Reaproxime-se nos momentos de emoção: a neutralidade serve à técnica, não à pessoa.', fortalecer: 'Nos passos técnicos críticos, respire e distancie-se emocionalmente da reação do cliente para não comprometer a execução.' },
+    Q2_EFICIENTE:   { moderar: 'Aceite pequenas pausas humanas sem tratá-las como desperdício — relação também é resultado.', fortalecer: 'Identifique um movimento ou etapa que você repete sem necessidade e elimine-o nesta semana.' },
+    Q2_OBJETIVO:    { moderar: 'Permita desvios breves quando trouxerem informação útil sobre a necessidade do cliente.', fortalecer: 'Defina o resultado da sessão em uma frase no início e retome-a sempre que a conversa dispersar.' },
+    Q2_RAPIDO_E:    { moderar: 'Reduza a velocidade nos pontos de decisão do cliente: rapidez é para os trâmites, não para as escolhas dele.', fortalecer: 'Encontre a etapa mais lenta do seu atendimento e encurte-a sem cortar qualidade: prepare o material antes, simplifique o registro.' },
+    Q2_PRECISO:     { moderar: 'Busque o "suficientemente certo": precisão além do que o cliente percebe vira lentidão.', fortalecer: 'Confira números, nomes e datas antes de comunicá-los — um erro pequeno custa a confiança inteira.' },
+    Q2_SOLICITO:    { moderar: 'Ajude quando for pedido ou sinalizado; antecipar tudo tira a autonomia do cliente.', fortalecer: 'Ofereça ajuda ativamente uma vez por atendimento: "posso adiantar algo enquanto o senhor aguarda?".' },
+    Q3_AUTENTICO:   { moderar: 'Verdade com tato: escolha as palavras pela necessidade do cliente, não pelo impulso de dizer tudo.', fortalecer: 'Elimine uma frase de fachada do seu fechamento e substitua-a por algo que você realmente pensa.' },
+    Q3_CORDIAL_A:   { moderar: 'Despedida calorosa e breve: consolide o vínculo em um gesto, sem prolongar a saída.', fortalecer: 'Encerre sempre com nome, agradecimento e disponibilidade: "Sr. João, obrigado; qualquer dúvida, estou aqui".' },
+    Q3_EMPATICO:    { moderar: 'Empatia com fronteira: acolha a emoção do cliente sem absorvê-la — você precisa preservar a clareza da informação.', fortalecer: 'Antes de dar um resultado difícil, pergunte-se como você gostaria de ouvi-lo — e comece por aí.' },
+    Q3_ACESSIVEL:   { moderar: 'Disponibilidade com contorno: combine canal e prazo de retorno, em vez de prometer acesso ilimitado.', fortalecer: 'Feche todo atendimento dizendo como e quando o cliente pode falar com você novamente.' },
+    Q3_ELOQUENTE:   { moderar: 'Menos discurso, mais resultado: uma síntese de três frases fecha melhor do que uma explanação.', fortalecer: 'Prepare uma frase-síntese do resultado antes de chamar o cliente para o fechamento.' },
+    Q3_ESPONTANEO:  { moderar: 'Naturalidade dentro do rito: a espontaneidade não pode pular as etapas formais do encerramento.', fortalecer: 'Saia do script em um momento do fechamento: um comentário genuíno humaniza a despedida.' },
+    Q3_DIRETO:      { moderar: 'Vá direto ao ponto, mas cheque a reação: uma pausa após a notícia dá espaço para o cliente processar.', fortalecer: 'Dê a informação principal na primeira frase do fechamento — contexto e detalhes vêm depois.' },
+    Q3_PROTOCOLAR:  { moderar: 'Cumpra o protocolo sem exibi-lo: o cliente precisa perceber a segurança do processo, não a burocracia.', fortalecer: 'Crie um checklist de encerramento (registros, orientações, assinaturas) e não libere o cliente sem completá-lo.' },
+    Q3_RAPIDO_P:    { moderar: 'Agilize os trâmites, mas nunca a conversa final: os últimos minutos definem a memória do atendimento.', fortalecer: 'Deixe a documentação do fechamento pré-preparada, para que a saída do cliente não se arraste.' },
+    Q3_CONSISTENTE: { moderar: 'Consistência com ajuste fino: mantenha o padrão, mas adapte o fechamento à situação de cada cliente.', fortalecer: 'Trate o último atendimento do dia com o mesmo padrão do primeiro — é nele que a consistência é testada.' },
+    Q3_PRESTATIVO:  { moderar: 'Selecione as três orientações mais importantes: mais do que isso, o cliente não retém.', fortalecer: 'Entregue sempre uma orientação de pós-atendimento por escrito, ou peça ao cliente que a repita.' },
+    Q3_ENFATICO_E:  { moderar: 'Reserve a ênfase para a recomendação decisiva; dramatizar o fechamento gera ansiedade.', fortalecer: 'Escolha a recomendação mais importante e confirme se o cliente a registrou — o que ele repete, ele lembra.' }
+};

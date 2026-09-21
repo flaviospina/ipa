@@ -211,6 +211,11 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
 .pie-legend { display: grid; gap: 10px; min-width: 240px; }
 .pie-leg-row { display: flex; align-items: center; gap: 9px; font-size: 13.5px; }
 .pie-leg-row .chart-swatch { width: 12px; height: 12px; }
+.rp-line-wrap { margin: 18px 0 8px; }
+.rp-line-wrap svg { width: 100%; height: auto; display: block; }
+.line-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; min-width: 0; margin-top: 10px; justify-content: center; }
+.swatch-hachura { background: repeating-linear-gradient(45deg, #f1f4f9 0 2px, #9aa6bd 2px 3.5px); border: 1px solid #aab3c5; }
+.rp-item-meta { font-size: 12px; color: var(--ink-3); font-weight: 600; }
 .pie-leg-name { font-weight: 700; flex: 1; }
 .pie-leg-val { color: var(--ink-2); font-variant-numeric: tabular-nums; }
 

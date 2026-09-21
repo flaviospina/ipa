@@ -109,6 +109,75 @@ function barRow(label, cor, valor, max, sufixo) {
     </div>`;
 }
 
+/* Desvio padrão (populacional) dos 4 estilos em um momento.
+   Cada momento distribui 66 pontos — a média por estilo é sempre 16,5. */
+const MEDIA_MOMENTO = 16.5;
+function desvioMomento(m) {
+    const vals = ['A', 'C', 'P', 'E'].map(k => m[k]);
+    return Math.sqrt(vals.reduce((s, v) => s + (v - MEDIA_MOMENTO) ** 2, 0) / 4);
+}
+
+/* Gráfico de linhas dos momentos (Q1 → Q3): uma linha por estilo, marcadores
+   com contorno branco, rótulos diretos no fim de cada linha e banda hachurada
+   de média ± 1 desvio padrão por momento. */
+function lineChartMomentos(porMomento) {
+    const W = 640, H = 330, L = 48, R = 128, T = 26, B = 46;
+    const plotW = W - L - R, plotH = H - T - B;
+    const xs = [1, 2, 3].map(i => L + plotW * (i - 1) / 2);
+    const y = v => T + plotH * (1 - v / 30);
+    const sds = [1, 2, 3].map(q => desvioMomento(porMomento[q]));
+
+    let grid = '';
+    for (let v = 0; v <= 30; v += 5) {
+        grid += `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="#e5e9f2" stroke-width="1"/>
+            <text x="${L - 8}" y="${y(v)}" text-anchor="end" dominant-baseline="central" font-size="10" fill="#8a94ab">${v}</text>`;
+    }
+
+    // banda hachurada: média ± desvio padrão, momento a momento
+    const topo = xs.map((x, i) => `${x},${y(Math.min(30, MEDIA_MOMENTO + sds[i])).toFixed(1)}`);
+    const base = xs.map((x, i) => `${x},${y(Math.max(0, MEDIA_MOMENTO - sds[i])).toFixed(1)}`).reverse();
+    const banda = `<polygon points="${topo.join(' ')} ${base.join(' ')}" fill="url(#ipa-hachura)" stroke="#aab3c5" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="${L}" y1="${y(MEDIA_MOMENTO)}" x2="${W - R}" y2="${y(MEDIA_MOMENTO)}" stroke="#8a94ab" stroke-width="1.2" stroke-dasharray="6 4"/>
+        <text x="${L + 4}" y="${y(MEDIA_MOMENTO) - 6}" font-size="9.5" font-weight="600" fill="#8a94ab">média 16,5</text>`;
+
+    // rótulos diretos ao fim das linhas, com ajuste anticolisão
+    const ordem = ['A', 'C', 'P', 'E'];
+    const fins = ordem.map(k => ({ k, yl: y(porMomento[3][k]) })).sort((a, b) => a.yl - b.yl);
+    for (let i = 1; i < fins.length; i++) if (fins[i].yl - fins[i - 1].yl < 14) fins[i].yl = fins[i - 1].yl + 14;
+    const posFim = {};
+    fins.forEach(f => { posFim[f.k] = f.yl; });
+
+    let linhas = '';
+    ordem.forEach(k => {
+        const st = ACP.STYLES[k];
+        const pts = xs.map((x, i) => `${x},${y(porMomento[i + 1][k]).toFixed(1)}`).join(' ');
+        linhas += `<polyline points="${pts}" fill="none" stroke="${st.cor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+        xs.forEach((x, i) => {
+            const v = porMomento[i + 1][k];
+            linhas += `<circle cx="${x}" cy="${y(v).toFixed(1)}" r="4.5" fill="${st.cor}" stroke="#ffffff" stroke-width="1.6"><title>${esc(st.curto)} — Q${i + 1}: ${v} pontos</title></circle>`;
+        });
+        linhas += `<text x="${W - R + 10}" y="${posFim[k].toFixed(1)}" font-size="11" font-weight="700" fill="${st.cor}" dominant-baseline="central">${esc(st.curto)} · ${porMomento[3][k]}</text>`;
+    });
+
+    const eixoX = ['Q1 · Início', 'Q2 · Durante', 'Q3 · Término'].map((t, i) =>
+        `<text x="${xs[i]}" y="${H - B + 22}" text-anchor="middle" font-size="11" font-weight="600" fill="#4a5568">${t}</text>`).join('');
+
+    const legenda = ordem.map(k => `
+        <div class="pie-leg-row"><span class="chart-swatch" style="background:${ACP.STYLES[k].cor}"></span><span class="pie-leg-name">${esc(ACP.STYLES[k].curto)}</span></div>`).join('')
+        + `<div class="pie-leg-row"><span class="chart-swatch swatch-hachura"></span><span class="pie-leg-name">Média (16,5) ± 1 desvio padrão</span></div>`;
+
+    return `<div class="rp-line-wrap">
+        <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução da pontuação de cada estilo nos três momentos do atendimento">
+            <defs><pattern id="ipa-hachura" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="#f1f4f9"/>
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#9aa6bd" stroke-width="1.3"/>
+            </pattern></defs>
+            ${grid}${banda}${linhas}${eixoX}
+        </svg>
+        <div class="pie-legend line-legend">${legenda}</div>
+    </div>`;
+}
+
 /* Bloco de análise personalizada por IA (texto puro -> parágrafos) */
 function iaBlock(texto, titulo) {
     if (!texto) return '';
@@ -173,6 +242,53 @@ Engine.renderRelatorio = function (dados, r, ia) {
         Nas suas escolhas, a variável mais valorizada aqui foi <strong>${ACP.STYLES[lider].curto}</strong> (${m[lider]} pontos).</p>`;
     }).join('');
 
+    /* Gráfico de linhas dos momentos + leitura gerada a partir dos números */
+    const graficoMomentos = lineChartMomentos(r.porMomento);
+    const seriesM = ['A', 'C', 'P', 'E'].map(k => {
+        const vals = [1, 2, 3].map(q => r.porMomento[q][k]);
+        return { k, curto: ACP.STYLES[k].curto, vals, amp: Math.max(...vals) - Math.min(...vals) };
+    });
+    const verboVar = d => Math.abs(d) <= 2 ? 'se mantém praticamente estável' : (d > 0 ? `sobe ${d} pontos` : `cai ${-d} pontos`);
+    const trajetorias = seriesM.map(s => {
+        const [v1, v2, v3] = s.vals;
+        return `<li><strong>${esc(s.curto)}</strong> parte de ${v1} pontos no início, ${verboVar(v2 - v1)} durante o atendimento (${v2}) e ${verboVar(v3 - v2)} no término (${v3}).</li>`;
+    }).join('');
+    let pico = { v: -1 }, vale = { v: 99 };
+    seriesM.forEach(s => s.vals.forEach((v, i) => {
+        if (v > pico.v) pico = { v, s, q: i + 1 };
+        if (v < vale.v) vale = { v, s, q: i + 1 };
+    }));
+    const maisVolatil = [...seriesM].sort((a, b) => b.amp - a.amp)[0];
+    const maisEstavel = [...seriesM].sort((a, b) => a.amp - b.amp)[0];
+    const sdsM = [1, 2, 3].map(q => desvioMomento(r.porMomento[q]));
+    const fmt1 = n => n.toFixed(1).replace('.', ',');
+    const nomesQ = { 1: 'no início do atendimento', 2: 'durante o atendimento', 3: 'no término do atendimento' };
+    const qMaisSd = sdsM.indexOf(Math.max(...sdsM)) + 1;
+    const qMenosSd = sdsM.indexOf(Math.min(...sdsM)) + 1;
+    const leituraGrafico = `
+        <p>O gráfico acima traça a trajetória de cada estilo ao longo dos três momentos do atendimento. A linha
+        tracejada marca a média teórica de <strong>16,5 pontos</strong> (66 pontos distribuídos entre os quatro
+        estilos) e a <strong>faixa hachurada</strong> representa um desvio padrão para cima e para baixo dessa média,
+        calculado momento a momento: pontos acima da faixa indicam estilos que se destacam de forma estatisticamente
+        relevante naquele momento; pontos abaixo dela, estilos que ficam em segundo plano.</p>
+        <ul>${trajetorias}</ul>
+        <p>O ponto mais alto de todo o percurso é <strong>${esc(pico.s.curto)}</strong> ${nomesQ[pico.q]}, com
+        ${pico.v} pontos; o mais baixo é <strong>${esc(vale.s.curto)}</strong> ${nomesQ[vale.q]}, com ${vale.v} pontos.
+        O estilo que mais muda de intensidade entre os momentos é <strong>${esc(maisVolatil.curto)}</strong>
+        (amplitude de ${maisVolatil.amp} pontos) — sinal de que o seu uso depende fortemente da etapa do atendimento.
+        O mais constante é <strong>${esc(maisEstavel.curto)}</strong> (amplitude de ${maisEstavel.amp} pontos),
+        presente de forma parecida do início ao fim.</p>
+        <p>${Math.max(...sdsM) - Math.min(...sdsM) < 0.05
+            ? `Quanto ao desvio padrão: ele é praticamente o mesmo nos três momentos (${fmt1(sdsM[0])} pontos), ou
+        seja, o grau de concentração das suas preferências em um estilo dominante se mantém constante do início ao
+        término do atendimento.`
+            : `Quanto ao desvio padrão: ele é maior ${nomesQ[qMaisSd]} (${fmt1(sdsM[qMaisSd - 1])} pontos) — o momento em
+        que as suas preferências mais se concentram em um estilo dominante — e menor ${nomesQ[qMenosSd]}
+        (${fmt1(sdsM[qMenosSd - 1])} pontos), o momento em que você distribui as variáveis de forma mais homogênea,
+        mais próxima do Estilo Equilibrado, referência de desenvolvimento do modelo.`}
+        Essa leitura, somada à matriz acima, contribui diretamente para as recomendações de desenvolvimento das
+        Fases 6 e 7.</p>`;
+
     /* Fase 6 — tabelas de talentos e pontos a desenvolver */
     const cabecaTabela = `<thead><tr><th>Comportamento</th><th class="num">Pontos</th><th>Variável</th><th>Momento</th><th>Descrição comportamental</th></tr></thead>`;
     const linhaPalavra = (p, comDetalhe) => {
@@ -196,18 +312,21 @@ Engine.renderRelatorio = function (dados, r, ia) {
         ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.desenvolver.map(p => linhaPalavra(p, true)).join('')}</tbody></table></div>`
         : '<p class="rp-prose">Nenhum comportamento ficou com pontuação crítica (0 a 2).</p>';
 
-    /* Fase 7 — Campo de Forças: moderar as práticas supervalorizadas e
-       fortalecer as negligenciadas até a faixa de equilíbrio (4 a 6) */
+    /* Fase 7 — moderar as práticas supervalorizadas e fortalecer as
+       negligenciadas até a faixa de equilíbrio (4 a 6). Cada item usa a
+       descrição comportamental (sem a palavra do instrumento e sem a nota)
+       e uma ação específica daquela prática (ACP.ACAO) — nunca repetida. */
+    const cap1 = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
     const moderar = r.talentos.filter(p => p.peso >= 10).slice(0, 4).map(p => {
         const det = ACP.DETALHE[p.id] || {};
-        return `<li><div><strong>${esc(ACP.FRASE[p.id] || p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}) — força a preservar, intensidade a calibrar. ${esc(det.alto || '')} <em>Estratégia:</em> use esta força quando a situação a pedir — e reduza conscientemente sua intensidade quando o momento exigir outra variável.</div></li>`;
+        const acao = (ACP.ACAO[p.id] || {}).moderar || '';
+        return `<li><div><strong>${esc(ACP.FRASE[p.id] || p.sig)}</strong> <span class="rp-item-meta">(${ACP.STYLES[p.st].curto} · ${esc(p.momento)})</span> — força a preservar, intensidade a calibrar. ${esc(cap1(det.alto || ''))} <em>Como modular:</em> ${esc(acao)}</div></li>`;
     }).join('');
     const fortalecer = r.desenvolver.slice(0, 4).map(p => {
         const det = ACP.DETALHE[p.id] || {};
-        return `<li><div><strong>${esc(ACP.FRASE[p.id] || p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}). ${esc(det.baixo || p.risco)} <em>Estratégia:</em> a meta não é maximizar esta prática, e sim levá-la à faixa de equilíbrio (4 a 6): escolha um atendimento por dia para exercitá-la conscientemente no momento "${esc(p.momento)}", sem abandonar as suas forças, e registre a reação do cliente.</div></li>`;
+        const acao = (ACP.ACAO[p.id] || {}).fortalecer || '';
+        return `<li><div><strong>${esc(ACP.FRASE[p.id] || p.sig)}</strong> <span class="rp-item-meta">(${ACP.STYLES[p.st].curto} · ${esc(p.momento)})</span>. ${esc(cap1(det.baixo || p.risco))} <em>Como fortalecer:</em> ${esc(acao)}</div></li>`;
     }).join('');
-    const lewin = `<div class="rp-diag"><h4>O método: Campo de Forças (Kurt Lewin)</h4>
-        <p>Toda mudança de comportamento acontece dentro de um campo de forças: as <strong>forças impulsoras</strong>, que estimulam a mudança (feedbacks recebidos, situações em que o estilo atual não funcionou, o desejo de crescer), e as <strong>forças restritivas</strong>, que a impedem (o hábito, a crença de que "meu jeito sempre funcionou", o desconforto de agir diferente). Desenvolver-se é quebrar o equilíbrio atual e construir um novo: <strong>fortalecer as práticas negligenciadas</strong> (notas 0 a 2) e <strong>modular as supervalorizadas</strong> (notas 9 a 11), aproximando ambas da faixa de equilíbrio — em que cada variável é usada na intensidade que a situação pede.</p></div>`;
 
     /* Fase 8 — plano de ação com o "como fazer" */
     const alvos = r.desenvolver.slice(0, 2).map(p => `<strong>${esc(ACP.FRASE[p.id] || p.w)}</strong> (Q${p.quadro} · ${esc(p.momento.split(' ')[0])})`).join(' e ');
@@ -292,6 +411,11 @@ Engine.renderRelatorio = function (dados, r, ia) {
         <h3>Sua pontuação por estilo em cada momento</h3>
         ${matriz}
         <p class="chart-note">Cada momento distribui 66 pontos entre os quatro estilos (máximo de 30 por estilo). A célula destacada indica a maior ênfase do momento.</p>
+        <h3>A trajetória dos estilos ao longo do atendimento</h3>
+        ${graficoMomentos}
+        <p class="chart-note">Evolução da pontuação de cada estilo nos três momentos. A faixa hachurada representa a média (16,5) ± um desvio padrão, calculado em cada momento.</p>
+        <h3>Leitura do gráfico</h3>
+        <div class="rp-prose">${leituraGrafico}</div>
         <h3>O que isso significa para o seu desenvolvimento</h3>
         <div class="rp-prose">${implicacoes}</div>
         ${iaBlock(ia.momentos, 'Como isso tende a aparecer nos seus atendimentos')}
@@ -314,9 +438,8 @@ Engine.renderRelatorio = function (dados, r, ia) {
     <section class="rp-section">
         <h2>7 · Recomendações para o Desenvolvimento</h2>
         <div class="rp-prose">${ACP.FASE7.padrao.map(p => `<p>${esc(p)}</p>`).join('')}</div>
-        ${lewin}
-        ${moderar ? `<h3>Práticas a modular (notas 10 e 11 — forças que não podem virar excesso)</h3><ol class="rp-plan">${moderar}</ol>` : ''}
-        ${fortalecer ? `<h3>Práticas a fortalecer (notas 0 a 2 — rumo à faixa de equilíbrio)</h3><ol class="rp-plan">${fortalecer}</ol>` : ''}
+        ${moderar ? `<h3>Práticas a modular — forças que não podem virar excesso</h3><ol class="rp-plan">${moderar}</ol>` : ''}
+        ${fortalecer ? `<h3>Práticas a fortalecer — rumo à faixa de equilíbrio</h3><ol class="rp-plan">${fortalecer}</ol>` : ''}
         ${iaBlock(ia.recomendacoes, 'Recomendações personalizadas para você')}
     </section>
 
