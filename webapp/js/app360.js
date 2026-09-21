@@ -44,9 +44,9 @@ const App360 = {
         q.palavras.forEach(p => {
             const b = document.createElement('button');
             b.type = 'button';
-            b.className = 'word-card word-card-desc';
+            b.className = 'word-card';
             b.dataset.id = p.id;
-            b.innerHTML = `<strong>${ACP.FRASE[p.id]}</strong><span>${p.sig}</span>`;
+            b.textContent = p.w;
             b.draggable = true;
             b.onclick = () => { const s = this.sel(); if (!s.includes(p.id) && s.length < 12) { s.push(p.id); this.renderRank(); } };
             b.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', p.id));
@@ -90,7 +90,7 @@ const App360 = {
             const placeholder = w === 11 ? 'a que MAIS representa' : w === 0 ? 'a que MENOS representa' : '—';
             li.innerHTML = `
                 <span class="rank-weight">${w}</span>
-                <span class="rank-word rank-frase" title="${wordId ? byId[wordId].sig.replace(/"/g, '&quot;') : ''}">${wordId ? ACP.FRASE[wordId] : placeholder}</span>
+                <span class="rank-word">${wordId ? byId[wordId].w : placeholder}</span>
                 <span class="rank-ctrl">
                     ${wordId && w >= 1 && w <= 10 ? `
                         <button type="button" title="Subir" onclick="App360.move(${w},1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -108,8 +108,8 @@ const App360 = {
 
         const nome = this.state.avaliado.split(' ')[0] || 'a pessoa';
         const guide = document.getElementById('survey-guide');
-        if (s.length === 0) guide.innerHTML = `Leia todas as descrições. Escolha a que <strong>MAIS</strong> representa o atendimento de ${nome}.`;
-        else if (s.length === 1) guide.innerHTML = `Agora a que <strong>MENOS</strong> representa o atendimento de ${nome}.`;
+        if (s.length === 0) guide.innerHTML = `Leia todas as palavras. Escolha a que <strong>MAIS</strong> representa o atendimento de ${nome}.`;
+        else if (s.length === 1) guide.innerHTML = `Agora a palavra que <strong>MENOS</strong> representa o atendimento de ${nome}.`;
         else if (s.length < 12) guide.innerHTML = 'Ordene as demais em <strong>escala decrescente</strong>. Use as setas ou arraste para ajustar.';
         else guide.innerHTML = 'Quadro completo. Revise a escala e <strong>confirme</strong>.';
 
