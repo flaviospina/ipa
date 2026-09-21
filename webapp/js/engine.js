@@ -174,7 +174,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
     }).join('');
 
     /* Fase 6 — tabelas de talentos e pontos a desenvolver */
-    const cabecaTabela = `<thead><tr><th>Palavra</th><th class="num">Pontos</th><th>Variável</th><th>Momento</th><th>Significado</th></tr></thead>`;
+    const cabecaTabela = `<thead><tr><th>Comportamento</th><th class="num">Pontos</th><th>Variável</th><th>Momento</th><th>Descrição comportamental</th></tr></thead>`;
     const linhaPalavra = (p, comDetalhe) => {
         const det = ACP.DETALHE[p.id] || {};
         const detalhe = comDetalhe && det.baixo ? `<tr class="det"><td colspan="5">
@@ -182,7 +182,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
             <strong>No sentido oposto, a valorização excessiva (9 a 11):</strong> ${esc(det.alto)}
             <em>A faixa de equilíbrio situa-se entre 4 e 6 pontos.</em></td></tr>` : '';
         return `<tr>
-            <td><strong>${esc(p.w)}</strong></td>
+            <td><strong>${esc(ACP.FRASE[p.id] || p.w)}</strong></td>
             <td class="num"><span class="w-pill" style="background:${comDetalhe ? '#6b7280' : ACP.STYLES[p.st].cor}">${p.peso}</span></td>
             <td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[p.st].cor}"></span>${ACP.STYLES[p.st].curto}</span></td>
             <td>Q${p.quadro} · ${esc(p.momento.split(' ')[0])}</td>
@@ -191,26 +191,26 @@ Engine.renderRelatorio = function (dados, r, ia) {
     };
     const talentosHtml = r.talentos.length
         ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.talentos.map(p => linhaPalavra(p, false)).join('')}</tbody></table></div>`
-        : '<p class="rp-prose">Nenhuma palavra recebeu pontuação 9 ou superior de forma destacada.</p>';
+        : '<p class="rp-prose">Nenhum comportamento recebeu pontuação 9 ou superior de forma destacada.</p>';
     const desenvolverHtml = r.desenvolver.length
         ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.desenvolver.map(p => linhaPalavra(p, true)).join('')}</tbody></table></div>`
-        : '<p class="rp-prose">Nenhuma palavra ficou com pontuação crítica (0 a 2).</p>';
+        : '<p class="rp-prose">Nenhum comportamento ficou com pontuação crítica (0 a 2).</p>';
 
     /* Fase 7 — Campo de Forças: moderar as práticas supervalorizadas e
        fortalecer as negligenciadas até a faixa de equilíbrio (4 a 6) */
     const moderar = r.talentos.filter(p => p.peso >= 10).slice(0, 4).map(p => {
         const det = ACP.DETALHE[p.id] || {};
-        return `<li><div><strong>${esc(p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}) — força a preservar, intensidade a calibrar. ${esc(det.alto || '')} <em>Estratégia:</em> use esta força quando a situação a pedir — e reduza conscientemente sua intensidade quando o momento exigir outra variável.</div></li>`;
+        return `<li><div><strong>${esc(ACP.FRASE[p.id] || p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}) — força a preservar, intensidade a calibrar. ${esc(det.alto || '')} <em>Estratégia:</em> use esta força quando a situação a pedir — e reduza conscientemente sua intensidade quando o momento exigir outra variável.</div></li>`;
     }).join('');
     const fortalecer = r.desenvolver.slice(0, 4).map(p => {
         const det = ACP.DETALHE[p.id] || {};
-        return `<li><div><strong>${esc(p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}). ${esc(det.baixo || p.risco)} <em>Estratégia:</em> a meta não é maximizar esta prática, e sim levá-la à faixa de equilíbrio (4 a 6): escolha um atendimento por dia para exercitá-la conscientemente no momento "${esc(p.momento)}", sem abandonar as suas forças, e registre a reação do cliente.</div></li>`;
+        return `<li><div><strong>${esc(ACP.FRASE[p.id] || p.w)}</strong> (${ACP.STYLES[p.st].curto} · Q${p.quadro}, nota ${p.peso}). ${esc(det.baixo || p.risco)} <em>Estratégia:</em> a meta não é maximizar esta prática, e sim levá-la à faixa de equilíbrio (4 a 6): escolha um atendimento por dia para exercitá-la conscientemente no momento "${esc(p.momento)}", sem abandonar as suas forças, e registre a reação do cliente.</div></li>`;
     }).join('');
     const lewin = `<div class="rp-diag"><h4>O método: Campo de Forças (Kurt Lewin)</h4>
         <p>Toda mudança de comportamento acontece dentro de um campo de forças: as <strong>forças impulsoras</strong>, que estimulam a mudança (feedbacks recebidos, situações em que o estilo atual não funcionou, o desejo de crescer), e as <strong>forças restritivas</strong>, que a impedem (o hábito, a crença de que "meu jeito sempre funcionou", o desconforto de agir diferente). Desenvolver-se é quebrar o equilíbrio atual e construir um novo: <strong>fortalecer as práticas negligenciadas</strong> (notas 0 a 2) e <strong>modular as supervalorizadas</strong> (notas 9 a 11), aproximando ambas da faixa de equilíbrio — em que cada variável é usada na intensidade que a situação pede.</p></div>`;
 
     /* Fase 8 — plano de ação com o "como fazer" */
-    const alvos = r.desenvolver.slice(0, 2).map(p => `<strong>${esc(p.w)}</strong> (Q${p.quadro} · ${esc(p.momento.split(' ')[0])})`).join(' e ');
+    const alvos = r.desenvolver.slice(0, 2).map(p => `<strong>${esc(ACP.FRASE[p.id] || p.w)}</strong> (Q${p.quadro} · ${esc(p.momento.split(' ')[0])})`).join(' e ');
     const comoFazer = (perfilPred.comoFazer || []).map(x => `<li>${esc(x)}</li>`).join('');
     const plano = `
         <li><div><strong>Compromisso de versatilidade — como fazer, na prática:</strong>

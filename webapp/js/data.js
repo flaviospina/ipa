@@ -274,3 +274,47 @@ ACP.DETALHE = {
     Q3_ENFATICO_E:  { baixo: 'recomendações ditas sem ênfase são esquecidas — e o resultado se perde no pós-atendimento.',
                       alto: 'a ênfase dramática no fechamento pode assustar e gerar ansiedade desnecessária.' }
 };
+
+
+/* ============================================================
+   Frases comportamentais curtas — usadas NO RELATÓRIO no lugar
+   das palavras do instrumento (o questionário mantém as palavras).
+   ============================================================ */
+ACP.FRASE = {
+    Q1_ABERTO:      'Postura receptiva e aberta ao diálogo',
+    Q1_ACOLHEDOR:   'Recebe o cliente com calor humano',
+    Q1_ATENCIOSO:   'Demonstra interesse genuíno pela pessoa',
+    Q1_CLARO:       'Fala de forma simples e compreensível',
+    Q1_EXPLICITO:   'Deixa regras e etapas bem explícitas',
+    Q1_ENFATICO_C:  'Destaca com energia os pontos essenciais',
+    Q1_CONCENTRADO: 'Foca nos registros e informações iniciais',
+    Q1_FORMAL:      'Segue o padrão institucional de recepção',
+    Q1_IMPESSOAL:   'Trata com isenção, sem favoritismos',
+    Q1_FLEXIVEL:    'Ajusta-se ao perfil de cada cliente',
+    Q1_INTERESSADO: 'Pergunta e escuta a demanda antes de agir',
+    Q1_CORDIAL_E:   'Gentileza que facilita a cooperação',
+    Q2_COMPREENSIVO:'Acolhe as reações emocionais do cliente',
+    Q2_CUIDADOSO:   'Executa com zelo e cuidado',
+    Q2_RESPEITOSO:  'Trata o cliente com respeito integral',
+    Q2_DESCRITIVO:  'Explica o que está sendo feito',
+    Q2_INTERATIVO:  'Mantém diálogo constante com o cliente',
+    Q2_OUVINTE:     'Pratica a escuta ativa',
+    Q2_DISTANTE:    'Mantém neutralidade emocional na execução',
+    Q2_EFICIENTE:   'Executa com qualidade e sem desperdícios',
+    Q2_OBJETIVO:    'Foca no resultado contratado',
+    Q2_RAPIDO_E:    'Age com agilidade, sem atropelar',
+    Q2_PRECISO:     'Age e informa com exatidão',
+    Q2_SOLICITO:    'Está disponível para ajudar prontamente',
+    Q3_AUTENTICO:   'Encerra com verdade e coerência',
+    Q3_CORDIAL_A:   'Despede-se com calor humano',
+    Q3_EMPATICO:    'Reconhece a emoção ao entregar resultados',
+    Q3_ACESSIVEL:   'Permanece disponível para dúvidas',
+    Q3_ELOQUENTE:   'Comunica os resultados com fluência',
+    Q3_ESPONTANEO:  'Fecha com naturalidade, sem script',
+    Q3_DIRETO:      'Informa o resultado sem rodeios',
+    Q3_PROTOCOLAR:  'Cumpre as etapas obrigatórias do fechamento',
+    Q3_RAPIDO_P:    'Conclui os trâmites finais com agilidade',
+    Q3_CONSISTENTE: 'Mantém o mesmo padrão até o fim',
+    Q3_PRESTATIVO:  'Orienta os cuidados do pós-atendimento',
+    Q3_ENFATICO_E:  'Reforça as recomendações essenciais'
+};
