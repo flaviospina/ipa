@@ -75,9 +75,9 @@ const App = {
         q.palavras.forEach(p => {
             const b = document.createElement('button');
             b.type = 'button';
-            b.className = 'word-card';
+            b.className = 'word-card word-card-desc';
             b.dataset.id = p.id;
-            b.textContent = p.w;
+            b.innerHTML = `<strong>${ACP.FRASE[p.id]}</strong><span>${p.sig}</span>`;
             b.draggable = true;
             b.onclick = () => this.pickWord(p.id);
             b.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', p.id));
@@ -127,7 +127,7 @@ const App = {
 
     async resetQuadro() {
         if (this.sel().length > 0 &&
-            !(await Msg.confirma('Limpar este quadro?', 'As palavras já ordenadas neste quadro serão desmarcadas.', 'Limpar', 'Manter'))) return;
+            !(await Msg.confirma('Limpar este quadro?', 'As práticas já ordenadas neste quadro serão desmarcadas.', 'Limpar', 'Manter'))) return;
         this.state.selecoes[this.state.quadroAtual] = [];
         this.persist();
         this.renderRank();
@@ -148,7 +148,7 @@ const App = {
             const placeholder = w === 11 ? 'a que MAIS se aproxima' : w === 0 ? 'a que MENOS se aproxima' : '—';
             li.innerHTML = `
                 <span class="rank-weight">${w}</span>
-                <span class="rank-word">${wordId ? byId[wordId].w : placeholder}</span>
+                <span class="rank-word rank-frase" title="${wordId ? byId[wordId].sig.replace(/"/g, '&quot;') : ''}">${wordId ? ACP.FRASE[wordId] : placeholder}</span>
                 <span class="rank-ctrl">
                     ${wordId && w >= 1 && w <= 10 ? `
                         <button type="button" title="Subir" onclick="App.move(${w},1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg></button>
@@ -170,8 +170,8 @@ const App = {
         // contador + guia
         document.getElementById('survey-counter').textContent = `${s.length} / 12`;
         const guide = document.getElementById('survey-guide');
-        if (s.length === 0) guide.innerHTML = 'Leia todas as palavras. Depois, escolha a que <strong>MAIS</strong> se aproxima da sua prática.';
-        else if (s.length === 1) guide.innerHTML = 'Agora escolha a palavra que <strong>MENOS</strong> se aproxima da sua prática.';
+        if (s.length === 0) guide.innerHTML = 'Leia todas as descrições. Depois, escolha a que <strong>MAIS</strong> se aproxima da sua prática.';
+        else if (s.length === 1) guide.innerHTML = 'Agora escolha a que <strong>MENOS</strong> se aproxima da sua prática.';
         else if (s.length < 12) guide.innerHTML = 'Ordene as demais em <strong>escala decrescente</strong> — cada clique preenche a próxima posição. Use as setas ou arraste para ajustar.';
         else guide.innerHTML = 'Quadro completo. Revise a escala e <strong>confirme</strong>.';
 
