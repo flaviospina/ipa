@@ -117,50 +117,80 @@ function desvioMomento(m) {
     return Math.sqrt(vals.reduce((s, v) => s + (v - MEDIA_MOMENTO) ** 2, 0) / 4);
 }
 
-/* Gráfico de linhas dos momentos (Q1 → Q3): uma linha por estilo, marcadores
-   com contorno branco, rótulos diretos no fim de cada linha e banda hachurada
-   de média ± 1 desvio padrão por momento. */
+/* Curva suave por interpolação cúbica monótona (Fritsch–Carlson): passa
+   exatamente pelos 3 pontos e nunca ultrapassa os valores medidos —
+   diferente da Catmull-Rom, que "estoura" além dos dados. */
+function tangentesMonotonas(p) {
+    const d0 = (p[1].y - p[0].y) / (p[1].x - p[0].x);
+    const d1 = (p[2].y - p[1].y) / (p[2].x - p[1].x);
+    return [d0, d0 * d1 <= 0 ? 0 : 2 * d0 * d1 / (d0 + d1), d1];
+}
+function controlesSegmento(a, b, ma, mb) {
+    const dx = (b.x - a.x) / 3;
+    return [{ x: a.x + dx, y: a.y + ma * dx }, { x: b.x - dx, y: b.y - mb * dx }];
+}
+const fx = n => n.toFixed(1);
+function caminhoSuave(p) {
+    const m = tangentesMonotonas(p);
+    const [c1, c2] = controlesSegmento(p[0], p[1], m[0], m[1]);
+    const [c3, c4] = controlesSegmento(p[1], p[2], m[1], m[2]);
+    return `M${fx(p[0].x)},${fx(p[0].y)} C${fx(c1.x)},${fx(c1.y)} ${fx(c2.x)},${fx(c2.y)} ${fx(p[1].x)},${fx(p[1].y)} C${fx(c3.x)},${fx(c3.y)} ${fx(c4.x)},${fx(c4.y)} ${fx(p[2].x)},${fx(p[2].y)}`;
+}
+function caminhoSuaveReverso(p) { // mesmo trecho, percorrido da direita para a esquerda
+    const m = tangentesMonotonas(p);
+    const [c1, c2] = controlesSegmento(p[0], p[1], m[0], m[1]);
+    const [c3, c4] = controlesSegmento(p[1], p[2], m[1], m[2]);
+    return `L${fx(p[2].x)},${fx(p[2].y)} C${fx(c4.x)},${fx(c4.y)} ${fx(c3.x)},${fx(c3.y)} ${fx(p[1].x)},${fx(p[1].y)} C${fx(c2.x)},${fx(c2.y)} ${fx(c1.x)},${fx(c1.y)} ${fx(p[0].x)},${fx(p[0].y)}`;
+}
+
+/* Gráfico dos momentos (Q1 → Q3): uma curva suave por estilo, marcadores com
+   anel branco, rótulos diretos no fim de cada curva e banda hachurada de
+   média ± 1 desvio padrão por momento, com bordas também suavizadas. */
 function lineChartMomentos(porMomento) {
-    const W = 640, H = 330, L = 48, R = 128, T = 26, B = 46;
+    const W = 640, H = 340, L = 44, R = 132, T = 30, B = 48;
     const plotW = W - L - R, plotH = H - T - B;
     const xs = [1, 2, 3].map(i => L + plotW * (i - 1) / 2);
     const y = v => T + plotH * (1 - v / 30);
     const sds = [1, 2, 3].map(q => desvioMomento(porMomento[q]));
 
+    // grade recessiva: linhas de 10 em 10, eixo apenas na base
     let grid = '';
-    for (let v = 0; v <= 30; v += 5) {
-        grid += `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="#e5e9f2" stroke-width="1"/>
-            <text x="${L - 8}" y="${y(v)}" text-anchor="end" dominant-baseline="central" font-size="10" fill="#8a94ab">${v}</text>`;
+    for (let v = 0; v <= 30; v += 10) {
+        grid += `<line x1="${L}" y1="${y(v)}" x2="${W - R}" y2="${y(v)}" stroke="${v === 0 ? '#d4dae6' : '#edf0f6'}" stroke-width="1"/>
+            <text x="${L - 9}" y="${y(v)}" text-anchor="end" dominant-baseline="central" font-size="10" fill="#9aa3b8">${v}</text>`;
     }
 
-    // banda hachurada: média ± desvio padrão, momento a momento
-    const topo = xs.map((x, i) => `${x},${y(Math.min(30, MEDIA_MOMENTO + sds[i])).toFixed(1)}`);
-    const base = xs.map((x, i) => `${x},${y(Math.max(0, MEDIA_MOMENTO - sds[i])).toFixed(1)}`).reverse();
-    const banda = `<polygon points="${topo.join(' ')} ${base.join(' ')}" fill="url(#ipa-hachura)" stroke="#aab3c5" stroke-width="1" stroke-dasharray="3 3"/>
-        <line x1="${L}" y1="${y(MEDIA_MOMENTO)}" x2="${W - R}" y2="${y(MEDIA_MOMENTO)}" stroke="#8a94ab" stroke-width="1.2" stroke-dasharray="6 4"/>
-        <text x="${L + 4}" y="${y(MEDIA_MOMENTO) - 6}" font-size="9.5" font-weight="600" fill="#8a94ab">média 16,5</text>`;
+    // banda hachurada (média ± desvio padrão), com contorno curvo
+    const topoPts = xs.map((x, i) => ({ x, y: y(Math.min(30, MEDIA_MOMENTO + sds[i])) }));
+    const basePts = xs.map((x, i) => ({ x, y: y(Math.max(0, MEDIA_MOMENTO - sds[i])) }));
+    const banda = `<path d="${caminhoSuave(topoPts)} ${caminhoSuaveReverso(basePts)} Z" fill="url(#ipa-hachura)" stroke="#c3cad9" stroke-width="1"/>
+        <line x1="${L}" y1="${y(MEDIA_MOMENTO)}" x2="${W - R}" y2="${y(MEDIA_MOMENTO)}" stroke="#a7b0c3" stroke-width="1.2" stroke-dasharray="5 5"/>
+        <text x="${L + 6}" y="${y(MEDIA_MOMENTO) - 7}" font-size="9.5" font-weight="600" fill="#8a94ab">média 16,5</text>`;
 
-    // rótulos diretos ao fim das linhas, com ajuste anticolisão
+    // rótulos diretos ao fim das curvas, com ajuste anticolisão
     const ordem = ['A', 'C', 'P', 'E'];
     const fins = ordem.map(k => ({ k, yl: y(porMomento[3][k]) })).sort((a, b) => a.yl - b.yl);
-    for (let i = 1; i < fins.length; i++) if (fins[i].yl - fins[i - 1].yl < 14) fins[i].yl = fins[i - 1].yl + 14;
+    for (let i = 1; i < fins.length; i++) if (fins[i].yl - fins[i - 1].yl < 15) fins[i].yl = fins[i - 1].yl + 15;
     const posFim = {};
     fins.forEach(f => { posFim[f.k] = f.yl; });
 
     let linhas = '';
     ordem.forEach(k => {
         const st = ACP.STYLES[k];
-        const pts = xs.map((x, i) => `${x},${y(porMomento[i + 1][k]).toFixed(1)}`).join(' ');
-        linhas += `<polyline points="${pts}" fill="none" stroke="${st.cor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+        const pts = xs.map((x, i) => ({ x, y: y(porMomento[i + 1][k]) }));
+        const d = caminhoSuave(pts);
+        // halo branco sob a curva: mantém a leitura sobre a hachura e nos cruzamentos
+        linhas += `<path d="${d}" fill="none" stroke="#ffffff" stroke-width="6" stroke-opacity="0.75" stroke-linejoin="round" stroke-linecap="round"/>
+            <path d="${d}" fill="none" stroke="${st.cor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
         xs.forEach((x, i) => {
             const v = porMomento[i + 1][k];
-            linhas += `<circle cx="${x}" cy="${y(v).toFixed(1)}" r="4.5" fill="${st.cor}" stroke="#ffffff" stroke-width="1.6"><title>${esc(st.curto)} — Q${i + 1}: ${v} pontos</title></circle>`;
+            linhas += `<circle cx="${x}" cy="${fx(y(v))}" r="4.5" fill="${st.cor}" stroke="#ffffff" stroke-width="2"><title>${esc(st.curto)} — Q${i + 1}: ${v} pontos</title></circle>`;
         });
-        linhas += `<text x="${W - R + 10}" y="${posFim[k].toFixed(1)}" font-size="11" font-weight="700" fill="${st.cor}" dominant-baseline="central">${esc(st.curto)} · ${porMomento[3][k]}</text>`;
+        linhas += `<text x="${W - R + 12}" y="${fx(posFim[k])}" font-size="11.5" font-weight="700" fill="${st.cor}" dominant-baseline="central">${esc(st.curto)} · ${porMomento[3][k]}</text>`;
     });
 
     const eixoX = ['Q1 · Início', 'Q2 · Durante', 'Q3 · Término'].map((t, i) =>
-        `<text x="${xs[i]}" y="${H - B + 22}" text-anchor="middle" font-size="11" font-weight="600" fill="#4a5568">${t}</text>`).join('');
+        `<text x="${xs[i]}" y="${H - B + 24}" text-anchor="middle" font-size="11" font-weight="700" fill="#5b647a" letter-spacing=".02em">${t}</text>`).join('');
 
     const legenda = ordem.map(k => `
         <div class="pie-leg-row"><span class="chart-swatch" style="background:${ACP.STYLES[k].cor}"></span><span class="pie-leg-name">${esc(ACP.STYLES[k].curto)}</span></div>`).join('')
@@ -168,9 +198,9 @@ function lineChartMomentos(porMomento) {
 
     return `<div class="rp-line-wrap">
         <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução da pontuação de cada estilo nos três momentos do atendimento">
-            <defs><pattern id="ipa-hachura" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                <rect width="6" height="6" fill="#f1f4f9"/>
-                <line x1="0" y1="0" x2="0" y2="6" stroke="#9aa6bd" stroke-width="1.3"/>
+            <defs><pattern id="ipa-hachura" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(45)">
+                <rect width="7" height="7" fill="#f4f6fa"/>
+                <line x1="0" y1="0" x2="0" y2="7" stroke="#b7c1d4" stroke-width="1.4"/>
             </pattern></defs>
             ${grid}${banda}${linhas}${eixoX}
         </svg>
@@ -216,12 +246,13 @@ Engine.renderRelatorio = function (dados, r, ia) {
         return `<tr>
             <td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[k].cor}"></span>${ACP.STYLES[k].nome}</span></td>
             ${vals.map((v, i) => `<td class="num${v === Math.max(...['A','C','P','E'].map(x => r.porMomento[i+1][x])) ? ' hl-cell' : ''}">${v}</td>`).join('')}
+            <td class="num tot-col">${r.totais[k]}</td>
         </tr>`;
     }).join('');
     const matriz = `<table class="rp-table rp-table-sm rp-matrix">
-        <thead><tr><th>Estilos / Momentos</th><th class="num">Q1 · Início</th><th class="num">Q2 · Durante</th><th class="num">Q3 · Término</th></tr></thead>
+        <thead><tr><th>Estilos / Momentos</th><th class="num">Q1 · Início</th><th class="num">Q2 · Durante</th><th class="num">Q3 · Término</th><th class="num">Total do estilo</th></tr></thead>
         <tbody>${matrizLinhas}
-        <tr class="tot"><td>Total</td><td class="num">66</td><td class="num">66</td><td class="num">66</td></tr></tbody>
+        <tr class="tot"><td>Total</td><td class="num">66</td><td class="num">66</td><td class="num">66</td><td class="num tot-col">${r.total}</td></tr></tbody>
     </table>`;
 
     const implicacoes = ACP.QUADROS.map(q => {
