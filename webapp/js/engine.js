@@ -488,7 +488,7 @@ Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
     let css = '';
     try {
         // inline do CSS quando servido via http(s); em file:// segue sem estilo externo
-        const res = await fetch('css/app.css');
+        const res = await fetch('css/app.css?v=5');
         if (res.ok) css = await res.text();
     } catch (e) { /* segue sem css */ }
     return `<!DOCTYPE html>
