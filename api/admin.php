@@ -355,6 +355,45 @@ try {
         out(['ok' => true, 'nome' => $nome, 'auto' => $auto ?: null, 'avaliacoes' => $avaliacoes]);
     }
 
+    /* ===== arquivos de relatórios no servidor, separados por empresa =====
+       Listagem e download exigem sessão; o gestor só alcança a pasta da
+       própria empresa (o admin indica empresa_id). Nomes de arquivo são
+       validados contra path traversal e o download sai como anexo. */
+    if ($action === 'arquivos_list') {
+        exigir_login();
+        $empresaId = e_admin() ? (int)($data['empresa_id'] ?? 0) : empresa_sessao();
+        if ($empresaId <= 0) out(['ok' => false, 'code' => 'empresa_invalida']);
+        $dir = __DIR__ . '/arquivos/empresa-' . $empresaId;
+        $rows = [];
+        if (is_dir($dir)) {
+            foreach (scandir($dir, SCANDIR_SORT_DESCENDING) as $f) {
+                if (!preg_match('/^[A-Za-z0-9._-]+\.html$/', $f)) continue;
+                $rows[] = ['nome' => $f,
+                           'tamanho_kb' => (int)round(filesize($dir . '/' . $f) / 1024),
+                           'data' => gmdate('Y-m-d H:i', filemtime($dir . '/' . $f))];
+            }
+        }
+        out(['ok' => true, 'rows' => $rows]);
+    }
+
+    if ($action === 'arquivo') {
+        exigir_login();
+        $empresaId = e_admin() ? (int)($data['empresa_id'] ?? 0) : empresa_sessao();
+        $nome = basename((string)($data['nome'] ?? ''));
+        if ($empresaId <= 0 || !preg_match('/^[A-Za-z0-9._-]+\.html$/', $nome)) {
+            out(['ok' => false, 'code' => 'arquivo_invalido']);
+        }
+        $caminho = __DIR__ . '/arquivos/empresa-' . $empresaId . '/' . $nome;
+        if (!is_file($caminho)) out(['ok' => false, 'code' => 'not_found'], 404);
+        header('Content-Type: text/html; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $nome . '"');
+        header('X-Content-Type-Options: nosniff');
+        header('X-Robots-Tag: noindex, nofollow');
+        header('Cache-Control: no-store');
+        readfile($caminho);
+        exit;
+    }
+
     out(['ok' => false, 'code' => 'acao_desconhecida']);
 
 } catch (PDOException $e) {

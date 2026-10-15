@@ -144,6 +144,16 @@
             </table>
             <p class="lgpd">Tratamento de dados conforme a LGPD: os relatórios individuais destinam-se exclusivamente ao programa de desenvolvimento. Não repasse os links a pessoas não autorizadas.</p>
         </div>
+
+        <div class="card tbl-scroll">
+            <h2>📁 Arquivos de relatórios no servidor</h2>
+            <p class="muted">Cópia de cada relatório gerada automaticamente e armazenada na pasta exclusiva da sua empresa.
+               Baixe o arquivo e, ao abri-lo, use <strong>Imprimir → Salvar como PDF</strong> para obter o PDF idêntico ao do sistema.</p>
+            <table>
+                <thead><tr><th>Arquivo</th><th>Data (UTC)</th><th>Tamanho</th><th></th></tr></thead>
+                <tbody id="tb-arq"><tr><td colspan="4" class="muted">Carregando…</td></tr></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- RELATÓRIO 360° -->
@@ -209,6 +219,33 @@
             this.dados = r;
             document.getElementById('d-empresa').textContent = r.empresa.nome;
             this.render();
+            this.carregarArquivos();
+        },
+        async carregarArquivos() {
+            const tb = document.getElementById('tb-arq');
+            const r = await this.post({ action: 'arquivos_list' }).catch(() => null);
+            if (!r || !r.ok) { tb.innerHTML = '<tr><td colspan="4" class="muted">Não foi possível listar os arquivos.</td></tr>'; return; }
+            tb.innerHTML = r.rows.length ? r.rows.map(a => `<tr>
+                <td><strong>${this.esc(a.nome)}</strong></td>
+                <td>${this.esc(a.data)}</td>
+                <td>${a.tamanho_kb} KB</td>
+                <td><a class="rel arq-dl" href="#" data-nome="${this.esc(a.nome)}">Baixar ↓</a></td>
+            </tr>`).join('') : '<tr><td colspan="4" class="muted">Nenhum arquivo ainda — eles são gravados automaticamente a cada relatório gerado pelo link da empresa.</td></tr>';
+            document.querySelectorAll('#tb-arq .arq-dl').forEach(el =>
+                el.addEventListener('click', ev => { ev.preventDefault(); Emp.baixarArquivo(el.dataset.nome); }));
+        },
+        async baixarArquivo(nome) {
+            const resp = await fetch(API, { method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'arquivo', nome }) });
+            if (!resp.ok || (resp.headers.get('Content-Type') || '').includes('application/json')) {
+                return Msg.fire({ icon: 'error', titulo: 'Arquivo indisponível', html: 'Tente entrar novamente.' });
+            }
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = nome;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
         },
         kpi(n, l) { return `<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`; },
         render() {

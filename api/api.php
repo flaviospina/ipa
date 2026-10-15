@@ -123,6 +123,31 @@ function resolver_empresa($codigo): ?array {
     } catch (Throwable $x) { return null; }
 }
 
+/* Cópia do relatório em disco, separada por empresa:
+   api/arquivos/empresa-<id>/IPA-<nome>-<data>-<token8>.html
+   (registros sem empresa vão para api/arquivos/avulsos/). A pasta é
+   bloqueada contra acesso direto via web (.htaccess) — o download sai
+   somente pelo endpoint autenticado do admin.php. */
+function arquivar_em_disco(string $cid, string $html): void {
+    $st = db()->prepare('SELECT nome, token, empresa_id FROM ipa_respostas WHERE cliente_id = ? LIMIT 1');
+    $st->execute([$cid]);
+    $r = $st->fetch();
+    if (!$r) return;
+    $base = __DIR__ . '/arquivos';
+    if (!is_dir($base)) mkdir($base, 0755, true);
+    foreach (["{$base}/.htaccess" => "Require all denied\nDeny from all\n",
+              "{$base}/index.html" => ''] as $arq => $conteudo) {
+        if (!is_file($arq)) @file_put_contents($arq, $conteudo);
+    }
+    $dir = $base . '/' . (!empty($r['empresa_id']) ? 'empresa-' . (int)$r['empresa_id'] : 'avulsos');
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9]+/', '-',
+        iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', (string)$r['nome']) ?: 'relatorio'), '-'));
+    if ($slug === '') $slug = 'relatorio';
+    $nomeArq = 'IPA-' . mb_substr($slug, 0, 60) . '-' . date('Y-m-d') . '-' . substr((string)$r['token'], 0, 8) . '.html';
+    file_put_contents($dir . '/' . $nomeArq, $html);
+}
+
 function classificar(array $s): array {
     arsort($s);
     $ordem = array_keys($s);
@@ -331,7 +356,11 @@ try {
         if (strlen($html) > MAX_RELATORIO_BYTES) out(['ok' => false, 'code' => 'too_large']);
         $st = db()->prepare('UPDATE ipa_respostas SET relatorio = ? WHERE cliente_id = ? LIMIT 1');
         $st->execute([$html, $cid]);
-        out(['ok' => $st->rowCount() > 0, 'code' => $st->rowCount() > 0 ? 'archived' : 'not_found']);
+        $okArch = $st->rowCount() > 0;
+        if ($okArch) {
+            try { arquivar_em_disco($cid, $html); } catch (Throwable $e) { /* o arquivo em disco é um extra: nunca derruba o arquivamento no banco */ }
+        }
+        out(['ok' => $okArch, 'code' => $okArch ? 'archived' : 'not_found']);
     }
 
     if (rate_limited($ip)) out(['ok' => false, 'code' => 'rate_limited']);

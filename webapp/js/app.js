@@ -229,7 +229,7 @@ const App = {
             Msg.fire({ icon: 'warning', titulo: 'Envio pendente',
                 html: motivo + '<br><br><strong>Suas respostas não se perderam:</strong> ficaram salvas neste navegador e serão reenviadas automaticamente. Você já pode baixar o relatório em PDF.',
                 confirmText: '📄 Baixar em PDF', denyText: 'Ver relatório no site' })
-                .then(e => { if (e === 'confirm') window.print(); });
+                .then(e => { if (e === 'confirm') this.imprimirRelatorio(); });
             return;
         }
 
@@ -262,6 +262,24 @@ const App = {
         this.dialogoFinal(r, !!out.ia);
     },
 
+    /* Impressão segura do relatório: espera o modal fechar por completo e
+       remove qualquer resíduo do SweetAlert no <body> (classes/estilos que
+       travam a altura da página e fazem o navegador imprimir SÓ a capa). */
+    imprimirRelatorio() {
+        const limpar = () => {
+            document.querySelectorAll('.swal2-container, .msgv-overlay').forEach(el => el.remove());
+            document.body.classList.remove('swal2-shown', 'swal2-height-auto', 'swal2-no-backdrop', 'swal2-toast-shown');
+            ['overflow', 'overflow-y', 'padding-right', 'height'].forEach(p => {
+                document.body.style.removeProperty(p);
+                document.documentElement.style.removeProperty(p);
+            });
+        };
+        setTimeout(() => {
+            limpar();
+            requestAnimationFrame(() => setTimeout(() => window.print(), 60));
+        }, 350);
+    },
+
     /* janela de conclusão: baixar o PDF dali mesmo ou ver no site */
     async dialogoFinal(r, comIA) {
         const pred = r.ranking[0];
@@ -276,7 +294,7 @@ const App = {
             confirmText: '📄 Baixar em PDF',
             denyText: 'Ver relatório no site'
         });
-        if (escolha === 'confirm') window.print();
+        if (escolha === 'confirm') this.imprimirRelatorio();
     },
 
     async send(payload) {
