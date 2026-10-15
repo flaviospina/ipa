@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Tutorial — Administração | VIPEDia</title>
+    <meta name="description" content="Guia do administrador: empresas, códigos exclusivos, responsáveis e segurança.">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tutorial.css">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="VIPEDia">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="Tutorial — Administração do IPA">
+    <meta property="og:description" content="Guia do administrador: empresas, códigos exclusivos, responsáveis e segurança.">
+    <meta property="og:url" content="https://itthrive.com.br/vipedia/tutorial/admin.html">
+    <meta property="og:image" content="https://itthrive.com.br/vipedia/home/og-home.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://itthrive.com.br/vipedia/home/og-home.png">
+</head>
+<body>
+    <div class="top">
+        <div class="brand"><span class="mark">V</span> VIPEDia · Tutorial</div>
+        <a class="voltar" href="../admin/index.html" onclick="if(history.length>1){history.back();return false}">← Voltar</a>
+    </div>
+    <div class="wrap">
+        <span class="badge">Tutorial do administrador</span>
+        <h1>Como administrar empresas e acessos</h1>
+        <p class="lead">A área <code>admin/</code> é exclusiva do consultor. Nela você cadastra as empresas,
+           gera os links exclusivos e cria os acessos dos responsáveis.</p>
+
+        <ol class="passos">
+            <li><h3>Entre com a chave de administração</h3>
+                <p>A chave é a constante <code>ADMIN_KEY</code> do <code>api/config.php</code> no servidor — use uma
+                   chave longa, aleatória e diferente da chave do painel. Após 5 tentativas erradas o acesso bloqueia
+                   por 15 minutos; a sessão expira em 30 minutos sem uso.</p></li>
+            <li><h3>Crie a empresa (aba Empresas)</h3>
+                <p>Digite o nome e clique em "Criar empresa". O sistema gera automaticamente um
+                   <strong>código criptografado exclusivo</strong> (22 caracteres aleatórios) que identifica a empresa nas URLs.</p></li>
+            <li><h3>Copie e distribua os links exclusivos</h3>
+                <p>Na lista de empresas, cada linha tem dois botões:</p>
+                <ul>
+                    <li><strong>Copiar link IPA</strong> — <code>webapp/index.html?e=CÓDIGO</code>: o funcionário abre com a
+                        organização preenchida e travada, digitando só nome e função;</li>
+                    <li><strong>Copiar link 360°</strong> — <code>webapp/360.html?e=CÓDIGO</code>: o avaliador escolhe o
+                        profissional numa lista com a equipe da empresa.</li>
+                </ul>
+                <div class="dica">💡 Quem acessar o IPA ou o 360° sem o código recebe um aviso automático orientando a
+                solicitar o link da empresa ou contatar o administrador.</div></li>
+            <li><h3>Crie o(s) responsável(is) (aba Responsáveis)</h3>
+                <p>Selecione a empresa, informe nome e e-mail e gere uma senha forte (botão "Gerar", mínimo 10 caracteres).
+                   Anote a senha exibida na confirmação e repasse por canal seguro — ela é guardada apenas como hash
+                   criptográfico e não pode ser consultada depois.</p></li>
+            <li><h3>Gerencie no dia a dia</h3>
+                <ul>
+                    <li><strong>Desativar empresa</strong>: os links param de funcionar e os gestores perdem o acesso (reversível);</li>
+                    <li><strong>Desativar responsável</strong>: revoga só aquele login;</li>
+                    <li><strong>Redefinir senha</strong>: gera uma nova senha forte para o responsável.</li>
+                </ul></li>
+        </ol>
+
+        <h2>Boas práticas de segurança</h2>
+        <ol class="passos">
+            <li><h3>Proteja as chaves</h3>
+                <p><code>ADMIN_KEY</code> e <code>PANEL_KEY</code> ficam somente no <code>config.php</code> do servidor —
+                   nunca em e-mails, planilhas ou repositórios.</p></li>
+            <li><h3>Princípio do menor acesso</h3>
+                <p>Crie um login por responsável (não compartilhe acessos) e desative imediatamente quem sair da função.
+                   Cada gestor enxerga apenas a própria empresa.</p></li>
+            <li><h3>Mantenha HTTPS</h3>
+                <p>Confirme o cadeado no navegador (AutoSSL do cPanel). As tentativas de login ficam auditadas na tabela
+                   <code>ipa_login_log</code>.</p></li>
+        </ol>
+
+        <div class="outros">Outros tutoriais:
+            <a href="atendente.html">Fazer o IPA</a>
+            <a href="360.html">Avaliação 360°</a>
+            <a href="empresa.html">Área da Empresa</a>
+        </div>
+    </div>
+</body>
+</html>

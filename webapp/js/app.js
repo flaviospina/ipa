@@ -371,14 +371,16 @@ const App = {
     },
 
     /* Link da empresa (?e=CODIGO): busca o nome pelo código opaco, preenche e
-       TRAVA o campo Organização — o funcionário só digita nome e função. */
+       TRAVA o campo Organização — o funcionário só digita nome e função.
+       Sem código (ou com código inválido), emite o aviso orientando a usar o
+       link da empresa ou procurar o administrador do sistema. */
     async carregarEmpresa() {
         const cod = (new URLSearchParams(location.search).get('e') || '').trim();
-        if (!cod || cod.length < 16) return;
+        if (!cod || cod.length < 16) { this.avisoSemEmpresa(false); return; }
         try {
             const r = await fetch(IPA_CONFIG.ENDPOINT + '?action=empresa&c=' + encodeURIComponent(cod));
             const j = await r.json();
-            if (!j || j.ok !== true || !j.nome) return;   // código inválido: segue com digitação manual
+            if (!j || j.ok !== true || !j.nome) { this.avisoSemEmpresa(true); return; }
             this.empresaCodigo = cod;
             const f = document.getElementById('f-org');
             f.value = j.nome;
@@ -391,7 +393,21 @@ const App = {
             dica.style.cssText = 'font-size:12.5px;margin:-6px 0 10px';
             dica.textContent = '🏢 Diagnóstico vinculado à sua empresa — preencha apenas o seu nome e a sua função.';
             f.parentElement.appendChild(dica);
-        } catch (e) { /* sem rede: segue com digitação manual */ }
+        } catch (e) { /* sem rede agora: não bloqueia a retomada; o envio tentará de novo */ }
+    },
+
+    avisoSemEmpresa(codigoInvalido) {
+        // só avisa quem está COMEÇANDO (não interrompe retomadas no meio do questionário)
+        const welcome = document.getElementById('screen-welcome');
+        if (!welcome || !welcome.classList.contains('active')) return;
+        Msg.fire({
+            icon: 'warning',
+            titulo: codigoInvalido ? 'Código da empresa inválido' : 'Acesso sem o código da empresa',
+            html: codigoInvalido
+                ? 'O link utilizado contém um código que <strong>não foi reconhecido</strong> — ele pode ter sido copiado incompleto ou a empresa pode estar inativa.<br><br>Solicite o link correto ao responsável da sua empresa ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>'
+                : 'Você está acessando o IPA <strong>sem o link exclusivo da sua empresa</strong>. Para que o seu diagnóstico seja vinculado corretamente à sua organização, entre pelo link com o código da empresa.<br><br>Solicite o link ao responsável da sua empresa ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>',
+            confirmText: 'Entendi'
+        });
     },
 
     init() {

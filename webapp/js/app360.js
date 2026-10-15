@@ -197,7 +197,19 @@ const App360 = {
             document.getElementById('w-avaliado-2').textContent = 'um(a) profissional';
             if (avaliado) document.getElementById('f-avaliado').value = avaliado;
             if (org) document.getElementById('f-org').value = org;
+            this.avisoSemEmpresa(false);
         }
+    },
+
+    avisoSemEmpresa(codigoInvalido) {
+        Msg.fire({
+            icon: 'warning',
+            titulo: codigoInvalido ? 'Código da empresa inválido' : 'Acesso sem o código da empresa',
+            html: codigoInvalido
+                ? 'O link utilizado contém um código que <strong>não foi reconhecido</strong> — ele pode ter sido copiado incompleto ou a empresa pode estar inativa.<br><br>Solicite o link correto a quem convidou você ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>'
+                : 'Você está acessando a avaliação 360° <strong>sem o link da empresa ou do convite</strong>. Para que a sua avaliação seja registrada corretamente, entre pelo link recebido (com o código da empresa).<br><br>Solicite o link a quem convidou você ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>',
+            confirmText: 'Entendi'
+        });
     },
 
     /* Link da empresa (?e=CODIGO): troca o campo "nome da pessoa avaliada"
@@ -208,7 +220,7 @@ const App360 = {
         try {
             const r = await fetch(IPA_CONFIG.ENDPOINT + '?action=equipe360&c=' + encodeURIComponent(cod));
             const j = await r.json();
-            if (!j || j.ok !== true) return;   // código inválido: segue com digitação manual
+            if (!j || j.ok !== true) { this.avisoSemEmpresa(true); return; }
             this.empresaCodigo = cod;
             const inAv = document.getElementById('f-avaliado');
             const inOrg = document.getElementById('f-org');

@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Área da Empresa | IPA — VIPEDia</title>
+
+    <!-- Compartilhamento em redes sociais (WhatsApp, Telegram, LinkedIn)
+         Se o site estiver em outro endereço, troque a base https://itthrive.com.br/vipedia nas URLs abaixo. -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="VIPEDia">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="Área da Empresa — Indicadores IPA">
+    <meta property="og:description" content="Acesso restrito aos responsáveis: indicadores de atendimento da equipe por estilo e flexibilidade, avaliações 360° e relatórios individuais.">
+    <meta property="og:url" content="https://itthrive.com.br/vipedia/empresa/">
+    <meta property="og:image" content="https://itthrive.com.br/vipedia/empresa/og-empresa.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Área da Empresa — indicadores de atendimento da equipe (IPA · Abordagem ACP)">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Área da Empresa — Indicadores IPA">
+    <meta name="twitter:description" content="Indicadores de atendimento da equipe, avaliações 360° e relatórios individuais. Acesso restrito.">
+    <meta name="twitter:image" content="https://itthrive.com.br/vipedia/empresa/og-empresa.png">
+
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,6 +74,7 @@
     <div class="top">
         <div class="brand"><span class="mark">V</span> VIPEDia · <span style="color:var(--ink-3)">Área da Empresa — IPA</span></div>
         <div>
+            <a class="btn btn-ghost btn-sm" href="../tutorial/empresa.html" style="text-decoration:none;margin-right:8px">📖 Tutorial</a>
             <span id="quem" class="muted"></span>
             <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="Emp.sair()">Sair</button>
         </div>
@@ -131,8 +150,8 @@
                 senha: document.getElementById('in-senha').value });
             if (!r.ok) {
                 return Msg.fire({ icon: 'error',
-                    title: r.code === 'muitas_tentativas' ? 'Acesso bloqueado temporariamente' : 'Dados incorretos',
-                    text: r.code === 'muitas_tentativas' ? 'Muitas tentativas. Aguarde 15 minutos e tente novamente.' : 'E-mail ou senha inválidos.' });
+                    titulo: r.code === 'muitas_tentativas' ? 'Acesso bloqueado temporariamente' : 'Dados incorretos',
+                    html: r.code === 'muitas_tentativas' ? 'Muitas tentativas. Aguarde 15 minutos e tente novamente.' : 'E-mail ou senha inválidos.' });
             }
             document.getElementById('in-senha').value = '';
             this.entrar(r.gestor);
@@ -144,7 +163,7 @@
             document.getElementById('btn-sair').classList.remove('hidden');
             document.getElementById('quem').textContent = g.nome + ' · ';
             const r = await this.post({ action: 'dash' });
-            if (!r.ok) return Msg.fire({ icon: 'error', title: 'Sessão expirada', text: 'Entre novamente.' }).then(() => location.reload());
+            if (!r.ok) return Msg.fire({ icon: 'error', titulo: 'Sessão expirada', html: 'Entre novamente.' }).then(() => location.reload());
             this.dados = r;
             document.getElementById('d-empresa').textContent = r.empresa.nome;
             this.render();
