@@ -68,6 +68,32 @@
         a.rel { color:var(--accent); font-weight:700; }
         .sec-note { background:var(--accent-soft); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
         .lgpd { font-size:12px; color:var(--ink-3); margin-top:18px; }
+        /* ----- relatório 360° ----- */
+        .r360-head { display:flex; justify-content:space-between; align-items:start; gap:14px; flex-wrap:wrap; }
+        .cmp-row { display:grid; grid-template-columns: 130px 1fr 64px; gap:10px; align-items:center; margin:7px 0; font-size:13.5px; }
+        .cmp-lbl { font-weight:700; display:flex; align-items:center; gap:7px; }
+        .cmp-track { position:relative; height:30px; }
+        .cmp-bar { position:absolute; left:0; height:12px; border-radius:6px; }
+        .cmp-auto { top:1px; opacity:.45; }
+        .cmp-med { top:16px; }
+        .cmp-val { font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-2); line-height:1.3; }
+        .gap-tag { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:800; }
+        .gap-ok { background:#e7f6ef; color:var(--ok); }
+        .gap-cego { background:#fdeceb; color:var(--danger); }
+        .gap-oculta { background:#fff4d6; color:#8a6400; }
+        .av-card { border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; background:var(--card); }
+        .av-card h4 { margin:0 0 8px; font-size:14px; }
+        .av-bars { display:grid; gap:4px; }
+        .av-row { display:grid; grid-template-columns:110px 1fr 46px; gap:8px; align-items:center; font-size:12.5px; }
+        .av-track { background:var(--surface); border-radius:5px; height:9px; overflow:hidden; }
+        .av-bar { height:100%; border-radius:5px; }
+        .mini-mom { font-size:12px; color:var(--ink-3); margin-top:8px; }
+        @media print {
+            .top, .no-print, #tela-dash, #tela-login { display:none !important; }
+            body { background:#fff; font-size:12.5px; }
+            #tela-360 { display:block !important; }
+            .card, .av-card { break-inside:avoid; border-color:#ccc; }
+        }
     </style>
 </head>
 <body>
@@ -120,11 +146,27 @@
         </div>
     </div>
 
+    <!-- RELATÓRIO 360° -->
+    <div class="wrap hidden" id="tela-360">
+        <div class="r360-head no-print">
+            <div>
+                <h1 id="r360-nome">—</h1>
+                <p class="muted" id="r360-sub"></p>
+            </div>
+            <div>
+                <button class="btn btn-ghost btn-sm" onclick="Emp.fechar360()">← Voltar ao painel</button>
+                <button class="btn btn-sm" onclick="window.print()">Baixar em PDF</button>
+            </div>
+        </div>
+        <div id="r360-corpo"></div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
     <script src="../webapp/js/msg.js"></script>
     <script>
     const API = '../api/admin.php';
     const CORES = { 'Atenção':'var(--a)', 'Comunicação':'var(--c)', 'Procedimento':'var(--p)', 'Equilibrado':'var(--e)' };
+    const NOMES = { A: 'Atenção', C: 'Comunicação', P: 'Procedimento', E: 'Equilibrado' };
     const REGras = {
         FORTE_APEGO: ['Forte apego ao estilo', 'diferença ≥ 15 pontos para o 2º estilo'],
         FLEXIVEL: ['Perfil flexível', 'transita entre os estilos conforme a situação'],
@@ -210,13 +252,153 @@
                 <td>${this.esc(String(x.data).slice(0, 10))}</td>
                 <td><span class="sw" style="background:${CORES[x.predominante] || 'var(--ink-3)'}"></span>${this.esc(x.predominante)}</td>
                 <td>${(REGras[x.regra] || [x.regra])[0]}</td>
-                <td>${n360[x.nome] || 0}</td>
+                <td>${n360[x.nome] ? `<a class="rel btn-360" href="#" data-nome="${this.esc(x.nome)}">${n360[x.nome]} · Relatório 360° →</a>` : '0'}</td>
                 <td>${x.link ? `<a class="rel" href="${x.link}" target="_blank" rel="noopener">Ver relatório →</a>` : '<span class="muted">—</span>'}</td>
             </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum profissional neste indicador ainda.</td></tr>';
+            document.querySelectorAll('#tb-func .btn-360').forEach(b =>
+                b.addEventListener('click', ev => { ev.preventDefault(); Emp.ver360(b.dataset.nome); }));
         },
         filtrar(tipo, v) {
             this.filtro = tipo ? { tipo, v } : null;
             this.render();
+        },
+
+        /* ============ Relatório 360° (consolidado + individuais) ============ */
+        fechar360() {
+            document.getElementById('tela-360').classList.add('hidden');
+            document.getElementById('tela-dash').classList.remove('hidden');
+            window.scrollTo({ top: 0 });
+        },
+        media(avs, k) { return avs.length ? avs.reduce((s, a) => s + a[k], 0) / avs.length : 0; },
+        fmt(n) { return (Math.round(n * 10) / 10).toLocaleString('pt-BR'); },
+        async ver360(nome) {
+            const r = await this.post({ action: 'rel360', nome });
+            if (!r.ok) return Msg.fire({ icon: 'error', titulo: 'Não foi possível abrir', html: 'Tente entrar novamente.' });
+            document.getElementById('tela-dash').classList.add('hidden');
+            document.getElementById('tela-360').classList.remove('hidden');
+            window.scrollTo({ top: 0 });
+            document.getElementById('r360-nome').textContent = 'Relatório 360° — ' + r.nome;
+            document.getElementById('r360-sub').textContent =
+                `${r.avaliacoes.length} avaliação(ões) externa(s) anônima(s) · ${this.dados.empresa.nome}`;
+            document.getElementById('r360-corpo').innerHTML = this.render360(r);
+        },
+        barraCmp(k, auto, med) {
+            const MAX = 90; // máximo teórico de um estilo (30 pontos × 3 momentos)
+            return `<div class="cmp-row">
+                <span class="cmp-lbl"><span class="sw" style="background:${CORES[NOMES[k]]}"></span>${NOMES[k]}</span>
+                <div class="cmp-track">
+                    ${auto === null ? '' : `<div class="cmp-bar cmp-auto" style="width:${(auto / MAX * 100).toFixed(1)}%;background:${CORES[NOMES[k]]}"></div>`}
+                    <div class="cmp-bar cmp-med" style="width:${(med / MAX * 100).toFixed(1)}%;background:${CORES[NOMES[k]]}"></div>
+                </div>
+                <div class="cmp-val">${auto === null ? '' : 'auto ' + auto + '<br>'}360° ${this.fmt(med)}</div>
+            </div>`;
+        },
+        gapInfo(gap) {
+            if (gap >= 10) return ['gap-cego', 'Possível ponto cego', 'o profissional valoriza este estilo bem mais do que os outros percebem — vale checar se a intenção está virando comportamento visível.'];
+            if (gap <= -10) return ['gap-oculta', 'Força oculta', 'os outros percebem este estilo mais do que o próprio profissional reconhece — uma força a ser conscientizada e aproveitada.'];
+            return ['gap-ok', 'Percepção alinhada', 'autoimagem e percepção externa próximas — bom nível de autoconsciência neste estilo.'];
+        },
+        render360(r) {
+            const avs = r.avaliacoes, auto = r.auto;
+            const chaves = ['A', 'C', 'P', 'E'];
+            const med = {}; chaves.forEach(k => { med[k] = this.media(avs, k); });
+            const liderPerc = chaves.reduce((a, b) => med[a] >= med[b] ? a : b);
+
+            /* ----- consolidado: barras auto × média + gaps ----- */
+            const barras = chaves.map(k => this.barraCmp(k, auto ? auto[k] : null, med[k])).join('');
+            let gaps = '', leitura = '';
+            if (auto) {
+                gaps = `<table style="margin-top:16px"><thead><tr><th>Estilo</th><th>Autoavaliação</th><th>Média 360°</th><th>Diferença</th><th>Leitura</th></tr></thead><tbody>` +
+                    chaves.map(k => {
+                        const gap = auto[k] - med[k];
+                        const [cls, rotulo] = this.gapInfo(gap);
+                        return `<tr><td><span class="sw" style="background:${CORES[NOMES[k]]}"></span>${NOMES[k]}</td>
+                            <td>${auto[k]}</td><td>${this.fmt(med[k])}</td>
+                            <td>${gap > 0 ? '+' : ''}${this.fmt(gap)}</td>
+                            <td><span class="gap-tag ${cls}">${rotulo}</span></td></tr>`;
+                    }).join('') + '</tbody></table>';
+                const gapsArr = chaves.map(k => ({ k, gap: auto[k] - med[k] }));
+                const maiorCego = gapsArr.reduce((a, b) => a.gap >= b.gap ? a : b);
+                const maiorOculta = gapsArr.reduce((a, b) => a.gap <= b.gap ? a : b);
+                leitura = `<h2 style="font-size:16px">Leitura do consolidado</h2><div class="rp-prose" style="font-size:14px;color:var(--ink-2)">
+                    <p>Na autoavaliação, o estilo predominante de <strong>${this.esc(r.nome)}</strong> é
+                       <strong>${this.esc(auto.predominante)}</strong>; na percepção média dos avaliadores, o estilo mais
+                       presente é <strong>${NOMES[liderPerc]}</strong> (${this.fmt(med[liderPerc])} pontos).
+                       ${auto.predominante === NOMES[liderPerc]
+                           ? 'Autoimagem e percepção externa <strong>coincidem</strong> no estilo predominante — um indicador saudável de autoconsciência.'
+                           : 'Autoimagem e percepção externa <strong>divergem</strong> no estilo predominante — um ponto valioso para a conversa de desenvolvimento.'}</p>
+                    <p>${maiorCego.gap >= 10 ? `Maior possível ponto cego: <strong>${NOMES[maiorCego.k]}</strong> (autoavaliação ${this.fmt(maiorCego.gap)} pontos acima da percepção) — ${this.gapInfo(maiorCego.gap)[2]}` : ''}
+                       ${maiorOculta.gap <= -10 ? ` Maior força oculta: <strong>${NOMES[maiorOculta.k]}</strong> (percepção ${this.fmt(-maiorOculta.gap)} pontos acima da autoavaliação) — ${this.gapInfo(maiorOculta.gap)[2]}` : ''}
+                       ${maiorCego.gap < 10 && maiorOculta.gap > -10 ? 'Nenhuma divergência relevante (±10 pontos) entre autoimagem e percepção externa — perfil bem calibrado.' : ''}</p></div>`;
+            }
+
+            /* ----- por grupo de relação (anonimato: só grupos com 3+) ----- */
+            const grupos = {};
+            avs.forEach(a => { (grupos[a.relacao] = grupos[a.relacao] || []).push(a); });
+            const grandes = Object.entries(grupos).filter(([, g]) => g.length >= 3);
+            const pequenos = avs.length - grandes.reduce((s, [, g]) => s + g.length, 0);
+            let porGrupo = '';
+            if (grandes.length) {
+                porGrupo = `<h2 style="font-size:16px;margin-top:22px">Percepção por grupo de avaliadores</h2>
+                    <table><thead><tr><th>Grupo</th><th>Avaliações</th>${chaves.map(k => `<th>${NOMES[k]}</th>`).join('')}</tr></thead><tbody>` +
+                    grandes.map(([rel, g]) => `<tr><td><strong>${this.esc(rel)}</strong></td><td>${g.length}</td>` +
+                        chaves.map(k => `<td>${this.fmt(this.media(g, k))}</td>`).join('') + '</tr>').join('') +
+                    '</tbody></table>' +
+                    (pequenos > 0 ? `<p class="lgpd">${pequenos} avaliação(ões) de grupos com menos de 3 respostas não são detalhadas por grupo, para preservar o anonimato.</p>` : '');
+            } else if (avs.length) {
+                porGrupo = `<p class="lgpd" style="margin-top:16px">As médias por grupo de relação (gestor, colega, cliente) são exibidas somente quando um grupo acumula <strong>3 ou mais avaliações</strong> — prática recomendada para preservar o anonimato dos avaliadores.</p>`;
+            }
+
+            /* ----- por momento ----- */
+            const medMom = {};
+            [1, 2, 3].forEach(q => { medMom[q] = {}; chaves.forEach(k => {
+                medMom[q][k] = avs.length ? avs.reduce((s, a) => s + a.momentos[q][k], 0) / avs.length : 0; }); });
+            const nomesQ = { 1: 'Q1 · Início', 2: 'Q2 · Durante', 3: 'Q3 · Término' };
+            const porMomento = `<h2 style="font-size:16px;margin-top:22px">Ênfase por momento do atendimento</h2>
+                <table><thead><tr><th>Momento</th>${auto ? '<th>Autoavaliação (maior ênfase)</th>' : ''}<th>Percepção 360° (maior ênfase)</th></tr></thead><tbody>` +
+                [1, 2, 3].map(q => {
+                    const lp = chaves.reduce((a, b) => medMom[q][a] >= medMom[q][b] ? a : b);
+                    let cAuto = '';
+                    if (auto) {
+                        const la = chaves.reduce((a, b) => auto.momentos[q][a] >= auto.momentos[q][b] ? a : b);
+                        cAuto = `<td><span class="sw" style="background:${CORES[NOMES[la]]}"></span>${NOMES[la]} (${auto.momentos[q][la]} pts)</td>`;
+                    }
+                    return `<tr><td><strong>${nomesQ[q]}</strong></td>${cAuto}
+                        <td><span class="sw" style="background:${CORES[NOMES[lp]]}"></span>${NOMES[lp]} (${this.fmt(medMom[q][lp])} pts)</td></tr>`;
+                }).join('') + '</tbody></table>';
+
+            /* ----- avaliações individuais (anônimas) ----- */
+            const individuais = avs.map((a, i) => {
+                const lider = chaves.reduce((x, y) => a[x] >= a[y] ? x : y);
+                const moms = [1, 2, 3].map(q => {
+                    const l = chaves.reduce((x, y) => a.momentos[q][x] >= a.momentos[q][y] ? x : y);
+                    return `${nomesQ[q].slice(0, 2)}: ${NOMES[l]} (${a.momentos[q][l]})`;
+                }).join(' · ');
+                return `<div class="av-card">
+                    <h4>Avaliação nº ${i + 1} <span class="muted" style="font-weight:600">· ${this.esc(a.relacao)} · ${this.esc(String(a.criado_em).slice(0, 10))}</span></h4>
+                    <div class="av-bars">${chaves.map(k => `
+                        <div class="av-row"><span><span class="sw" style="background:${CORES[NOMES[k]]}"></span>${NOMES[k]}</span>
+                        <div class="av-track"><div class="av-bar" style="width:${(a[k] / 90 * 100).toFixed(1)}%;background:${CORES[NOMES[k]]}"></div></div>
+                        <span style="text-align:right;font-variant-numeric:tabular-nums">${a[k]}</span></div>`).join('')}
+                    </div>
+                    <div class="mini-mom"><strong>Estilo mais percebido:</strong> ${NOMES[lider]} · <strong>Por momento:</strong> ${moms}</div>
+                </div>`;
+            }).join('');
+
+            return `
+                <div class="card">
+                    <h2>Relatório consolidado — autoimagem × percepção externa</h2>
+                    ${auto ? '<p class="muted">Barra clara: autoavaliação (IPA) · Barra cheia: média das percepções 360°. Máximo teórico por estilo: 90 pontos.</p>'
+                           : '<p class="muted">Este profissional ainda não respondeu o IPA — exibindo apenas a percepção externa.</p>'}
+                    ${barras}${gaps}${leitura}${porGrupo}${porMomento}
+                    <div class="sec-note">🎯 Uso recomendado: os resultados 360° destinam-se ao <strong>desenvolvimento</strong> do profissional
+                    (conversas de feedback e plano de ação) — não a decisões punitivas, de remuneração ou desligamento. Avaliadores são anônimos.</div>
+                </div>
+                <div class="card">
+                    <h2>Avaliações individuais (anônimas)</h2>
+                    <p class="muted">Cada registro traz apenas a relação profissional e a data — nunca a identidade de quem avaliou.</p>
+                    ${individuais || '<p class="muted">Nenhuma avaliação registrada.</p>'}
+                </div>`;
         }
     };
     Emp.init();

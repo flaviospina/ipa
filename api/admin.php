@@ -308,6 +308,53 @@ try {
              'csrf' => csrf_token()]);
     }
 
+    /* ===== relatório 360° de um profissional (GESTOR; admin informa empresa_id)
+       Devolve a autoavaliação, cada avaliação individual (anônima: só a
+       relação e a data) com pontuações por estilo e por momento, prontas
+       para o relatório consolidado (gap auto × percepção). ===== */
+    if ($action === 'rel360') {
+        exigir_login();
+        $empresaId = e_admin() ? (int)($data['empresa_id'] ?? 0) : empresa_sessao();
+        $nome = limpar($data['nome'] ?? '');
+        if ($empresaId <= 0 || $nome === '') out(['ok' => false, 'code' => 'dados_invalidos']);
+
+        $momentos = function (string $tabela, string $fkCol, int $id): array {
+            $m = [1 => ['A'=>0,'C'=>0,'P'=>0,'E'=>0], 2 => ['A'=>0,'C'=>0,'P'=>0,'E'=>0], 3 => ['A'=>0,'C'=>0,'P'=>0,'E'=>0]];
+            $st = db()->prepare("SELECT quadro, estilo, SUM(peso) AS n FROM {$tabela} WHERE {$fkCol} = ? GROUP BY quadro, estilo");
+            $st->execute([$id]);
+            foreach ($st->fetchAll() as $r) $m[(int)$r['quadro']][$r['estilo']] = (int)$r['n'];
+            return $m;
+        };
+
+        $st = db()->prepare(
+            "SELECT id, criado_em, funcao, predominante, regra,
+                    score_a AS A, score_c AS C, score_p AS P, score_e AS E
+             FROM ipa_respostas WHERE empresa_id = ? AND nome = ?
+             ORDER BY criado_em DESC LIMIT 1");
+        $st->execute([$empresaId, $nome]);
+        $auto = $st->fetch();
+        if ($auto) {
+            foreach (['A','C','P','E'] as $k) $auto[$k] = (int)$auto[$k];
+            $auto['momentos'] = $momentos('ipa_respostas_palavras', 'resposta_id', (int)$auto['id']);
+            unset($auto['id']);
+        }
+
+        $st = db()->prepare(
+            "SELECT id, criado_em, relacao,
+                    score_a AS A, score_c AS C, score_p AS P, score_e AS E
+             FROM ipa_360 WHERE empresa_id = ? AND avaliado = ? ORDER BY criado_em");
+        $st->execute([$empresaId, $nome]);
+        $avaliacoes = $st->fetchAll();
+        foreach ($avaliacoes as &$a) {
+            foreach (['A','C','P','E'] as $k) $a[$k] = (int)$a[$k];
+            $a['momentos'] = $momentos('ipa_360_palavras', 'avaliacao_id', (int)$a['id']);
+            unset($a['id']);   // nenhum identificador do avaliador sai da API
+        }
+        unset($a);
+
+        out(['ok' => true, 'nome' => $nome, 'auto' => $auto ?: null, 'avaliacoes' => $avaliacoes]);
+    }
+
     out(['ok' => false, 'code' => 'acao_desconhecida']);
 
 } catch (PDOException $e) {
