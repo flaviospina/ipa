@@ -218,6 +218,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
 .line-legend { display: flex; flex-wrap: wrap; gap: 8px 22px; min-width: 0; margin-top: 10px; justify-content: center; }
 .swatch-hachura { background: repeating-linear-gradient(45deg, #f1f4f9 0 2px, #9aa6bd 2px 3.5px); border: 1px solid #aab3c5; }
 .rp-item-meta { font-size: 12px; color: var(--ink-3); font-weight: 600; }
+.rp-momento-titulo { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; color: var(--brand); margin: 18px 0 2px; }
 .pie-leg-name { font-weight: 700; flex: 1; }
 .pie-leg-val { color: var(--ink-2); font-variant-numeric: tabular-nums; }
 

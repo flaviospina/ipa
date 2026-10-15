@@ -263,7 +263,7 @@ Engine.renderRelatorio = function (dados, r, ia) {
         if (alinhado) {
             return `<p><strong>Q${q.id} — ${esc(q.momento)}:</strong> sua maior ênfase (${ACP.STYLES[lider].curto}, ${m[lider]} pontos) está alinhada ao que este momento tipicamente pede. <em>Implicação:</em> este é um ponto forte a preservar — a necessidade de <strong>${ACP.STYLES[esperado].necessidade.toLowerCase()}</strong> do cliente tende a ser bem atendida aqui.</p>`;
         }
-        return `<p><strong>Q${q.id} — ${esc(q.momento)}:</strong> sua maior ênfase foi <strong>${ACP.STYLES[lider].curto}</strong> (${m[lider]} pontos), enquanto este momento tipicamente pede destaque em <strong>${ACP.STYLES[esperado].curto}</strong> (você atribuiu ${m[esperado]} pontos). <em>Implicação para o desenvolvimento:</em> quando a variável ${ACP.STYLES[esperado].curto} fica em segundo plano neste momento, a necessidade de <strong>${ACP.STYLES[esperado].necessidade.toLowerCase()}</strong> do cliente pode ficar descoberta. O caminho não é abandonar sua força em ${ACP.STYLES[lider].curto}, e sim incluir conscientemente comportamentos de ${ACP.STYLES[esperado].curto} neste momento do atendimento.</p>`;
+        return `<p><strong>Q${q.id} — ${esc(q.momento)}:</strong> sua maior ênfase foi <strong>${ACP.STYLES[lider].curto}</strong> (${m[lider]} pontos), enquanto este momento tipicamente pede destaque em <strong>${ACP.STYLES[esperado].curto}</strong> (você atribuiu ${m[esperado]} pontos). <em>Implicação para o desenvolvimento:</em> quando a variável ${ACP.STYLES[esperado].curto} fica em segundo plano neste momento, a necessidade de <strong>${ACP.STYLES[esperado].necessidade.toLowerCase()}</strong> do cliente pode ficar descoberta. O caminho não é abandonar sua força em ${ACP.STYLES[lider].curto}, mas moderá-la e valorizar, ao mesmo tempo, as forças de ${ACP.STYLES[esperado].curto}.</p>`;
     }).join('');
 
     const analiseMomentos = ACP.QUADROS.map(q => {
@@ -320,27 +320,25 @@ Engine.renderRelatorio = function (dados, r, ia) {
         Essa leitura, somada à matriz acima, contribui diretamente para as recomendações de desenvolvimento das
         Fases 6 e 7.</p>`;
 
-    /* Fase 6 — tabelas de talentos e pontos a desenvolver */
-    const cabecaTabela = `<thead><tr><th>Comportamento</th><th class="num">Pontos</th><th>Variável</th><th>Momento</th><th>Descrição comportamental</th></tr></thead>`;
-    const linhaPalavra = (p, comDetalhe) => {
-        const det = ACP.DETALHE[p.id] || {};
-        const detalhe = comDetalhe && det.baixo ? `<tr class="det"><td colspan="5">
-            <strong>Pontuação baixa (0 a 2):</strong> ${esc(det.baixo)}
-            <strong>No sentido oposto, a valorização excessiva (9 a 11):</strong> ${esc(det.alto)}
-            <em>A faixa de equilíbrio situa-se entre 4 e 6 pontos.</em></td></tr>` : '';
-        return `<tr>
-            <td><strong>${esc(ACP.FRASE[p.id] || p.w)}</strong></td>
-            <td class="num"><span class="w-pill" style="background:${comDetalhe ? '#6b7280' : ACP.STYLES[p.st].cor}">${p.peso}</span></td>
-            <td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[p.st].cor}"></span>${ACP.STYLES[p.st].curto}</span></td>
-            <td>Q${p.quadro} · ${esc(p.momento.split(' ')[0])}</td>
+    /* Fase 6 — um quadro por momento do atendimento (formato Zuvela 28/set/26):
+       Descrição comportamental · Nota · Estilo/variável, sem a palavra do instrumento */
+    const cabecaMomento = `<thead><tr><th>Descrição comportamental</th><th class="num">Nota</th><th>Estilo / variável</th></tr></thead>`;
+    const quadrosPorMomento = (lista) => ACP.QUADROS.map(q => {
+        const itens = lista.filter(p => p.quadro === q.id);
+        if (!itens.length) return '';
+        const linhas = itens.map(p => `<tr>
             <td class="sig">${esc(p.sig)}</td>
-        </tr>${detalhe}`;
-    };
+            <td class="num"><span class="w-pill" style="background:${ACP.STYLES[p.st].cor}">${p.peso}</span></td>
+            <td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[p.st].cor}"></span>${ACP.STYLES[p.st].curto}</span></td>
+        </tr>`).join('');
+        return `<h4 class="rp-momento-titulo">Momento ${esc(q.momento.split(' ')[0])} — Q${q.id}</h4>
+        <div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaMomento}<tbody>${linhas}</tbody></table></div>`;
+    }).join('');
     const talentosHtml = r.talentos.length
-        ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.talentos.map(p => linhaPalavra(p, false)).join('')}</tbody></table></div>`
+        ? quadrosPorMomento(r.talentos)
         : '<p class="rp-prose">Nenhum comportamento recebeu pontuação 9 ou superior de forma destacada.</p>';
     const desenvolverHtml = r.desenvolver.length
-        ? `<div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaTabela}<tbody>${r.desenvolver.map(p => linhaPalavra(p, true)).join('')}</tbody></table></div>`
+        ? quadrosPorMomento(r.desenvolver)
         : '<p class="rp-prose">Nenhum comportamento ficou com pontuação crítica (0 a 2).</p>';
 
     /* Fase 7 — moderar as práticas supervalorizadas e fortalecer as
@@ -456,12 +454,20 @@ Engine.renderRelatorio = function (dados, r, ia) {
     <section class="rp-section">
         <h2>6 · Talentos e Pontos a Desenvolver</h2>
         <h3>Talentos comportamentais (pontuações 9 a 11)</h3>
-        <div class="rp-prose"><p>Estas são as práticas que você mais valoriza — suas forças visíveis, que brilham quando usadas no momento certo:</p></div>
+        <div class="rp-prose"><p>Nos quadros a seguir estão as práticas que você mais valoriza — suas forças visíveis, que brilham quando praticadas no momento certo:</p></div>
         <div class="rp-words">${talentosHtml}</div>
+        <div class="rp-prose">
+            <p>Os quadros retratam as práticas comportamentais mais valorizadas e, muito provavelmente, mais usadas por você em cada um dos momentos. Elas explicam as suas ações, dando vida aos números apresentados no gráfico dos momentos (Fase 5) e trazendo maior consciência sobre os seus comportamentos.</p>
+            <p>O grande cuidado está na alta intensidade: a valorização excessiva leva, na maioria das vezes, a um impacto negativo na percepção do cliente. Somente em casos e situações muito especiais ela pode ter resultados benéficos.</p>
+        </div>
         ${iaBlock(ia.talentos, 'Suas forças em ação')}
         <h3>Pontos a desenvolver (pontuações 0 a 2)</h3>
-        <div class="rp-prose"><p>As pontuações baixas não são falhas de caráter — são <strong>focos primários de capacitação</strong>. Elas revelam comportamentos pouco espontâneos que, quando a situação os exige, podem virar "vazamentos de energia relacional" ou gargalos de conformidade:</p></div>
+        <div class="rp-prose"><p>As pontuações baixas não são falhas de caráter — são <strong>focos primários de capacitação</strong>. Elas revelam comportamentos pouco espontâneos e raramente utilizados por você:</p></div>
         <div class="rp-words">${desenvolverHtml}</div>
+        <div class="rp-prose">
+            <p>Os quadros acima retratam as práticas comportamentais menos valorizadas e, muito provavelmente, pouco ou quase nunca usadas por você em cada um dos momentos. Da mesma forma, explicam as ações que dão vida aos números apresentados no gráfico dos momentos (Fase 5), permitindo que você tome consciência desses comportamentos quase nunca praticados.</p>
+            <p>O grande cuidado está na baixa valorização desses comportamentos quando requeridos pelos clientes: muito provavelmente, quando a situação os exigir, você terá dificuldade de adotá-los, visto não fazerem parte do seu repertório. Esses comportamentos são os "gargalos" para a adoção fluida do processo recomendado de atendimento.</p>
+        </div>
         ${iaBlock(ia.desenvolvimento, 'O que priorizar na sua capacitação')}
     </section>
 
@@ -488,7 +494,7 @@ Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
     let css = '';
     try {
         // inline do CSS quando servido via http(s); em file:// segue sem estilo externo
-        const res = await fetch('css/app.css?v=5');
+        const res = await fetch('css/app.css?v=6');
         if (res.ok) css = await res.text();
     } catch (e) { /* segue sem css */ }
     return `<!DOCTYPE html>
