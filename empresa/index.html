@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Área da Empresa | IPA — VIPEDia</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --ink:#16213a; --ink-2:#4b5772; --ink-3:#8a94ab; --surface:#f6f7f9; --card:#fff;
+                --line:#e4e8ef; --brand:#1e3a8a; --accent:#2952cc; --accent-soft:#eaf0fe; --ok:#0e9f6e; --danger:#c22b1a;
+                --a:#d9a400; --c:#e8401a; --p:#2952cc; --e:#0e9f6e; }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--surface); color:var(--ink); font-size:14.5px; }
+        .top { background:var(--card); border-bottom:1px solid var(--line); padding:0 22px; height:58px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+        .brand { display:flex; align-items:center; gap:9px; font-weight:800; }
+        .mark { background:var(--brand); color:#fff; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; font-weight:800; }
+        .wrap { max-width:1100px; margin:0 auto; padding:26px 20px 60px; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:22px; }
+        h1 { font-size:21px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 14px; }
+        .muted { color:var(--ink-3); font-size:13px; }
+        label { display:block; font-weight:700; font-size:12.5px; margin:12px 0 5px; }
+        input { width:100%; font:inherit; padding:11px 13px; border:1.5px solid var(--line); border-radius:10px; outline:none; }
+        input:focus { border-color:var(--accent); }
+        .btn { font:inherit; font-weight:700; border:0; border-radius:10px; padding:11px 18px; cursor:pointer; background:var(--accent); color:#fff; }
+        .btn-ghost { background:transparent; color:var(--accent); border:1.5px solid var(--line); }
+        .btn-sm { padding:6px 11px; font-size:12.5px; border-radius:8px; }
+        .login-box { max-width:430px; margin:60px auto; }
+        .hidden { display:none !important; }
+        .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:22px; }
+        .kpi { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+        .kpi .n { font-size:30px; font-weight:800; letter-spacing:-.02em; }
+        .kpi .l { font-size:12px; font-weight:700; color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; }
+        .ind-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
+        .ind { border:1.5px solid var(--line); border-left:5px solid var(--cor,var(--accent)); border-radius:12px; padding:13px 15px; cursor:pointer; background:var(--card); font:inherit; text-align:left; transition:transform .2s, box-shadow .2s; }
+        .ind:hover { transform:translateY(-2px); box-shadow:0 8px 20px #16213a14; }
+        .ind.on { background:var(--accent-soft); border-color:var(--accent); }
+        .ind .t { font-weight:800; font-size:13.5px; }
+        .ind .n { font-size:22px; font-weight:800; }
+        .ind .s { font-size:12px; color:var(--ink-3); }
+        table { width:100%; border-collapse:collapse; font-size:13.5px; }
+        th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); border-bottom:2px solid var(--line); padding:8px 9px; }
+        td { border-bottom:1px solid var(--line); padding:9px; }
+        .sw { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:7px; vertical-align:baseline; }
+        .tbl-scroll { overflow-x:auto; }
+        a.rel { color:var(--accent); font-weight:700; }
+        .sec-note { background:var(--accent-soft); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
+        .lgpd { font-size:12px; color:var(--ink-3); margin-top:18px; }
+    </style>
+</head>
+<body>
+    <div class="top">
+        <div class="brand"><span class="mark">V</span> VIPEDia · <span style="color:var(--ink-3)">Área da Empresa — IPA</span></div>
+        <div>
+            <span id="quem" class="muted"></span>
+            <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="Emp.sair()">Sair</button>
+        </div>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="wrap login-box" id="tela-login">
+        <div class="card">
+            <h1>Acesso da empresa</h1>
+            <p class="muted">Exclusivo para responsáveis autorizados. O acesso dá visibilidade aos indicadores e relatórios do IPA dos profissionais da sua organização.</p>
+            <form onsubmit="Emp.login(event)">
+                <label for="in-email">E-mail</label>
+                <input type="email" id="in-email" autocomplete="username" required>
+                <label for="in-senha">Senha</label>
+                <input type="password" id="in-senha" autocomplete="current-password" required>
+                <div style="margin-top:16px"><button class="btn" type="submit">Entrar</button></div>
+            </form>
+            <div class="sec-note">🔒 Conexão protegida: senha criptografada, bloqueio automático após tentativas repetidas e sessão com expiração por inatividade.</div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="wrap hidden" id="tela-dash">
+        <h1 id="d-empresa">—</h1>
+        <p class="muted" style="margin-bottom:18px">Indicadores do IPA dos profissionais da sua organização. Clique em um indicador para filtrar a lista; cada linha tem o link direto para o relatório individual.</p>
+
+        <div class="kpis" id="kpis"></div>
+
+        <div class="card">
+            <h2>Indicadores por estilo predominante</h2>
+            <div class="ind-grid" id="ind-estilo"></div>
+            <h2 style="margin-top:22px">Indicadores por flexibilidade (regra do perfil)</h2>
+            <div class="ind-grid" id="ind-regra"></div>
+        </div>
+
+        <div class="card tbl-scroll">
+            <h2 id="t-lista">Profissionais</h2>
+            <table>
+                <thead><tr><th>Nome</th><th>Função</th><th>Data</th><th>Predominante</th><th>Perfil</th><th>360° recebidas</th><th>Relatório</th></tr></thead>
+                <tbody id="tb-func"></tbody>
+            </table>
+            <p class="lgpd">Tratamento de dados conforme a LGPD: os relatórios individuais destinam-se exclusivamente ao programa de desenvolvimento. Não repasse os links a pessoas não autorizadas.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+    <script src="../webapp/js/msg.js"></script>
+    <script>
+    const API = '../api/admin.php';
+    const CORES = { 'Atenção':'var(--a)', 'Comunicação':'var(--c)', 'Procedimento':'var(--p)', 'Equilibrado':'var(--e)' };
+    const REGras = {
+        FORTE_APEGO: ['Forte apego ao estilo', 'diferença ≥ 15 pontos para o 2º estilo'],
+        FLEXIVEL: ['Perfil flexível', 'transita entre os estilos conforme a situação'],
+        EQUILIBRADO_NATURAL: ['Equilíbrio natural', 'diferenças menores que 15 pontos entre todos'],
+        EQUILIBRADO_MODELO: ['Equilibrado (modelo)', 'estilo Equilibrado em 1º lugar']
+    };
+    const Emp = {
+        dados: null, filtro: null,
+        async post(body) {
+            const r = await fetch(API, { method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+            return r.json();
+        },
+        esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
+        async init() {
+            const s = await this.post({ action: 'ping' }).catch(() => null);
+            if (s && s.ok && s.gestor) this.entrar(s.gestor);
+        },
+        async login(ev) {
+            ev.preventDefault();
+            const r = await this.post({ action: 'gestor_login',
+                email: document.getElementById('in-email').value,
+                senha: document.getElementById('in-senha').value });
+            if (!r.ok) {
+                return Msg.fire({ icon: 'error',
+                    title: r.code === 'muitas_tentativas' ? 'Acesso bloqueado temporariamente' : 'Dados incorretos',
+                    text: r.code === 'muitas_tentativas' ? 'Muitas tentativas. Aguarde 15 minutos e tente novamente.' : 'E-mail ou senha inválidos.' });
+            }
+            document.getElementById('in-senha').value = '';
+            this.entrar(r.gestor);
+        },
+        async sair() { await this.post({ action: 'logout' }); location.reload(); },
+        async entrar(g) {
+            document.getElementById('tela-login').classList.add('hidden');
+            document.getElementById('tela-dash').classList.remove('hidden');
+            document.getElementById('btn-sair').classList.remove('hidden');
+            document.getElementById('quem').textContent = g.nome + ' · ';
+            const r = await this.post({ action: 'dash' });
+            if (!r.ok) return Msg.fire({ icon: 'error', title: 'Sessão expirada', text: 'Entre novamente.' }).then(() => location.reload());
+            this.dados = r;
+            document.getElementById('d-empresa').textContent = r.empresa.nome;
+            this.render();
+        },
+        kpi(n, l) { return `<div class="kpi"><div class="n">${n}</div><div class="l">${l}</div></div>`; },
+        render() {
+            const f = this.dados.funcionarios;
+            const t360 = this.dados.avaliacoes360.reduce((s, a) => s + a.n, 0);
+            const comRel = f.filter(x => x.link).length;
+            const porEstilo = {}; const porRegra = {};
+            f.forEach(x => {
+                porEstilo[x.predominante] = (porEstilo[x.predominante] || 0) + 1;
+                porRegra[x.regra] = (porRegra[x.regra] || 0) + 1;
+            });
+            document.getElementById('kpis').innerHTML =
+                this.kpi(f.length, 'Diagnósticos IPA') +
+                this.kpi(comRel, 'Relatórios disponíveis') +
+                this.kpi(t360, 'Avaliações 360° recebidas') +
+                this.kpi(Object.keys(porEstilo).length ? Object.entries(porEstilo).sort((a,b) => b[1]-a[1])[0][0] : '—', 'Estilo mais comum');
+
+            document.getElementById('ind-estilo').innerHTML = ['Atenção','Comunicação','Procedimento','Equilibrado'].map(e => `
+                <button class="ind ${this.filtro && this.filtro.tipo==='estilo' && this.filtro.v===e ? 'on':''}" style="--cor:${CORES[e]}" onclick="Emp.filtrar('estilo','${e}')">
+                    <div class="t">${e}</div><div class="n">${porEstilo[e] || 0}</div>
+                    <div class="s">profissional(is) com este estilo predominante</div>
+                </button>`).join('');
+            document.getElementById('ind-regra').innerHTML = Object.keys(REGras).map(k => `
+                <button class="ind ${this.filtro && this.filtro.tipo==='regra' && this.filtro.v===k ? 'on':''}" onclick="Emp.filtrar('regra','${k}')">
+                    <div class="t">${REGras[k][0]}</div><div class="n">${porRegra[k] || 0}</div>
+                    <div class="s">${REGras[k][1]}</div>
+                </button>`).join('');
+
+            const n360 = {}; this.dados.avaliacoes360.forEach(a => { n360[a.avaliado] = a.n; });
+            let lista = f;
+            let titulo = 'Profissionais';
+            if (this.filtro) {
+                lista = f.filter(x => (this.filtro.tipo === 'estilo' ? x.predominante : x.regra) === this.filtro.v);
+                titulo = 'Profissionais — ' + (this.filtro.tipo === 'estilo' ? this.filtro.v : REGras[this.filtro.v][0]) +
+                         ' <button class="btn btn-ghost btn-sm" onclick="Emp.filtrar(null)">Limpar filtro</button>';
+            }
+            document.getElementById('t-lista').innerHTML = titulo;
+            document.getElementById('tb-func').innerHTML = lista.length ? lista.map(x => `<tr>
+                <td><strong>${this.esc(x.nome)}</strong></td>
+                <td>${this.esc(x.funcao)}</td>
+                <td>${this.esc(String(x.data).slice(0, 10))}</td>
+                <td><span class="sw" style="background:${CORES[x.predominante] || 'var(--ink-3)'}"></span>${this.esc(x.predominante)}</td>
+                <td>${(REGras[x.regra] || [x.regra])[0]}</td>
+                <td>${n360[x.nome] || 0}</td>
+                <td>${x.link ? `<a class="rel" href="${x.link}" target="_blank" rel="noopener">Ver relatório →</a>` : '<span class="muted">—</span>'}</td>
+            </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum profissional neste indicador ainda.</td></tr>';
+        },
+        filtrar(tipo, v) {
+            this.filtro = tipo ? { tipo, v } : null;
+            this.render();
+        }
+    };
+    Emp.init();
+    </script>
+</body>
+</html>

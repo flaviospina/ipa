@@ -214,6 +214,7 @@ const App = {
         const ind = document.getElementById('sync-indicator');
         const id = 'ipa-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
         const payload = Engine.montarPayload(this.state.dados, this.state.selecoes, r, this.state.consent, id);
+        if (this.empresaCodigo) payload.empresa = this.empresaCodigo;
 
         ind.className = 'sync-indicator pending';
         ind.textContent = 'Registrando respostas e gerando análise personalizada…';
@@ -369,6 +370,30 @@ const App = {
         location.reload();
     },
 
+    /* Link da empresa (?e=CODIGO): busca o nome pelo código opaco, preenche e
+       TRAVA o campo Organização — o funcionário só digita nome e função. */
+    async carregarEmpresa() {
+        const cod = (new URLSearchParams(location.search).get('e') || '').trim();
+        if (!cod || cod.length < 16) return;
+        try {
+            const r = await fetch(IPA_CONFIG.ENDPOINT + '?action=empresa&c=' + encodeURIComponent(cod));
+            const j = await r.json();
+            if (!j || j.ok !== true || !j.nome) return;   // código inválido: segue com digitação manual
+            this.empresaCodigo = cod;
+            const f = document.getElementById('f-org');
+            f.value = j.nome;
+            f.readOnly = true;
+            f.setAttribute('aria-readonly', 'true');
+            f.style.background = 'var(--surface)';
+            f.title = 'Organização definida pelo link da sua empresa';
+            const dica = document.createElement('p');
+            dica.className = 'muted';
+            dica.style.cssText = 'font-size:12.5px;margin:-6px 0 10px';
+            dica.textContent = '🏢 Diagnóstico vinculado à sua empresa — preencha apenas o seu nome e a sua função.';
+            f.parentElement.appendChild(dica);
+        } catch (e) { /* sem rede: segue com digitação manual */ }
+    },
+
     init() {
         document.getElementById('consent-check').addEventListener('change', e => {
             document.getElementById('btn-consent').disabled = !e.target.checked;
@@ -376,6 +401,7 @@ const App = {
         this.flushQueue();
         this.restore();
         this.updateProgress();
+        this.carregarEmpresa();
     }
 };
 

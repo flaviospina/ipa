@@ -141,6 +141,7 @@ const App360 = {
             enviadoEm: new Date().toISOString(),
             website: ''
         };
+        if (this.empresaCodigo) payload.empresa = this.empresaCodigo;
         this.goTo('done');
         const status = document.getElementById('done-status');
         try {
@@ -177,6 +178,7 @@ const App360 = {
         const p = new URLSearchParams(location.search);
         const avaliado = (p.get('avaliado') || '').slice(0, 120).trim();
         const org = (p.get('org') || '').slice(0, 120).trim();
+        const codEmpresa = (p.get('e') || '').trim();
         if (avaliado && org) {
             document.getElementById('f-avaliado').value = avaliado;
             document.getElementById('f-org').value = org;
@@ -188,12 +190,45 @@ const App360 = {
             document.getElementById('invite-org').textContent = org;
             document.getElementById('w-avaliado').textContent = avaliado;
             document.getElementById('w-avaliado-2').textContent = avaliado;
+        } else if (codEmpresa.length >= 16) {
+            this.carregarEquipe(codEmpresa);
         } else {
             document.getElementById('w-avaliado').textContent = 'um(a) colega';
             document.getElementById('w-avaliado-2').textContent = 'um(a) profissional';
             if (avaliado) document.getElementById('f-avaliado').value = avaliado;
             if (org) document.getElementById('f-org').value = org;
         }
+    },
+
+    /* Link da empresa (?e=CODIGO): troca o campo "nome da pessoa avaliada"
+       por uma lista com os profissionais daquela empresa e trava a organização. */
+    async carregarEquipe(cod) {
+        document.getElementById('w-avaliado').textContent = 'um(a) colega';
+        document.getElementById('w-avaliado-2').textContent = 'um(a) profissional';
+        try {
+            const r = await fetch(IPA_CONFIG.ENDPOINT + '?action=equipe360&c=' + encodeURIComponent(cod));
+            const j = await r.json();
+            if (!j || j.ok !== true) return;   // código inválido: segue com digitação manual
+            this.empresaCodigo = cod;
+            const inAv = document.getElementById('f-avaliado');
+            const inOrg = document.getElementById('f-org');
+            inOrg.value = j.empresa;
+            inOrg.readOnly = true;
+            inOrg.style.background = 'var(--surface)';
+            if (Array.isArray(j.nomes) && j.nomes.length) {
+                const sel = document.createElement('select');
+                sel.id = 'f-avaliado';
+                sel.required = true;
+                sel.style.cssText = 'width:100%;font:inherit;padding:13px 16px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);outline:none';
+                sel.innerHTML = '<option value="">Selecione o(a) profissional…</option>' +
+                    j.nomes.map(n => `<option>${String(n).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</option>`).join('');
+                inAv.replaceWith(sel);
+                sel.addEventListener('change', () => {
+                    document.getElementById('w-avaliado').textContent = sel.value || 'um(a) colega';
+                    document.getElementById('w-avaliado-2').textContent = sel.value || 'um(a) profissional';
+                });
+            }
+        } catch (e) { /* sem rede: segue com digitação manual */ }
     }
 };
 

@@ -109,6 +109,20 @@ function calcular_scores(array $respostas): array {
     return $s;
 }
 
+/* resolve o código opaco da empresa (?e= da URL, campo "empresa" do payload):
+   devolve [id, nome] ou null. Com código válido, a organização gravada é
+   SEMPRE o nome cadastrado — o cliente não consegue falsificá-la. */
+function resolver_empresa($codigo): ?array {
+    $cod = preg_replace('/[^A-Za-z0-9_-]/', '', (string)$codigo);
+    if (strlen($cod) < 16) return null;
+    try {
+        $st = db()->prepare('SELECT id, nome FROM ipa_empresas WHERE codigo = ? AND ativo = 1 LIMIT 1');
+        $st->execute([$cod]);
+        $e = $st->fetch();
+        return $e ? [(int)$e['id'], (string)$e['nome']] : null;
+    } catch (Throwable $x) { return null; }
+}
+
 function classificar(array $s): array {
     arsort($s);
     $ordem = array_keys($s);
@@ -220,7 +234,7 @@ try {
             try {
                 db();
                 $st['banco'] = true;
-                foreach (['ipa_respostas', 'ipa_respostas_palavras', 'ipa_360', 'ipa_360_palavras'] as $t) {
+                foreach (['ipa_respostas', 'ipa_respostas_palavras', 'ipa_360', 'ipa_360_palavras', 'ipa_empresas', 'ipa_gestores', 'ipa_login_log'] as $t) {
                     try {
                         $n = (int)db()->query("SELECT COUNT(*) FROM {$t}")->fetchColumn();
                         $st['tabelas'][$t] = $comChave ? $n : 'ok';
@@ -245,6 +259,31 @@ try {
             header('X-Robots-Tag: noindex, nofollow');
             echo $row['relatorio'];
             exit;
+        }
+
+        /* empresa pelo código opaco da URL (?e=): devolve apenas o nome */
+        if ($action === 'empresa') {
+            $cod = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($_GET['c'] ?? ''));
+            if (strlen($cod) < 16) out(['ok' => false, 'code' => 'bad_code']);
+            $st = db()->prepare('SELECT nome FROM ipa_empresas WHERE codigo = ? AND ativo = 1 LIMIT 1');
+            $st->execute([$cod]);
+            $nome = $st->fetchColumn();
+            if (!$nome) out(['ok' => false, 'code' => 'not_found']);
+            out(['ok' => true, 'nome' => $nome]);
+        }
+
+        /* nomes da equipe para o seletor do IPA 360° — protegido pelo código
+           opaco da empresa (somente nomes; nenhum dado de resultado) */
+        if ($action === 'equipe360') {
+            $cod = preg_replace('/[^A-Za-z0-9_-]/', '', (string)($_GET['c'] ?? ''));
+            if (strlen($cod) < 16) out(['ok' => false, 'code' => 'bad_code']);
+            $st = db()->prepare('SELECT id, nome FROM ipa_empresas WHERE codigo = ? AND ativo = 1 LIMIT 1');
+            $st->execute([$cod]);
+            $emp = $st->fetch();
+            if (!$emp) out(['ok' => false, 'code' => 'not_found']);
+            $st = db()->prepare('SELECT DISTINCT nome FROM ipa_respostas WHERE empresa_id = ? ORDER BY nome');
+            $st->execute([(int)$emp['id']]);
+            out(['ok' => true, 'empresa' => $emp['nome'], 'nomes' => array_column($st->fetchAll(), 'nome')]);
         }
 
         if ($action === 'list' || $action === 'list360') {
@@ -302,16 +341,26 @@ try {
         $avaliado = limpar($data['avaliado'] ?? '');
         $org = limpar($data['organizacao'] ?? '');
         $relacao = limpar($data['relacao'] ?? '');
+        $empresa = resolver_empresa($data['empresa'] ?? '');
+        if ($empresa) $org = $empresa[1];
         if ($avaliado === '' || $org === '' || $relacao === '') out(['ok' => false, 'code' => 'missing_fields']);
         $erro = validar_respostas($data['respostas'] ?? null);
         if ($erro) out(['ok' => false, 'code' => $erro]);
         $s = calcular_scores($data['respostas']);
         db()->beginTransaction();
-        $st = db()->prepare(
-            'INSERT INTO ipa_360 (avaliado, organizacao, relacao, respostas, score_a, score_c, score_p, score_e, total, ip)
-             VALUES (?,?,?,?,?,?,?,?,?,?)');
-        $st->execute([$avaliado, $org, $relacao, json_encode($data['respostas']),
-                      $s['A'], $s['C'], $s['P'], $s['E'], array_sum($s), $ip]);
+        if ($empresa) {
+            $st = db()->prepare(
+                'INSERT INTO ipa_360 (avaliado, organizacao, relacao, respostas, score_a, score_c, score_p, score_e, total, ip, empresa_id)
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?)');
+            $st->execute([$avaliado, $org, $relacao, json_encode($data['respostas']),
+                          $s['A'], $s['C'], $s['P'], $s['E'], array_sum($s), $ip, $empresa[0]]);
+        } else {
+            $st = db()->prepare(
+                'INSERT INTO ipa_360 (avaliado, organizacao, relacao, respostas, score_a, score_c, score_p, score_e, total, ip)
+                 VALUES (?,?,?,?,?,?,?,?,?,?)');
+            $st->execute([$avaliado, $org, $relacao, json_encode($data['respostas']),
+                          $s['A'], $s['C'], $s['P'], $s['E'], array_sum($s), $ip]);
+        }
         gravar_palavras('ipa_360_palavras', 'avaliacao_id', (int)db()->lastInsertId(), $data['respostas']);
         db()->commit();
         out(['ok' => true, 'code' => 'saved_360']);
@@ -322,6 +371,8 @@ try {
     $org = limpar($data['organizacao'] ?? '');
     $funcao = limpar($data['funcao'] ?? '');
     $cid = limpar($data['id'] ?? '');
+    $empresa = resolver_empresa($data['empresa'] ?? '');
+    if ($empresa) $org = $empresa[1];
     if ($nome === '' || $org === '' || $funcao === '' || $cid === '') out(['ok' => false, 'code' => 'missing_fields']);
     if (empty($data['consentimento'])) out(['ok' => false, 'code' => 'missing_consent']);
     $erro = validar_respostas($data['respostas'] ?? null);
@@ -332,13 +383,23 @@ try {
     $token = bin2hex(random_bytes(16));
 
     db()->beginTransaction();
-    $st = db()->prepare(
-        'INSERT INTO ipa_respostas (cliente_id, token, organizacao, nome, funcao, consentimento, respostas,
-                                    score_a, score_c, score_p, score_e, total, predominante, regra, ip)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-    $st->execute([$cid, $token, $org, $nome, $funcao, limpar($data['consentimento']),
-                  json_encode($data['respostas']), $s['A'], $s['C'], $s['P'], $s['E'],
-                  array_sum($s), $predominante, $regra, $ip]);
+    if ($empresa) {
+        $st = db()->prepare(
+            'INSERT INTO ipa_respostas (cliente_id, token, organizacao, nome, funcao, consentimento, respostas,
+                                        score_a, score_c, score_p, score_e, total, predominante, regra, ip, empresa_id)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $st->execute([$cid, $token, $org, $nome, $funcao, limpar($data['consentimento']),
+                      json_encode($data['respostas']), $s['A'], $s['C'], $s['P'], $s['E'],
+                      array_sum($s), $predominante, $regra, $ip, $empresa[0]]);
+    } else {
+        $st = db()->prepare(
+            'INSERT INTO ipa_respostas (cliente_id, token, organizacao, nome, funcao, consentimento, respostas,
+                                        score_a, score_c, score_p, score_e, total, predominante, regra, ip)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+        $st->execute([$cid, $token, $org, $nome, $funcao, limpar($data['consentimento']),
+                      json_encode($data['respostas']), $s['A'], $s['C'], $s['P'], $s['E'],
+                      array_sum($s), $predominante, $regra, $ip]);
+    }
     gravar_palavras('ipa_respostas_palavras', 'resposta_id', (int)db()->lastInsertId(), $data['respostas']);
     db()->commit();
 

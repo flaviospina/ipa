@@ -15,6 +15,10 @@ const DB_PASS = 'TROQUE-ESTA-SENHA';
 /* Chave de acesso do Painel do Consultor (invente uma longa e aleatória) */
 const PANEL_KEY = 'TROQUE-POR-UMA-CHAVE-LONGA-E-ALEATORIA';
 
+/* Chave da Área Administrativa (admin/ — cria empresas e gestores).
+   Use uma chave DIFERENTE da PANEL_KEY, longa e aleatória. */
+const ADMIN_KEY = 'TROQUE-POR-OUTRA-CHAVE-LONGA-E-ALEATORIA';
+
 /* Opcional: análise personalizada por IA no relatório.
    Obtenha grátis em https://aistudio.google.com/apikey e cole aqui.
    Deixe '' (vazio) para desativar — o relatório funciona normalmente sem. */

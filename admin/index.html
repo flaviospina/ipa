@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Administração | IPA — VIPEDia</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --ink:#16213a; --ink-2:#4b5772; --ink-3:#8a94ab; --surface:#f6f7f9; --card:#fff;
+                --line:#e4e8ef; --brand:#1e3a8a; --accent:#2952cc; --accent-soft:#eaf0fe; --ok:#0e9f6e; --danger:#c22b1a; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--surface); color:var(--ink); font-size:14.5px; }
+        .top { background:var(--card); border-bottom:1px solid var(--line); padding:0 22px; height:58px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+        .brand { display:flex; align-items:center; gap:9px; font-weight:800; }
+        .mark { background:var(--brand); color:#fff; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; font-weight:800; }
+        .wrap { max-width:1100px; margin:0 auto; padding:26px 20px 60px; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:22px; }
+        h1 { font-size:21px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 14px; }
+        .muted { color:var(--ink-3); font-size:13px; }
+        label { display:block; font-weight:700; font-size:12.5px; margin:12px 0 5px; }
+        input, select { width:100%; font:inherit; padding:11px 13px; border:1.5px solid var(--line); border-radius:10px; background:#fff; outline:none; }
+        input:focus, select:focus { border-color:var(--accent); }
+        .btn { font:inherit; font-weight:700; border:0; border-radius:10px; padding:11px 18px; cursor:pointer; background:var(--accent); color:#fff; }
+        .btn:disabled { opacity:.5; cursor:default; }
+        .btn-ghost { background:transparent; color:var(--accent); border:1.5px solid var(--line); }
+        .btn-sm { padding:6px 11px; font-size:12.5px; border-radius:8px; }
+        .row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+        .row > div { flex:1; min-width:170px; }
+        table { width:100%; border-collapse:collapse; font-size:13.5px; }
+        th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); border-bottom:2px solid var(--line); padding:8px 9px; }
+        td { border-bottom:1px solid var(--line); padding:9px; vertical-align:middle; }
+        .tag { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:800; }
+        .tag-on { background:#e7f6ef; color:var(--ok); } .tag-off { background:#fdeceb; color:var(--danger); }
+        .code { font-family:ui-monospace,monospace; font-size:12px; background:var(--surface); padding:3px 8px; border-radius:7px; }
+        .tabs { display:flex; gap:8px; margin-bottom:18px; }
+        .tab { font:inherit; font-weight:700; padding:9px 18px; border-radius:999px; border:1.5px solid var(--line); background:#fff; cursor:pointer; }
+        .tab.on { background:var(--brand); border-color:var(--brand); color:#fff; }
+        .hidden { display:none !important; }
+        .links a { display:inline-block; margin-right:10px; color:var(--accent); font-weight:700; font-size:12.5px; }
+        .tbl-scroll { overflow-x:auto; }
+        .center { text-align:center; }
+        .login-box { max-width:430px; margin:60px auto; }
+        .sec-note { background:var(--accent-soft); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
+    </style>
+</head>
+<body>
+    <div class="top">
+        <div class="brand"><span class="mark">V</span> VIPEDia · <span style="color:var(--ink-3)">Administração IPA</span></div>
+        <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="Admin.sair()">Sair</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="wrap login-box" id="tela-login">
+        <div class="card">
+            <h1>Área administrativa</h1>
+            <p class="muted">Acesso restrito ao consultor. As tentativas de acesso são registradas e bloqueadas após falhas repetidas.</p>
+            <form onsubmit="Admin.login(event)">
+                <label for="in-key">Chave de administração</label>
+                <input type="password" id="in-key" autocomplete="current-password" required>
+                <div style="margin-top:16px"><button class="btn" type="submit">Entrar</button></div>
+            </form>
+            <div class="sec-note">🔒 Sessão protegida: cookie HttpOnly/SameSite, expiração por inatividade (30 min) e token anti-CSRF em todas as ações.</div>
+        </div>
+    </div>
+
+    <!-- PAINEL -->
+    <div class="wrap hidden" id="tela-admin">
+        <h1>Empresas e responsáveis</h1>
+        <p class="muted" style="margin-bottom:18px">Cadastre a empresa, gere o link exclusivo dela e crie o acesso do(s) responsável(is). Dados pessoais tratados conforme a LGPD.</p>
+        <div class="tabs">
+            <button class="tab on" id="tab-emp" onclick="Admin.aba('emp')">Empresas</button>
+            <button class="tab" id="tab-ges" onclick="Admin.aba('ges')">Responsáveis (gestores)</button>
+        </div>
+
+        <!-- EMPRESAS -->
+        <div id="aba-emp">
+            <div class="card">
+                <h2>Nova empresa</h2>
+                <form class="row" onsubmit="Admin.criarEmpresa(event)">
+                    <div style="flex:3"><label for="emp-nome">Nome da empresa</label><input id="emp-nome" required maxlength="120"></div>
+                    <div style="flex:0"><button class="btn" type="submit">Criar empresa</button></div>
+                </form>
+                <p class="muted" style="margin:10px 0 0">Ao criar, o sistema gera um <strong>código criptografado exclusivo</strong>. Com ele, os links abaixo já abrem o IPA e o 360° com a empresa preenchida e travada.</p>
+            </div>
+            <div class="card tbl-scroll">
+                <h2>Empresas cadastradas</h2>
+                <table><thead><tr><th>Empresa</th><th>Código</th><th>Links para enviar</th><th class="center">Gestores</th><th class="center">IPAs</th><th class="center">360°</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tb-emp"><tr><td colspan="8" class="muted">Carregando…</td></tr></tbody></table>
+            </div>
+        </div>
+
+        <!-- GESTORES -->
+        <div id="aba-ges" class="hidden">
+            <div class="card">
+                <h2>Novo responsável</h2>
+                <form onsubmit="Admin.criarGestor(event)">
+                    <div class="row">
+                        <div><label for="ges-emp">Empresa</label><select id="ges-emp" required></select></div>
+                        <div><label for="ges-nome">Nome</label><input id="ges-nome" required maxlength="120"></div>
+                    </div>
+                    <div class="row">
+                        <div><label for="ges-email">E-mail (login)</label><input id="ges-email" type="email" required maxlength="190"></div>
+                        <div><label for="ges-senha">Senha (mín. 10 caracteres)</label>
+                            <div style="display:flex;gap:8px"><input id="ges-senha" type="text" required minlength="10" maxlength="72" autocomplete="new-password">
+                            <button type="button" class="btn btn-ghost" onclick="Admin.gerarSenha()">Gerar</button></div></div>
+                    </div>
+                    <div style="margin-top:16px"><button class="btn" type="submit">Criar acesso</button></div>
+                </form>
+                <p class="muted" style="margin:10px 0 0">A senha é guardada apenas como <strong>hash criptográfico</strong> (Argon2id/bcrypt) — anote-a e repasse ao responsável por canal seguro; ela não poderá ser consultada depois, somente redefinida.</p>
+            </div>
+            <div class="card tbl-scroll">
+                <h2>Responsáveis cadastrados</h2>
+                <table><thead><tr><th>Nome</th><th>E-mail</th><th>Empresa</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tb-ges"><tr><td colspan="5" class="muted">Carregando…</td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+    <script src="../webapp/js/msg.js"></script>
+    <script>
+    const API = '../api/admin.php';
+    const Admin = {
+        csrf: '',
+        async post(body) {
+            const r = await fetch(API, { method: 'POST', credentials: 'same-origin',
+                headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+            return r.json();
+        },
+        async init() {
+            const s = await this.post({ action: 'ping' }).catch(() => null);
+            if (s && s.ok && s.admin) { this.csrf = s.csrf; this.mostrar(); }
+        },
+        mostrar() {
+            document.getElementById('tela-login').classList.add('hidden');
+            document.getElementById('tela-admin').classList.remove('hidden');
+            document.getElementById('btn-sair').classList.remove('hidden');
+            this.carregarEmpresas(); this.carregarGestores();
+        },
+        async login(ev) {
+            ev.preventDefault();
+            const r = await this.post({ action: 'admin_login', key: document.getElementById('in-key').value });
+            if (!r.ok) {
+                return Msg.fire({ icon: 'error', title: r.code === 'muitas_tentativas' ? 'Acesso bloqueado temporariamente' : 'Chave incorreta',
+                    text: r.code === 'muitas_tentativas' ? 'Muitas tentativas. Aguarde 15 minutos.' : 'Verifique a chave de administração (ADMIN_KEY do config.php).' });
+            }
+            this.csrf = r.csrf; document.getElementById('in-key').value = '';
+            this.mostrar();
+        },
+        async sair() { await this.post({ action: 'logout' }); location.reload(); },
+        aba(a) {
+            document.getElementById('aba-emp').classList.toggle('hidden', a !== 'emp');
+            document.getElementById('aba-ges').classList.toggle('hidden', a !== 'ges');
+            document.getElementById('tab-emp').classList.toggle('on', a === 'emp');
+            document.getElementById('tab-ges').classList.toggle('on', a === 'ges');
+        },
+        esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
+        linkIpa(c)  { return new URL('../webapp/index.html?e=' + c, location.href).href; },
+        link360(c)  { return new URL('../webapp/360.html?e=' + c, location.href).href; },
+
+        async carregarEmpresas() {
+            const r = await this.post({ action: 'empresa_list' });
+            const tb = document.getElementById('tb-emp');
+            const sel = document.getElementById('ges-emp');
+            if (!r.ok) { tb.innerHTML = '<tr><td colspan="8" class="muted">Erro ao carregar.</td></tr>'; return; }
+            this.empresas = r.rows;
+            sel.innerHTML = '<option value="">Selecione…</option>' +
+                r.rows.filter(e => e.ativo).map(e => `<option value="${e.id}">${this.esc(e.nome)}</option>`).join('');
+            tb.innerHTML = r.rows.length ? r.rows.map(e => `<tr>
+                <td><strong>${this.esc(e.nome)}</strong></td>
+                <td><span class="code">${this.esc(e.codigo)}</span></td>
+                <td class="links">
+                    <a href="#" onclick="Admin.copiar(Admin.linkIpa('${e.codigo}'));return false">Copiar link IPA</a>
+                    <a href="#" onclick="Admin.copiar(Admin.link360('${e.codigo}'));return false">Copiar link 360°</a>
+                </td>
+                <td class="center">${e.gestores}</td>
+                <td class="center">${e.respondentes}</td>
+                <td class="center">${e.avaliacoes360}</td>
+                <td><span class="tag ${e.ativo ? 'tag-on' : 'tag-off'}">${e.ativo ? 'Ativa' : 'Inativa'}</span></td>
+                <td><button class="btn btn-ghost btn-sm" onclick="Admin.toggleEmpresa(${e.id}, ${e.ativo ? 0 : 1})">${e.ativo ? 'Desativar' : 'Reativar'}</button></td>
+            </tr>`).join('') : '<tr><td colspan="8" class="muted">Nenhuma empresa cadastrada ainda.</td></tr>';
+        },
+        async copiar(txt) {
+            try { await navigator.clipboard.writeText(txt); Msg.toast('Link copiado!'); }
+            catch (e) { Msg.fire({ icon: 'info', title: 'Copie o link', text: txt }); }
+        },
+        async criarEmpresa(ev) {
+            ev.preventDefault();
+            const r = await this.post({ action: 'empresa_create', csrf: this.csrf, nome: document.getElementById('emp-nome').value });
+            if (!r.ok) return Msg.fire({ icon: 'error', title: 'Não foi possível criar', text: r.dica || 'Verifique o nome (empresas não podem se repetir).' });
+            document.getElementById('emp-nome').value = '';
+            Msg.toast('Empresa criada!');
+            this.carregarEmpresas();
+        },
+        async toggleEmpresa(id, ativo) {
+            if (!ativo) {
+                const resp = await Msg.fire({ icon: 'warning', title: 'Desativar empresa?',
+                    text: 'Os links e logins dos gestores desta empresa deixarão de funcionar até reativá-la.',
+                    showCancelButton: true, confirmButtonText: 'Desativar', cancelButtonText: 'Cancelar' });
+                if (resp !== 'confirm') return;
+            }
+            await this.post({ action: 'empresa_toggle', csrf: this.csrf, id, ativo });
+            this.carregarEmpresas();
+        },
+        gerarSenha() {
+            const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789-#@';
+            const arr = crypto.getRandomValues(new Uint32Array(14));
+            document.getElementById('ges-senha').value = Array.from(arr, n => abc[n % abc.length]).join('');
+        },
+        async criarGestor(ev) {
+            ev.preventDefault();
+            const senha = document.getElementById('ges-senha').value;
+            const r = await this.post({ action: 'gestor_create', csrf: this.csrf,
+                empresa_id: parseInt(document.getElementById('ges-emp').value, 10),
+                nome: document.getElementById('ges-nome').value,
+                email: document.getElementById('ges-email').value, senha });
+            if (!r.ok) return Msg.fire({ icon: 'error', title: 'Não foi possível criar', text: r.dica || 'Confira os dados (e-mails não podem se repetir; senha com 10+ caracteres).' });
+            await Msg.fire({ icon: 'success', title: 'Acesso criado!',
+                html: `Repasse ao responsável por canal seguro:<br><br><strong>Login:</strong> ${this.esc(document.getElementById('ges-email').value)}<br><strong>Senha:</strong> <span class="code">${this.esc(senha)}</span><br><br>Página de acesso: <strong>empresa/</strong>` });
+            document.getElementById('ges-nome').value = ''; document.getElementById('ges-email').value = ''; document.getElementById('ges-senha').value = '';
+            this.carregarGestores(); this.carregarEmpresas();
+        },
+        async carregarGestores() {
+            const r = await this.post({ action: 'gestor_list' });
+            const tb = document.getElementById('tb-ges');
+            if (!r.ok) { tb.innerHTML = '<tr><td colspan="5" class="muted">Erro ao carregar.</td></tr>'; return; }
+            tb.innerHTML = r.rows.length ? r.rows.map(g => `<tr>
+                <td><strong>${this.esc(g.nome)}</strong></td>
+                <td>${this.esc(g.email)}</td>
+                <td>${this.esc(g.empresa)}</td>
+                <td><span class="tag ${g.ativo ? 'tag-on' : 'tag-off'}">${g.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-ghost btn-sm" onclick="Admin.resetSenha(${g.id})">Redefinir senha</button>
+                    <button class="btn btn-ghost btn-sm" onclick="Admin.toggleGestor(${g.id}, ${g.ativo ? 0 : 1})">${g.ativo ? 'Desativar' : 'Reativar'}</button>
+                </td>
+            </tr>`).join('') : '<tr><td colspan="5" class="muted">Nenhum responsável cadastrado ainda.</td></tr>';
+        },
+        async toggleGestor(id, ativo) {
+            await this.post({ action: 'gestor_toggle', csrf: this.csrf, id, ativo });
+            this.carregarGestores();
+        },
+        async resetSenha(id) {
+            const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789-#@';
+            const arr = crypto.getRandomValues(new Uint32Array(14));
+            const senha = Array.from(arr, n => abc[n % abc.length]).join('');
+            const resp = await Msg.fire({ icon: 'question', title: 'Redefinir a senha?',
+                html: `A nova senha será:<br><span class="code">${senha}</span><br>Anote antes de confirmar.`,
+                showCancelButton: true, confirmButtonText: 'Redefinir', cancelButtonText: 'Cancelar' });
+            if (resp !== 'confirm') return;
+            const r = await this.post({ action: 'gestor_senha', csrf: this.csrf, id, senha });
+            Msg.toast(r.ok ? 'Senha redefinida.' : 'Falha ao redefinir.');
+        }
+    };
+    Admin.init();
+    </script>
+</body>
+</html>
