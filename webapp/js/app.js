@@ -17,6 +17,7 @@ const App = {
 
     /* ---------- Navegação ---------- */
     goTo(screen) {
+        if (this.bloqueado) return;
         this.state.screen = screen;
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('screen-' + screen).classList.add('active');
@@ -393,21 +394,44 @@ const App = {
             dica.style.cssText = 'font-size:12.5px;margin:-6px 0 10px';
             dica.textContent = '🏢 Diagnóstico vinculado à sua empresa — preencha apenas o seu nome e a sua função.';
             f.parentElement.appendChild(dica);
-        } catch (e) { /* sem rede agora: não bloqueia a retomada; o envio tentará de novo */ }
+        } catch (e) { this.avisoSemEmpresa(true); /* sem confirmação do servidor, o acesso não é liberado */ }
     },
 
     avisoSemEmpresa(codigoInvalido) {
-        // só avisa quem está COMEÇANDO (não interrompe retomadas no meio do questionário)
-        const welcome = document.getElementById('screen-welcome');
-        if (!welcome || !welcome.classList.contains('active')) return;
         Msg.fire({
             icon: 'warning',
             titulo: codigoInvalido ? 'Código da empresa inválido' : 'Acesso sem o código da empresa',
             html: codigoInvalido
                 ? 'O link utilizado contém um código que <strong>não foi reconhecido</strong> — ele pode ter sido copiado incompleto ou a empresa pode estar inativa.<br><br>Solicite o link correto ao responsável da sua empresa ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>'
-                : 'Você está acessando o IPA <strong>sem o link exclusivo da sua empresa</strong>. Para que o seu diagnóstico seja vinculado corretamente à sua organização, entre pelo link com o código da empresa.<br><br>Solicite o link ao responsável da sua empresa ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>',
+                : 'O IPA só pode ser acessado pelo <strong>link exclusivo da sua empresa</strong> (com o código de acesso).<br><br>Solicite o link ao responsável da sua empresa ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>',
             confirmText: 'Entendi'
-        });
+        }).then(() => this.bloquearSistema());
+    },
+
+    /* Sem código válido, o sistema fica TOTALMENTE desabilitado:
+       todas as telas saem do ar e só resta a tela de acesso restrito. */
+    bloquearSistema() {
+        this.bloqueado = true;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        let b = document.getElementById('screen-bloqueado');
+        if (!b) {
+            b = document.createElement('section');
+            b.id = 'screen-bloqueado';
+            b.className = 'screen';
+            b.innerHTML = `<div class="card card-narrow center" style="margin-top:56px">
+                <div style="font-size:52px;margin-bottom:10px">🔒</div>
+                <h2>Acesso restrito</h2>
+                <p class="muted">Este diagnóstico está disponível apenas pelo <strong>link exclusivo da sua
+                   empresa</strong>, que contém o código de acesso.</p>
+                <p class="muted">Solicite o link ao responsável da sua empresa ou entre em contato com o
+                   administrador do sistema.</p>
+                <a class="btn btn-primary" href="mailto:contato@itthrive.com.br?subject=Acesso%20ao%20IPA">Falar com o administrador</a>
+            </div>`;
+            document.getElementById('app').appendChild(b);
+        }
+        b.classList.add('active');
+        const pb = document.getElementById('progress-bar');
+        if (pb) pb.style.width = '0%';
     },
 
     init() {

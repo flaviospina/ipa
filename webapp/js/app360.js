@@ -19,6 +19,7 @@ const App360 = {
     },
 
     start(ev) {
+        if (this.bloqueado) { ev.preventDefault(); return; }
         ev.preventDefault();
         if (document.getElementById('f-site').value.trim() !== '') return; // honeypot
         this.state.avaliado = document.getElementById('f-avaliado').value.trim();
@@ -207,9 +208,31 @@ const App360 = {
             titulo: codigoInvalido ? 'Código da empresa inválido' : 'Acesso sem o código da empresa',
             html: codigoInvalido
                 ? 'O link utilizado contém um código que <strong>não foi reconhecido</strong> — ele pode ter sido copiado incompleto ou a empresa pode estar inativa.<br><br>Solicite o link correto a quem convidou você ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>'
-                : 'Você está acessando a avaliação 360° <strong>sem o link da empresa ou do convite</strong>. Para que a sua avaliação seja registrada corretamente, entre pelo link recebido (com o código da empresa).<br><br>Solicite o link a quem convidou você ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>',
+                : 'A avaliação 360° só pode ser acessada pelo <strong>link do convite ou pelo link da empresa</strong> (com o código de acesso).<br><br>Solicite o link a quem convidou você ou entre em contato com o administrador do sistema:<br><strong>contato@itthrive.com.br</strong>',
             confirmText: 'Entendi'
-        });
+        }).then(() => this.bloquearSistema());
+    },
+
+    /* Sem convite e sem código válido, a avaliação fica TOTALMENTE desabilitada. */
+    bloquearSistema() {
+        this.bloqueado = true;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        let b = document.getElementById('screen-bloqueado');
+        if (!b) {
+            b = document.createElement('section');
+            b.id = 'screen-bloqueado';
+            b.className = 'screen';
+            b.innerHTML = `<div class="card card-narrow center" style="margin-top:56px">
+                <div style="font-size:52px;margin-bottom:10px">🔒</div>
+                <h2>Acesso restrito</h2>
+                <p class="muted">A avaliação 360° está disponível apenas pelo <strong>link do convite</strong> ou pelo
+                   <strong>link exclusivo da empresa</strong>, que contém o código de acesso.</p>
+                <p class="muted">Solicite o link a quem convidou você ou entre em contato com o administrador do sistema.</p>
+                <a class="btn btn-primary" href="mailto:contato@itthrive.com.br?subject=Acesso%20ao%20IPA%20360">Falar com o administrador</a>
+            </div>`;
+            document.getElementById('app').appendChild(b);
+        }
+        b.classList.add('active');
     },
 
     /* Link da empresa (?e=CODIGO): troca o campo "nome da pessoa avaliada"
@@ -240,7 +263,7 @@ const App360 = {
                     document.getElementById('w-avaliado-2').textContent = sel.value || 'um(a) profissional';
                 });
             }
-        } catch (e) { /* sem rede: segue com digitação manual */ }
+        } catch (e) { this.avisoSemEmpresa(true); /* sem confirmação do servidor, o acesso não é liberado */ }
     }
 };
 
