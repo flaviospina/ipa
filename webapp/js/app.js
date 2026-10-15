@@ -72,10 +72,11 @@ const App = {
 
         const grid = document.getElementById('word-grid');
         grid.innerHTML = '';
-        q.palavras.forEach(p => {
+        q.palavras.forEach((p, i) => {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'word-card';
+            b.style.setProperty('--i', i);
             b.dataset.id = p.id;
             b.textContent = p.w;
             b.draggable = true;

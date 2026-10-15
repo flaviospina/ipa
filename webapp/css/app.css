@@ -52,9 +52,39 @@ body {
 
 /* ---------- Telas ---------- */
 main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
-.screen { display: none; animation: fade .35s ease-out; }
+.screen { display: none; animation: screenIn .5s cubic-bezier(.22,1,.36,1); }
 .screen.active { display: block; }
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes screenIn { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+
+/* ===== Animações (apenas movimento — nenhum estilo alterado) ===== */
+@keyframes riseIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes popIn  { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* entrada escalonada da tela de boas-vindas */
+#screen-welcome .badge        { animation: riseIn .6s cubic-bezier(.22,1,.36,1) backwards .05s; }
+#screen-welcome h1            { animation: riseIn .7s cubic-bezier(.22,1,.36,1) backwards .14s; }
+#screen-welcome .lead         { animation: riseIn .7s cubic-bezier(.22,1,.36,1) backwards .25s; }
+#screen-welcome .hero-meta    { animation: riseIn .7s cubic-bezier(.22,1,.36,1) backwards .36s; }
+#screen-welcome .btn-lg,
+#screen-welcome .hint         { animation: riseIn .7s cubic-bezier(.22,1,.36,1) backwards .46s; }
+#screen-welcome .style-card   { animation: riseIn .7s cubic-bezier(.22,1,.36,1) backwards; }
+#screen-welcome .style-card:nth-child(1) { animation-delay: .5s; }
+#screen-welcome .style-card:nth-child(2) { animation-delay: .59s; }
+#screen-welcome .style-card:nth-child(3) { animation-delay: .68s; }
+#screen-welcome .style-card:nth-child(4) { animation-delay: .77s; }
+
+/* cards de palavras surgem em cascata a cada quadro */
+.word-card { animation: popIn .45s cubic-bezier(.22,1,.36,1) backwards calc(var(--i, 0) * 35ms); }
+
+/* micro-transições de interação (movimento, sem mudar aparência estática) */
+.btn, .word-card, .style-card { transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease; }
+.btn:hover:not(:disabled) { transform: translateY(-1.5px); }
+.style-card:hover { transform: translateY(-3px); }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
+}
 
 /* ---------- Componentes ---------- */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow); }
@@ -261,6 +291,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
 /* ---------- Impressão ---------- */
 @media print {
     @page { size: A4; margin: 16mm 14mm; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
     body { background: #fff; }
     .no-print, .topbar, .site-foot { display: none !important; }
     main { padding: 0; max-width: none; }
