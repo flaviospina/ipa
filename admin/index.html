@@ -63,6 +63,27 @@
         .tbl-scroll { overflow-x:auto; }
         .center { text-align:center; }
         .login-box { max-width:430px; margin:60px auto; }
+        /* ----- tela de login moderna ----- */
+        .login-split { display:grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 58px); }
+        .login-hero { background: radial-gradient(900px 600px at 85% -10%, #2952cc55, transparent 60%),
+                      linear-gradient(140deg, #0d1733 0%, #16254d 55%, #1e3a8a 100%);
+                      color:#fff; padding:56px 54px; display:flex; flex-direction:column; justify-content:space-between; }
+        .login-mark { width:58px; height:58px; border-radius:15px; background:#2952cc; display:grid; place-items:center;
+                      font-weight:800; font-size:30px; box-shadow:0 10px 30px #0006; margin-bottom:26px; animation:heroUp .6s ease-out backwards; }
+        .login-hero h1 { font-size:34px; line-height:1.15; letter-spacing:-.02em; margin:0 0 14px; animation:heroUp .7s ease-out backwards .1s; }
+        .login-hero h1 em { font-style:normal; color:#8fb0ff; font-size:24px; font-weight:700; }
+        .login-hero p { color:#c6d2f2; font-size:15px; max-width:420px; animation:heroUp .7s ease-out backwards .2s; }
+        .login-feats { list-style:none; padding:0; margin:26px 0 0; display:grid; gap:12px; font-size:14px; font-weight:600; color:#dbe4fa; animation:heroUp .7s ease-out backwards .3s; }
+        .login-foot { font-size:11.5px; color:#8fa3d6; letter-spacing:.08em; text-transform:uppercase; }
+        .login-form { display:flex; align-items:center; justify-content:center; padding:40px 24px; }
+        .login-card { width:100%; max-width:400px; background:var(--card); border:1px solid var(--line); border-radius:18px;
+                      padding:30px 28px; box-shadow:0 18px 50px #16213a14; animation:heroUp .6s ease-out backwards .15s; }
+        .login-card h2 { margin:0 0 4px; font-size:22px; }
+        .btn-block { width:100%; padding:13px; font-size:15px; }
+        .link-toggle { background:none; border:0; font:inherit; color:var(--accent); font-weight:700; font-size:13px; cursor:pointer; margin-top:14px; padding:0; }
+        @keyframes heroUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
+        @media (max-width: 860px) { .login-split { grid-template-columns:1fr; } .login-hero { padding:36px 28px; min-height:auto; } .login-feats { display:none; } }
+        @media (prefers-reduced-motion: reduce) { * { animation:none !important; } }
         .sec-note { background:var(--accent-soft); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
         /* ----- estudo coletivo ----- */
         .est-bar-row { display:grid; grid-template-columns:130px 1fr 110px; gap:10px; align-items:center; margin:6px 0; font-size:13.5px; }
@@ -91,21 +112,48 @@
 <body>
     <div class="top">
         <div class="brand"><span class="mark">V</span> VIPEDia · <span style="color:var(--ink-3)">Administração IPA</span></div>
-        <span><a class="btn btn-ghost btn-sm" href="../tutorial/admin.html" style="text-decoration:none;margin-right:8px">📖 Tutorial</a>
+        <span><span id="quem-adm" class="muted" style="font-size:13px"></span><a class="btn btn-ghost btn-sm" href="../tutorial/admin.html" style="text-decoration:none;margin-right:8px">📖 Tutorial</a>
         <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="Admin.sair()">Sair</button></span>
     </div>
 
     <!-- LOGIN -->
-    <div class="wrap login-box" id="tela-login">
-        <div class="card">
-            <h1>Área administrativa</h1>
-            <p class="muted">Acesso restrito ao consultor. As tentativas de acesso são registradas e bloqueadas após falhas repetidas.</p>
-            <form onsubmit="Admin.login(event)">
-                <label for="in-key">Chave de administração</label>
-                <input type="password" id="in-key" autocomplete="current-password" required>
-                <div style="margin-top:16px"><button class="btn" type="submit">Entrar</button></div>
-            </form>
-            <div class="sec-note">🔒 Sessão protegida: cookie HttpOnly/SameSite, expiração por inatividade (30 min) e token anti-CSRF em todas as ações.</div>
+    <div id="tela-login" class="login-split">
+        <div class="login-hero">
+            <div>
+                <div class="login-mark">V</div>
+                <h1>VIPEDia<br><em>Administração IPA</em></h1>
+                <p>Gestão das empresas, dos acessos e dos relatórios do
+                   Indicador do Perfil de Atendimento — Abordagem ACP.</p>
+                <ul class="login-feats">
+                    <li>🏢 Empresas com link e código exclusivos</li>
+                    <li>👥 Contas de administradores e gestores</li>
+                    <li>📊 Relatórios individuais e visão coletiva</li>
+                    <li>🔒 Segurança de mercado · LGPD</li>
+                </ul>
+            </div>
+            <div class="login-foot">© 2026 VIPEDia · IT Thrive</div>
+        </div>
+        <div class="login-form">
+            <div class="login-card">
+                <h2>Entrar</h2>
+                <p class="muted" style="margin:0 0 6px">Acesso restrito a administradores autorizados.</p>
+                <form onsubmit="Admin.login(event)" id="form-login">
+                    <div id="login-conta">
+                        <label for="in-email">E-mail</label>
+                        <input type="email" id="in-email" autocomplete="username" placeholder="voce@empresa.com.br">
+                        <label for="in-senha">Senha</label>
+                        <input type="password" id="in-senha" autocomplete="current-password" placeholder="••••••••••">
+                    </div>
+                    <div id="login-chave" class="hidden">
+                        <label for="in-key">Chave mestra (ADMIN_KEY)</label>
+                        <input type="password" id="in-key" autocomplete="off" placeholder="chave do config.php">
+                    </div>
+                    <div style="margin-top:18px"><button class="btn btn-block" type="submit">Entrar</button></div>
+                </form>
+                <button class="link-toggle" id="btn-modo" onclick="Admin.alternarModo()">Entrar com a chave mestra →</button>
+                <div class="sec-note">🔒 Senhas criptografadas (Argon2id), bloqueio após 5 tentativas,
+                sessão com expiração automática e registro de auditoria.</div>
+            </div>
         </div>
     </div>
 
@@ -117,6 +165,7 @@
             <button class="tab on" id="tab-emp" onclick="Admin.aba('emp')">Empresas</button>
             <button class="tab" id="tab-ges" onclick="Admin.aba('ges')">Responsáveis (gestores)</button>
             <button class="tab" id="tab-rel" onclick="Admin.aba('rel')">Relatórios por empresa</button>
+            <button class="tab" id="tab-adm" onclick="Admin.aba('adm')">Administradores</button>
         </div>
 
         <!-- EMPRESAS -->
@@ -188,6 +237,31 @@
                 <div id="estudo-corpo"></div>
             </div>
         </div>
+
+        <!-- CONTAS DE ADMINISTRADOR -->
+        <div id="aba-adm" class="hidden">
+            <div class="card">
+                <h2>Nova conta de administrador</h2>
+                <form onsubmit="Admin.criarAdmin(event)">
+                    <div class="row">
+                        <div><label for="adm-nome">Nome</label><input id="adm-nome" required maxlength="120"></div>
+                        <div><label for="adm-email">E-mail (login)</label><input id="adm-email" type="email" required maxlength="190"></div>
+                        <div><label for="adm-senha">Senha (mín. 10 caracteres)</label>
+                            <div style="display:flex;gap:8px"><input id="adm-senha" type="text" required minlength="10" maxlength="72" autocomplete="new-password">
+                            <button type="button" class="btn btn-ghost" onclick="Admin.gerarSenhaAdm()">Gerar</button></div></div>
+                    </div>
+                    <div style="margin-top:16px"><button class="btn" type="submit">Criar administrador</button></div>
+                </form>
+                <p class="muted" style="margin:10px 0 0">Administradores têm acesso total a esta área (empresas, gestores e relatórios).
+                   A senha é guardada apenas como hash criptográfico — repasse por canal seguro. A <strong>chave mestra</strong> (ADMIN_KEY
+                   do config.php) continua funcionando como recuperação de emergência.</p>
+            </div>
+            <div class="card tbl-scroll">
+                <h2>Administradores cadastrados</h2>
+                <table><thead><tr><th>Nome</th><th>E-mail</th><th>Criado em</th><th>Status</th><th></th></tr></thead>
+                <tbody id="tb-adm"><tr><td colspan="5" class="muted">Carregando…</td></tr></tbody></table>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
@@ -203,30 +277,50 @@
         },
         async init() {
             const s = await this.post({ action: 'ping' }).catch(() => null);
-            if (s && s.ok && s.admin) { this.csrf = s.csrf; this.mostrar(); }
+            if (s && s.ok && s.admin) { this.csrf = s.csrf; this.mostrar(s.admin_nome); }
         },
-        mostrar() {
+        mostrar(nome) {
             document.getElementById('tela-login').classList.add('hidden');
             document.getElementById('tela-admin').classList.remove('hidden');
             document.getElementById('btn-sair').classList.remove('hidden');
-            this.carregarEmpresas(); this.carregarGestores();
+            if (nome) document.getElementById('quem-adm').textContent = '👤 ' + nome + ' · ';
+            this.carregarEmpresas(); this.carregarGestores(); this.carregarAdmins();
         },
         async login(ev) {
             ev.preventDefault();
-            const r = await this.post({ action: 'admin_login', key: document.getElementById('in-key').value });
+            const porChave = !document.getElementById('login-chave').classList.contains('hidden');
+            const body = porChave
+                ? { action: 'admin_login', key: document.getElementById('in-key').value }
+                : { action: 'admin_login', email: document.getElementById('in-email').value,
+                    senha: document.getElementById('in-senha').value };
+            const r = await this.post(body);
             if (!r.ok) {
-                return Msg.fire({ icon: 'error', titulo: r.code === 'muitas_tentativas' ? 'Acesso bloqueado temporariamente' : 'Chave incorreta',
-                    html: r.code === 'muitas_tentativas' ? 'Muitas tentativas. Aguarde 15 minutos.' : 'Verifique a chave de administração (ADMIN_KEY do config.php).' });
+                return Msg.fire({ icon: 'error', titulo: r.code === 'muitas_tentativas' ? 'Acesso bloqueado temporariamente' : 'Dados incorretos',
+                    html: r.code === 'muitas_tentativas' ? 'Muitas tentativas. Aguarde 15 minutos.'
+                        : (porChave ? 'Verifique a chave de administração (ADMIN_KEY do config.php).' : 'E-mail ou senha inválidos.') });
             }
-            this.csrf = r.csrf; document.getElementById('in-key').value = '';
-            this.mostrar();
+            this.csrf = r.csrf;
+            document.getElementById('in-key').value = ''; document.getElementById('in-senha').value = '';
+            this.mostrar(r.nome);
         },
         async sair() { await this.post({ action: 'logout' }); location.reload(); },
         aba(a) {
-            ['emp', 'ges', 'rel'].forEach(x => {
+            ['emp', 'ges', 'rel', 'adm'].forEach(x => {
                 document.getElementById('aba-' + x).classList.toggle('hidden', a !== x);
                 document.getElementById('tab-' + x).classList.toggle('on', a === x);
             });
+        },
+        alternarModo() {
+            const conta = document.getElementById('login-conta');
+            const chave = document.getElementById('login-chave');
+            const porChave = chave.classList.contains('hidden');
+            conta.classList.toggle('hidden', porChave);
+            chave.classList.toggle('hidden', !porChave);
+            document.getElementById('in-email').required = !porChave;
+            document.getElementById('in-senha').required = !porChave;
+            document.getElementById('in-key').required = porChave;
+            document.getElementById('btn-modo').textContent = porChave
+                ? '← Entrar com e-mail e senha' : 'Entrar com a chave mestra →';
         },
         esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
         linkIpa(c)  { return new URL('../webapp/index.html?e=' + c, location.href).href; },
@@ -325,6 +419,57 @@
                 confirmText: 'Redefinir', cancelText: 'Cancelar' });
             if (resp !== 'confirm') return;
             const r = await this.post({ action: 'gestor_senha', csrf: this.csrf, id, senha });
+            Msg.toast(r.ok ? 'Senha redefinida.' : 'Falha ao redefinir.');
+        },
+
+        /* ----- contas de administrador ----- */
+        gerarSenhaAdm() {
+            const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789-#@';
+            const arr = crypto.getRandomValues(new Uint32Array(14));
+            document.getElementById('adm-senha').value = Array.from(arr, n => abc[n % abc.length]).join('');
+        },
+        async criarAdmin(ev) {
+            ev.preventDefault();
+            const senha = document.getElementById('adm-senha').value;
+            const email = document.getElementById('adm-email').value;
+            const r = await this.post({ action: 'admin_create', csrf: this.csrf,
+                nome: document.getElementById('adm-nome').value, email, senha });
+            if (!r.ok) return Msg.fire({ icon: 'error', titulo: 'Não foi possível criar',
+                html: r.dica || 'Confira os dados (e-mails não podem se repetir; senha com 10+ caracteres). Se a tabela ipa_admins não existir, importe api/migracao-admins.sql.' });
+            await Msg.fire({ icon: 'success', titulo: 'Administrador criado!',
+                html: `Repasse por canal seguro:<br><br><strong>Login:</strong> ${this.esc(email)}<br><strong>Senha:</strong> <span class="code">${this.esc(senha)}</span>` });
+            document.getElementById('adm-nome').value = ''; document.getElementById('adm-email').value = ''; document.getElementById('adm-senha').value = '';
+            this.carregarAdmins();
+        },
+        async carregarAdmins() {
+            const tb = document.getElementById('tb-adm');
+            const r = await this.post({ action: 'admin_list' }).catch(() => null);
+            if (!r || !r.ok) { tb.innerHTML = '<tr><td colspan="5" class="muted">Tabela ipa_admins ainda não existe — importe api/migracao-admins.sql no phpMyAdmin (uma vez).</td></tr>'; return; }
+            tb.innerHTML = r.rows.length ? r.rows.map(a => `<tr>
+                <td><strong>${this.esc(a.nome)}</strong>${a.id === r.eu ? ' <span class="tag tag-on">você</span>' : ''}</td>
+                <td>${this.esc(a.email)}</td>
+                <td>${this.esc(String(a.criado_em).slice(0, 10))}</td>
+                <td><span class="tag ${a.ativo ? 'tag-on' : 'tag-off'}">${a.ativo ? 'Ativo' : 'Inativo'}</span></td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-ghost btn-sm" onclick="Admin.resetSenhaAdmin(${a.id})">Redefinir senha</button>
+                    <button class="btn btn-ghost btn-sm" onclick="Admin.toggleAdmin(${a.id}, ${a.ativo ? 0 : 1})">${a.ativo ? 'Desativar' : 'Reativar'}</button>
+                </td>
+            </tr>`).join('') : '<tr><td colspan="5" class="muted">Nenhuma conta ainda — crie a primeira acima (você está logado pela chave mestra).</td></tr>';
+        },
+        async toggleAdmin(id, ativo) {
+            const r = await this.post({ action: 'admin_toggle', csrf: this.csrf, id, ativo });
+            if (!r.ok) Msg.fire({ icon: 'warning', titulo: 'Não permitido', html: r.dica || 'Operação recusada.' });
+            this.carregarAdmins();
+        },
+        async resetSenhaAdmin(id) {
+            const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789-#@';
+            const arr = crypto.getRandomValues(new Uint32Array(14));
+            const senha = Array.from(arr, n => abc[n % abc.length]).join('');
+            const resp = await Msg.fire({ icon: 'question', titulo: 'Redefinir a senha?',
+                html: `A nova senha será:<br><span class="code">${senha}</span><br>Anote antes de confirmar.`,
+                confirmText: 'Redefinir', cancelText: 'Cancelar' });
+            if (resp !== 'confirm') return;
+            const r = await this.post({ action: 'admin_senha', csrf: this.csrf, id, senha });
             Msg.toast(r.ok ? 'Senha redefinida.' : 'Falha ao redefinir.');
         },
 

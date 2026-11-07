@@ -143,7 +143,8 @@ try {
 
     /* ===== estado da sessão (para as páginas restaurarem o contexto) ===== */
     if ($action === 'ping') {
-        $resp = ['ok' => true, 'admin' => e_admin(), 'gestor' => null, 'csrf' => csrf_token()];
+        $resp = ['ok' => true, 'admin' => e_admin(), 'admin_nome' => e_admin() ? (string)($_SESSION['admin_nome'] ?? 'Administrador') : null,
+                 'gestor' => null, 'csrf' => csrf_token()];
         if (gestor_id()) {
             $resp['gestor'] = ['nome' => (string)($_SESSION['gestor_nome'] ?? ''),
                                'empresa' => (string)($_SESSION['empresa_nome'] ?? '')];
@@ -151,19 +152,40 @@ try {
         out($resp);
     }
 
-    /* ===== login do administrador (consultor) ===== */
+    /* ===== login do administrador =====
+       Dois caminhos: conta de administrador (e-mail + senha, tabela
+       ipa_admins) ou a CHAVE MESTRA (ADMIN_KEY do config.php), que serve
+       para criar a primeira conta e como recuperação de emergência. */
     if ($action === 'admin_login') {
-        if (falhas_recentes($ip, 'admin') >= LOGIN_MAX_FALHAS) {
+        $email = mb_strtolower(trim((string)($data['email'] ?? '')));
+        $chaveInformada = (string)($data['key'] ?? '');
+        $idRate = $email !== '' ? $email : 'admin';
+        if (falhas_recentes($ip, $idRate) >= LOGIN_MAX_FALHAS) {
             out(['ok' => false, 'code' => 'muitas_tentativas'], 429);
         }
-        $chave = admin_key();
-        $okLogin = $chave !== '' && hash_equals($chave, (string)($data['key'] ?? ''));
-        registrar_login($ip, 'admin', $okLogin);
+        $okLogin = false; $nomeAdmin = 'Administrador'; $adminId = 0;
+        if ($email !== '') {
+            $senha = (string)($data['senha'] ?? '');
+            try {
+                $st = db()->prepare('SELECT id, nome, senha_hash FROM ipa_admins WHERE email = ? AND ativo = 1 LIMIT 1');
+                $st->execute([$email]);
+                $adm = $st->fetch();
+                $okLogin = $adm && $senha !== '' && password_verify($senha, $adm['senha_hash']);
+                if ($okLogin) { $nomeAdmin = $adm['nome']; $adminId = (int)$adm['id']; }
+            } catch (Throwable $e) { $okLogin = false; /* tabela ausente: entre pela chave mestra */ }
+        } else {
+            $chave = admin_key();
+            $okLogin = $chave !== '' && hash_equals($chave, $chaveInformada);
+            if ($okLogin) $nomeAdmin = 'Chave mestra';
+        }
+        registrar_login($ip, $idRate, $okLogin);
         if (!$okLogin) out(['ok' => false, 'code' => 'credenciais_invalidas'], 401);
         session_regenerate_id(true);
         $_SESSION['admin'] = true;
+        $_SESSION['admin_id'] = $adminId;        // 0 = chave mestra
+        $_SESSION['admin_nome'] = $nomeAdmin;
         unset($_SESSION['gestor_id'], $_SESSION['empresa_id'], $_SESSION['gestor_nome'], $_SESSION['empresa_nome'], $_SESSION['csrf']);
-        out(['ok' => true, 'csrf' => csrf_token()]);
+        out(['ok' => true, 'csrf' => csrf_token(), 'nome' => $nomeAdmin]);
     }
 
     /* ===== login do gestor da empresa ===== */
@@ -198,6 +220,47 @@ try {
     if ($action === 'logout') {
         session_unset();
         session_destroy();
+        out(['ok' => true]);
+    }
+
+    /* ===== contas de administrador (somente ADMIN logado) ===== */
+    if ($action === 'admin_create') {
+        exigir_admin(); exigir_csrf($data);
+        $nome = limpar($data['nome'] ?? '');
+        $email = mb_strtolower(trim((string)($data['email'] ?? '')));
+        $senha = (string)($data['senha'] ?? '');
+        if (mb_strlen($nome) < 2) out(['ok' => false, 'code' => 'dados_invalidos']);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) out(['ok' => false, 'code' => 'email_invalido']);
+        if (mb_strlen($senha) < 10) out(['ok' => false, 'code' => 'senha_curta', 'dica' => 'Use pelo menos 10 caracteres.']);
+        $st = db()->prepare('INSERT INTO ipa_admins (nome, email, senha_hash) VALUES (?,?,?)');
+        $st->execute([$nome, $email, hash_senha($senha)]);
+        out(['ok' => true, 'id' => (int)db()->lastInsertId()]);
+    }
+
+    if ($action === 'admin_list') {
+        exigir_admin();
+        $rows = db()->query('SELECT id, nome, email, ativo, criado_em FROM ipa_admins ORDER BY nome')->fetchAll();
+        foreach ($rows as &$r) { $r['id'] = (int)$r['id']; $r['ativo'] = (int)$r['ativo']; }
+        out(['ok' => true, 'rows' => $rows, 'eu' => (int)($_SESSION['admin_id'] ?? 0)]);
+    }
+
+    if ($action === 'admin_toggle') {
+        exigir_admin(); exigir_csrf($data);
+        $id = (int)($data['id'] ?? 0);
+        if ($id > 0 && $id === (int)($_SESSION['admin_id'] ?? 0) && empty($data['ativo'])) {
+            out(['ok' => false, 'code' => 'auto_bloqueio', 'dica' => 'Você não pode desativar a própria conta em uso.']);
+        }
+        $st = db()->prepare('UPDATE ipa_admins SET ativo = ? WHERE id = ?');
+        $st->execute([(int)!empty($data['ativo']), $id]);
+        out(['ok' => true]);
+    }
+
+    if ($action === 'admin_senha') {
+        exigir_admin(); exigir_csrf($data);
+        $senha = (string)($data['senha'] ?? '');
+        if (mb_strlen($senha) < 10) out(['ok' => false, 'code' => 'senha_curta']);
+        $st = db()->prepare('UPDATE ipa_admins SET senha_hash = ? WHERE id = ?');
+        $st->execute([hash_senha($senha), (int)($data['id'] ?? 0)]);
         out(['ok' => true]);
     }
 

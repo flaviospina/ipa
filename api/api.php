@@ -259,7 +259,7 @@ try {
             try {
                 db();
                 $st['banco'] = true;
-                foreach (['ipa_respostas', 'ipa_respostas_palavras', 'ipa_360', 'ipa_360_palavras', 'ipa_empresas', 'ipa_gestores', 'ipa_login_log'] as $t) {
+                foreach (['ipa_respostas', 'ipa_respostas_palavras', 'ipa_360', 'ipa_360_palavras', 'ipa_empresas', 'ipa_gestores', 'ipa_admins', 'ipa_login_log'] as $t) {
                     try {
                         $n = (int)db()->query("SELECT COUNT(*) FROM {$t}")->fetchColumn();
                         $st['tabelas'][$t] = $comChave ? $n : 'ok';

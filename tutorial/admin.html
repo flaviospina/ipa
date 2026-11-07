@@ -34,10 +34,13 @@
            gera os links exclusivos e cria os acessos dos responsáveis.</p>
 
         <ol class="passos">
-            <li><h3>Entre com a chave de administração</h3>
-                <p>A chave é a constante <code>ADMIN_KEY</code> do <code>api/config.php</code> no servidor — use uma
-                   chave longa, aleatória e diferente da chave do painel. Após 5 tentativas erradas o acesso bloqueia
-                   por 15 minutos; a sessão expira em 30 minutos sem uso.</p></li>
+            <li><h3>Entre com a sua conta de administrador</h3>
+                <p>O acesso é por <strong>e-mail e senha</strong> (aba Administradores). Na primeira vez — ou como
+                   recuperação de emergência — use <strong>"Entrar com a chave mestra"</strong>: a chave é a constante
+                   <code>ADMIN_KEY</code> do <code>api/config.php</code> no servidor. Após 5 tentativas erradas o acesso
+                   bloqueia por 15 minutos; a sessão expira em 30 minutos sem uso.</p>
+                <div class="dica">💡 Logado pela chave mestra, crie a sua conta na aba <strong>Administradores</strong>
+                e passe a entrar com e-mail e senha. Novos administradores são criados na mesma aba.</div></li>
             <li><h3>Crie a empresa (aba Empresas)</h3>
                 <p>Digite o nome e clique em "Criar empresa". O sistema gera automaticamente um
                    <strong>código criptografado exclusivo</strong> (22 caracteres aleatórios) que identifica a empresa nas URLs.</p></li>
