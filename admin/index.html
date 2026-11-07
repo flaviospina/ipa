@@ -587,24 +587,31 @@
                 }).join('; ') + '.';
             }
 
-            /* recomendações comuns à equipe, geradas dos números */
+            /* recomendações comuns à equipe — o atendimento é sempre INDIVIDUAL:
+               cada prática é aplicada por cada profissional nos próprios
+               atendimentos; a equipe entra no reforço (reunião e feedback) */
             const recs = [];
             if (temMomentos) [1, 2, 3].forEach(q => {
                 if (lideresQ[q] !== ESPERADO[q]) {
-                    recs.push(`<strong>No momento ${NOMES_Q[q]}:</strong> a ênfase coletiva está em ${NOMES[lideresQ[q]]},
+                    recs.push(`<strong>No momento ${NOMES_Q[q]}:</strong> a ênfase do grupo está em ${NOMES[lideresQ[q]]},
                         mas esse momento tipicamente pede ${NOMES[ESPERADO[q]]} (necessidade de ${NECESS[ESPERADO[q]]} do cliente).
-                        Pratiquem em conjunto, nesse momento, comportamentos de ${NOMES[ESPERADO[q]]} — moderando a força atual, sem abandoná-la.`);
+                        Recomendação comum: cada integrante, nos próprios atendimentos, modere a força atual e valorize, ao
+                        mesmo tempo, comportamentos de ${NOMES[ESPERADO[q]]} nesse momento — e a equipe acompanhe os relatos
+                        na reunião periódica.`);
                 }
             });
             recs.push(`<strong>Fortalecer ${NOMES[kMedBaixa]}:</strong> é a variável menos valorizada do grupo
-                (${fmt(media[kMedBaixa])} pts). Combinem um exercício coletivo semanal — cada pessoa escolhe um atendimento
+                (${fmt(media[kMedBaixa])} pts). Combinem na equipe um exercício comum: cada pessoa escolhe um atendimento
                 por dia para praticá-la conscientemente e relata o efeito na reunião de equipe.`);
-            recs.push(`<strong>Moderar ${NOMES[kMedTop]}:</strong> é a força coletiva (${fmt(media[kMedTop])} pts) — e força
-                em excesso vira risco quando todos a usam ao mesmo tempo. Combinem o sinal de "calibrar": quando a situação
-                pedir outra variável, qualquer colega pode lembrar o grupo.`);
+            recs.push(`<strong>Moderar ${NOMES[kMedTop]}:</strong> é a força do grupo (${fmt(media[kMedTop])} pts) — e, como
+                todo atendimento é individual, o excesso aparece um a um: cada profissional tende a aplicá-la além do que a
+                situação pede. Recomendação comum: cada integrante observe, nos próprios atendimentos, os sinais de excesso
+                de ${NOMES[kMedTop]} na reação do cliente e calibre a intensidade; a equipe reforça essa calibragem fora do
+                atendimento, com lembretes e feedback entre colegas.`);
             if (n > 0 && nApego / n >= 0.3) {
                 recs.push(`<strong>Versatilidade:</strong> ${pct(nApego)} da equipe tem forte apego ao próprio estilo.
-                    Promovam rodízio de papéis e simulações de atendimento com estilos trocados, acompanhados de feedback entre pares.`);
+                    Promovam simulações de atendimento (fora do atendimento real) com estilos trocados, acompanhadas de
+                    feedback entre pares — cada um leva o aprendizado para os próprios atendimentos.`);
             }
             recs.push(`<strong>Feedback contínuo:</strong> instituam a rotina quinzenal em duplas — "em que momento você me
                 viu rígido(a) no meu jeito habitual? E em que momento me viu me adaptar bem ao cliente?" — registrando as
@@ -635,7 +642,9 @@
                 necessidades do cliente que o padrão dominante da equipe deixa descobertas. Vale ler o relatório
                 individual com atenção e aproveitá-lo(a) em duplas de aprendizagem com colegas de perfil típico.</p>
                 <h3 class="est">Recomendações de atendimento para a equipe</h3>
-                <p>Práticas coletivas, comuns a cada integrante, geradas a partir dos números desta equipe:</p>
+                <p>Recomendações comuns a todos os integrantes — como todo atendimento é <strong>individual</strong>,
+                   cada prática é aplicada por cada profissional nos próprios atendimentos; a equipe entra no reforço
+                   (reuniões, lembretes e feedback):</p>
                 <ol style="padding-left:20px;display:grid;gap:10px">${recs.map(x => `<li>${x}</li>`).join('')}</ol>
                 <p class="muted" style="font-size:12px">Estudo gerado automaticamente a partir dos diagnósticos registrados
                 (${n} IPA). Médias sobre o máximo teórico de 90 pontos por variável (30 por momento). Uso recomendado:
