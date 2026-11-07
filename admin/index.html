@@ -94,6 +94,7 @@
         <div class="tabs">
             <button class="tab on" id="tab-emp" onclick="Admin.aba('emp')">Empresas</button>
             <button class="tab" id="tab-ges" onclick="Admin.aba('ges')">Responsáveis (gestores)</button>
+            <button class="tab" id="tab-rel" onclick="Admin.aba('rel')">Relatórios por empresa</button>
         </div>
 
         <!-- EMPRESAS -->
@@ -138,6 +139,23 @@
                 <tbody id="tb-ges"><tr><td colspan="5" class="muted">Carregando…</td></tr></tbody></table>
             </div>
         </div>
+
+        <!-- RELATÓRIOS POR EMPRESA (somente leitura) -->
+        <div id="aba-rel" class="hidden">
+            <div class="card">
+                <h2>Relatórios individuais por empresa</h2>
+                <p class="muted">Escolha a empresa para listar os profissionais e abrir o relatório individual de cada um.
+                   Consulta somente leitura — nenhum dado é alterado.</p>
+                <div class="row">
+                    <div><label for="rel-emp">Empresa</label><select id="rel-emp" onchange="Admin.carregarRelatorios()"></select></div>
+                </div>
+            </div>
+            <div class="card tbl-scroll">
+                <h2 id="rel-titulo">Profissionais</h2>
+                <table><thead><tr><th>Nome</th><th>Função</th><th>Data</th><th>Predominante</th><th>Perfil</th><th class="center">360°</th><th>Relatório individual</th></tr></thead>
+                <tbody id="tb-rel"><tr><td colspan="7" class="muted">Selecione uma empresa acima.</td></tr></tbody></table>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
@@ -173,10 +191,10 @@
         },
         async sair() { await this.post({ action: 'logout' }); location.reload(); },
         aba(a) {
-            document.getElementById('aba-emp').classList.toggle('hidden', a !== 'emp');
-            document.getElementById('aba-ges').classList.toggle('hidden', a !== 'ges');
-            document.getElementById('tab-emp').classList.toggle('on', a === 'emp');
-            document.getElementById('tab-ges').classList.toggle('on', a === 'ges');
+            ['emp', 'ges', 'rel'].forEach(x => {
+                document.getElementById('aba-' + x).classList.toggle('hidden', a !== x);
+                document.getElementById('tab-' + x).classList.toggle('on', a === x);
+            });
         },
         esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
         linkIpa(c)  { return new URL('../webapp/index.html?e=' + c, location.href).href; },
@@ -190,6 +208,9 @@
             this.empresas = r.rows;
             sel.innerHTML = '<option value="">Selecione…</option>' +
                 r.rows.filter(e => e.ativo).map(e => `<option value="${e.id}">${this.esc(e.nome)}</option>`).join('');
+            const selRel = document.getElementById('rel-emp');
+            if (selRel) selRel.innerHTML = '<option value="">Selecione…</option>' +
+                r.rows.map(e => `<option value="${e.id}">${this.esc(e.nome)}${e.ativo ? '' : ' (inativa)'}</option>`).join('');
             tb.innerHTML = r.rows.length ? r.rows.map(e => `<tr>
                 <td><strong>${this.esc(e.nome)}</strong></td>
                 <td><span class="code">${this.esc(e.codigo)}</span></td>
@@ -273,6 +294,31 @@
             if (resp !== 'confirm') return;
             const r = await this.post({ action: 'gestor_senha', csrf: this.csrf, id, senha });
             Msg.toast(r.ok ? 'Senha redefinida.' : 'Falha ao redefinir.');
+        },
+
+        /* ----- Relatórios por empresa (somente leitura) ----- */
+        async carregarRelatorios() {
+            const empresaId = parseInt(document.getElementById('rel-emp').value, 10);
+            const tb = document.getElementById('tb-rel');
+            const titulo = document.getElementById('rel-titulo');
+            if (!empresaId) { tb.innerHTML = '<tr><td colspan="7" class="muted">Selecione uma empresa acima.</td></tr>'; titulo.textContent = 'Profissionais'; return; }
+            tb.innerHTML = '<tr><td colspan="7" class="muted">Carregando…</td></tr>';
+            const r = await this.post({ action: 'dash', empresa_id: empresaId });
+            if (!r.ok) { tb.innerHTML = '<tr><td colspan="7" class="muted">Não foi possível consultar. Entre novamente.</td></tr>'; return; }
+            const CORES = { 'Atenção': '#d9a400', 'Comunicação': '#e8401a', 'Procedimento': '#2952cc', 'Equilibrado': '#0e9f6e' };
+            const PERFIS = { FORTE_APEGO: 'Forte apego ao estilo', FLEXIVEL: 'Perfil flexível',
+                             EQUILIBRADO_NATURAL: 'Equilíbrio natural', EQUILIBRADO_MODELO: 'Equilibrado (modelo)' };
+            const n360 = {}; (r.avaliacoes360 || []).forEach(a => { n360[a.avaliado] = a.n; });
+            titulo.textContent = `Profissionais — ${r.empresa.nome} (${r.funcionarios.length})`;
+            tb.innerHTML = r.funcionarios.length ? r.funcionarios.map(x => `<tr>
+                <td><strong>${this.esc(x.nome)}</strong></td>
+                <td>${this.esc(x.funcao)}</td>
+                <td>${this.esc(String(x.data).slice(0, 10))}</td>
+                <td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${CORES[x.predominante] || '#8a94ab'};margin-right:7px"></span>${this.esc(x.predominante)}</td>
+                <td>${PERFIS[x.regra] || this.esc(x.regra)}</td>
+                <td class="center">${n360[x.nome] || 0}</td>
+                <td>${x.link ? `<a href="${x.link}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Emitir relatório →</a>` : '<span class="muted">sem relatório arquivado</span>'}</td>
+            </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum profissional desta empresa respondeu o IPA ainda.</td></tr>';
         }
     };
     Admin.init();
