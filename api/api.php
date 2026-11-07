@@ -280,9 +280,17 @@ try {
             $st->execute([$token]);
             $row = $st->fetch();
             if (!$row || !$row['relatorio']) out(['ok' => false, 'code' => 'not_found']);
+            $html = $row['relatorio'];
+            /* &print=1: abre o relatório já com o diálogo de impressão
+               (Salvar como PDF) — o link de download usado nos painéis */
+            if (!empty($_GET['print'])) {
+                $html = str_replace('</body>',
+                    '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},500);});</script></body>',
+                    $html);
+            }
             header('Content-Type: text/html; charset=utf-8');
             header('X-Robots-Tag: noindex, nofollow');
-            echo $row['relatorio'];
+            echo $html;
             exit;
         }
 

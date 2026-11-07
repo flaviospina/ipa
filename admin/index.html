@@ -64,6 +64,28 @@
         .center { text-align:center; }
         .login-box { max-width:430px; margin:60px auto; }
         .sec-note { background:var(--accent-soft); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
+        /* ----- estudo coletivo ----- */
+        .est-bar-row { display:grid; grid-template-columns:130px 1fr 110px; gap:10px; align-items:center; margin:6px 0; font-size:13.5px; }
+        .est-lbl { font-weight:700; display:flex; align-items:center; gap:7px; }
+        .est-track { background:var(--surface); border-radius:6px; height:14px; overflow:hidden; }
+        .est-bar { height:100%; border-radius:6px; }
+        .est-val { font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--ink-2); }
+        .sw { display:inline-block; width:10px; height:10px; border-radius:3px; }
+        .delta-pos { color:var(--ok); font-weight:700; }
+        .delta-neg { color:var(--danger); font-weight:700; }
+        .delta-zero { color:var(--ink-3); }
+        .est-prose { font-size:14px; color:var(--ink-2); line-height:1.6; }
+        .est-prose p { margin:8px 0; }
+        h3.est { font-size:15px; margin:22px 0 10px; }
+        @media print {
+            @page { size:A4; margin:14mm 12mm; }
+            body { background:#fff; font-size:12.5px; }
+            .top, .tabs, .no-print, #aba-emp, #aba-ges, #tela-login { display:none !important; }
+            #aba-rel > .card:not(.estudo-card) { display:none !important; }
+            #card-estudo { display:block !important; border:0; padding:0; }
+            .card, table, .est-bar-row { break-inside:avoid; }
+            h3.est { break-after:avoid; }
+        }
     </style>
 </head>
 <body>
@@ -154,6 +176,16 @@
                 <h2 id="rel-titulo">Profissionais</h2>
                 <table><thead><tr><th>Nome</th><th>Função</th><th>Data</th><th>Predominante</th><th>Perfil</th><th class="center">360°</th><th>Relatório individual</th></tr></thead>
                 <tbody id="tb-rel"><tr><td colspan="7" class="muted">Selecione uma empresa acima.</td></tr></tbody></table>
+                <p class="muted" style="margin:10px 0 0;font-size:12.5px">💡 "Baixar PDF" abre o relatório já com o diálogo de impressão — escolha <strong>Salvar como PDF</strong>.</p>
+            </div>
+
+            <!-- ESTUDO COLETIVO (gerado dos dados já carregados; somente leitura) -->
+            <div class="card estudo-card hidden" id="card-estudo">
+                <div class="row no-print" style="justify-content:space-between;align-items:center">
+                    <h2 style="margin:0" id="estudo-titulo">Visão coletiva</h2>
+                    <div style="flex:0"><button class="btn btn-sm" onclick="window.print()">Baixar estudo em PDF</button></div>
+                </div>
+                <div id="estudo-corpo"></div>
             </div>
         </div>
     </div>
@@ -301,7 +333,7 @@
             const empresaId = parseInt(document.getElementById('rel-emp').value, 10);
             const tb = document.getElementById('tb-rel');
             const titulo = document.getElementById('rel-titulo');
-            if (!empresaId) { tb.innerHTML = '<tr><td colspan="7" class="muted">Selecione uma empresa acima.</td></tr>'; titulo.textContent = 'Profissionais'; return; }
+            if (!empresaId) { tb.innerHTML = '<tr><td colspan="7" class="muted">Selecione uma empresa acima.</td></tr>'; titulo.textContent = 'Profissionais'; document.getElementById('card-estudo').classList.add('hidden'); return; }
             tb.innerHTML = '<tr><td colspan="7" class="muted">Carregando…</td></tr>';
             const r = await this.post({ action: 'dash', empresa_id: empresaId });
             if (!r.ok) { tb.innerHTML = '<tr><td colspan="7" class="muted">Não foi possível consultar. Entre novamente.</td></tr>'; return; }
@@ -317,8 +349,103 @@
                 <td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${CORES[x.predominante] || '#8a94ab'};margin-right:7px"></span>${this.esc(x.predominante)}</td>
                 <td>${PERFIS[x.regra] || this.esc(x.regra)}</td>
                 <td class="center">${n360[x.nome] || 0}</td>
-                <td>${x.link ? `<a href="${x.link}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Emitir relatório →</a>` : '<span class="muted">sem relatório arquivado</span>'}</td>
+                <td style="white-space:nowrap">${x.link
+                    ? `<a href="${x.link}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Abrir →</a>
+                       &nbsp;·&nbsp;<a href="${x.link}&print=1" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Baixar PDF ⤓</a>`
+                    : '<span class="muted">sem relatório arquivado</span>'}</td>
             </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum profissional desta empresa respondeu o IPA ainda.</td></tr>';
+            this.renderEstudo(r);
+        },
+
+        /* ----- estudo coletivo: distribuição dos estilos, média por variável,
+           pessoa × média do grupo e análise de flexibilidade (só leitura) ----- */
+        renderEstudo(r) {
+            const card = document.getElementById('card-estudo');
+            const corpo = document.getElementById('estudo-corpo');
+            const f = r.funcionarios;
+            if (!f.length) { card.classList.add('hidden'); return; }
+            card.classList.remove('hidden');
+            document.getElementById('estudo-titulo').textContent = 'Visão coletiva — ' + r.empresa.nome;
+
+            const K = ['A', 'C', 'P', 'E'];
+            const NOMES = { A: 'Atenção', C: 'Comunicação', P: 'Procedimento', E: 'Equilibrado' };
+            const CORES = { A: '#d9a400', C: '#e8401a', P: '#2952cc', E: '#0e9f6e' };
+            const PERFIS = { FORTE_APEGO: 'Forte apego ao estilo', FLEXIVEL: 'Perfil flexível',
+                             EQUILIBRADO_NATURAL: 'Equilíbrio natural', EQUILIBRADO_MODELO: 'Equilibrado (modelo)' };
+            const n = f.length;
+            const fmt = x => (Math.round(x * 10) / 10).toLocaleString('pt-BR');
+            const pct = x => (Math.round(x / n * 1000) / 10).toLocaleString('pt-BR') + '%';
+
+            /* 1 · distribuição dos estilos predominantes */
+            const dist = {}; K.forEach(k => { dist[k] = f.filter(x => x.predominante === NOMES[k]).length; });
+            const distHtml = K.map(k => `<div class="est-bar-row">
+                <span class="est-lbl"><span class="sw" style="background:${CORES[k]}"></span>${NOMES[k]}</span>
+                <div class="est-track"><div class="est-bar" style="width:${n ? (dist[k] / n * 100).toFixed(1) : 0}%;background:${CORES[k]}"></div></div>
+                <span class="est-val">${dist[k]} pessoa(s) · ${pct(dist[k])}</span>
+            </div>`).join('');
+
+            /* 2 · média do grupo por variável (máximo teórico: 90 por estilo) */
+            const media = {}; K.forEach(k => { media[k] = f.reduce((s, x) => s + x[k], 0) / n; });
+            const mediaHtml = K.map(k => `<div class="est-bar-row">
+                <span class="est-lbl"><span class="sw" style="background:${CORES[k]}"></span>${NOMES[k]}</span>
+                <div class="est-track"><div class="est-bar" style="width:${(media[k] / 90 * 100).toFixed(1)}%;background:${CORES[k]}"></div></div>
+                <span class="est-val">média ${fmt(media[k])} pts</span>
+            </div>`).join('');
+
+            /* 3 · cada pessoa × média do grupo */
+            const delta = d => d > 0 ? `<span class="delta-pos">+${fmt(d)}</span>` : d < 0 ? `<span class="delta-neg">−${fmt(-d)}</span>` : '<span class="delta-zero">0</span>';
+            const pessoas = f.map(x => {
+                const soma = K.reduce((s, k) => s + Math.abs(x[k] - media[k]), 0);
+                return { x, soma };
+            });
+            const maisSingular = pessoas.reduce((a, b) => a.soma >= b.soma ? a : b).x;
+            const pessoaHtml = `<div class="tbl-scroll"><table>
+                <thead><tr><th>Profissional</th>${K.map(k => `<th class="center">${NOMES[k]}<br><span style="font-weight:600;color:var(--ink-3)">pts · Δ média</span></th>`).join('')}<th>Perfil</th></tr></thead>
+                <tbody>${f.map(x => `<tr>
+                    <td><strong>${this.esc(x.nome)}</strong></td>
+                    ${K.map(k => `<td class="center">${x[k]} · ${delta(x[k] - media[k])}</td>`).join('')}
+                    <td>${PERFIS[x.regra] || this.esc(x.regra)}</td>
+                </tr>`).join('')}</tbody></table></div>`;
+
+            /* 4 · análise de flexibilidade */
+            const porRegra = {}; f.forEach(x => { porRegra[x.regra] = (porRegra[x.regra] || 0) + 1; });
+            const flexHtml = Object.keys(PERFIS).map(k => `<div class="est-bar-row">
+                <span class="est-lbl" style="font-size:12.5px">${PERFIS[k]}</span>
+                <div class="est-track"><div class="est-bar" style="width:${n ? ((porRegra[k] || 0) / n * 100).toFixed(1) : 0}%;background:var(--brand)"></div></div>
+                <span class="est-val">${porRegra[k] || 0} pessoa(s) · ${pct(porRegra[k] || 0)}</span>
+            </div>`).join('');
+
+            /* leitura automática */
+            const kTop = K.reduce((a, b) => dist[a] >= dist[b] ? a : b);
+            const kMedTop = K.reduce((a, b) => media[a] >= media[b] ? a : b);
+            const kMedBaixa = K.reduce((a, b) => media[a] <= media[b] ? a : b);
+            const nApego = porRegra.FORTE_APEGO || 0;
+            const nEquil = (porRegra.EQUILIBRADO_NATURAL || 0) + (porRegra.EQUILIBRADO_MODELO || 0);
+            const leitura = `
+                <p><strong>Perfil do grupo:</strong> entre os ${n} profissionais avaliados, o estilo predominante mais
+                comum é <strong>${NOMES[kTop]}</strong> (${dist[kTop]} pessoa(s), ${pct(dist[kTop])}). Na média das
+                pontuações, a variável mais valorizada pelo grupo é <strong>${NOMES[kMedTop]}</strong>
+                (${fmt(media[kMedTop])} pontos) e a menos valorizada é <strong>${NOMES[kMedBaixa]}</strong>
+                (${fmt(media[kMedBaixa])} pontos) — quando ${NOMES[kMedBaixa] === 'Equilibrado' ? 'o estilo Equilibrado' : 'uma variável'}
+                fica em segundo plano no coletivo, vale observar se a necessidade do cliente associada a ela está sendo
+                coberta pela equipe.</p>
+                <p><strong>Flexibilidade:</strong> ${nApego} pessoa(s) (${pct(nApego)}) apresenta(m) forte apego ao próprio
+                estilo — prioridade natural para o desenvolvimento de versatilidade — e ${nEquil} (${pct(nEquil)})
+                já demonstra(m) equilíbrio entre as variáveis. ${(porRegra.FLEXIVEL || 0)} pessoa(s) transita(m) entre
+                estilos conforme a situação.</p>
+                <p><strong>Perfil mais singular:</strong> <strong>${this.esc(maisSingular.nome)}</strong> é quem mais se
+                distancia da média do grupo (somando as diferenças nas quatro variáveis) — um perfil complementar que
+                pode enriquecer a equipe, e cujo relatório individual merece leitura atenta.</p>
+                <p class="muted" style="font-size:12px">Estudo gerado automaticamente a partir dos diagnósticos registrados
+                (${n} IPA). Médias sobre o máximo teórico de 90 pontos por variável. Uso recomendado: desenvolvimento de
+                equipe — não decisões punitivas. Consulta somente leitura.</p>`;
+
+            corpo.innerHTML = `
+                <h3 class="est">1 · Distribuição dos estilos predominantes</h3>${distHtml}
+                <h3 class="est">2 · Média do grupo por variável</h3>${mediaHtml}
+                <h3 class="est">3 · Cada pessoa em relação à média do grupo</h3>${pessoaHtml}
+                <h3 class="est">4 · Análise de flexibilidade</h3>${flexHtml}
+                <h3 class="est">Leitura do estudo</h3><div class="est-prose">${leitura}</div>`;
         }
     };
     Admin.init();
