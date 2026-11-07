@@ -561,14 +561,64 @@
             </div>`).join('');
 
             /* leitura automática */
-            const kTop = K.reduce((a, b) => dist[a] >= dist[b] ? a : b);
+            const rank = [...K].sort((a, b) => dist[b] - dist[a] || media[b] - media[a]);
+            const k1 = rank[0], k2 = rank[1];
             const kMedTop = K.reduce((a, b) => media[a] >= media[b] ? a : b);
             const kMedBaixa = K.reduce((a, b) => media[a] <= media[b] ? a : b);
             const nApego = porRegra.FORTE_APEGO || 0;
             const nEquil = (porRegra.EQUILIBRADO_NATURAL || 0) + (porRegra.EQUILIBRADO_MODELO || 0);
+
+            /* por momento: líder coletivo × o que o momento tipicamente pede */
+            const M = r.momentos || null;
+            const ESPERADO = { 1: 'A', 2: 'P', 3: 'C' };
+            const NOMES_Q = { 1: 'Início', 2: 'Durante', 3: 'Término' };
+            const NECESS = { A: 'autoestima', C: 'segurança', P: 'tratamento justo', E: 'integração das três variáveis' };
+            const temMomentos = M && [1, 2, 3].some(q => K.some(k => (M[q] || {})[k] > 0));
+            let momentosTxt = '';
+            const lideresQ = {};
+            if (temMomentos) {
+                momentosTxt = [1, 2, 3].map(q => {
+                    const lq = K.reduce((a, b) => M[q][a] >= M[q][b] ? a : b);
+                    lideresQ[q] = lq;
+                    const alinhado = lq === ESPERADO[q];
+                    return `<strong>${NOMES_Q[q]}:</strong> ${NOMES[lq]} (média de ${fmt(M[q][lq] / n)} pts por pessoa)${alinhado
+                        ? ' — alinhada ao que este momento tipicamente pede'
+                        : ` — este momento tipicamente pede destaque em ${NOMES[ESPERADO[q]]}`}`;
+                }).join('; ') + '.';
+            }
+
+            /* recomendações comuns à equipe, geradas dos números */
+            const recs = [];
+            if (temMomentos) [1, 2, 3].forEach(q => {
+                if (lideresQ[q] !== ESPERADO[q]) {
+                    recs.push(`<strong>No momento ${NOMES_Q[q]}:</strong> a ênfase coletiva está em ${NOMES[lideresQ[q]]},
+                        mas esse momento tipicamente pede ${NOMES[ESPERADO[q]]} (necessidade de ${NECESS[ESPERADO[q]]} do cliente).
+                        Pratiquem em conjunto, nesse momento, comportamentos de ${NOMES[ESPERADO[q]]} — moderando a força atual, sem abandoná-la.`);
+                }
+            });
+            recs.push(`<strong>Fortalecer ${NOMES[kMedBaixa]}:</strong> é a variável menos valorizada do grupo
+                (${fmt(media[kMedBaixa])} pts). Combinem um exercício coletivo semanal — cada pessoa escolhe um atendimento
+                por dia para praticá-la conscientemente e relata o efeito na reunião de equipe.`);
+            recs.push(`<strong>Moderar ${NOMES[kMedTop]}:</strong> é a força coletiva (${fmt(media[kMedTop])} pts) — e força
+                em excesso vira risco quando todos a usam ao mesmo tempo. Combinem o sinal de "calibrar": quando a situação
+                pedir outra variável, qualquer colega pode lembrar o grupo.`);
+            if (n > 0 && nApego / n >= 0.3) {
+                recs.push(`<strong>Versatilidade:</strong> ${pct(nApego)} da equipe tem forte apego ao próprio estilo.
+                    Promovam rodízio de papéis e simulações de atendimento com estilos trocados, acompanhados de feedback entre pares.`);
+            }
+            recs.push(`<strong>Feedback contínuo:</strong> instituam a rotina quinzenal em duplas — "em que momento você me
+                viu rígido(a) no meu jeito habitual? E em que momento me viu me adaptar bem ao cliente?" — registrando as
+                respostas. O Estilo Equilibrado, nas pesquisas da Abordagem ACP, nasce de feedbacks reais.`);
+
             const leitura = `
+                <p><strong>1º estilo mais predominante:</strong> ${NOMES[k1]} — ${dist[k1]} pessoa(s) (${pct(dist[k1])}),
+                   com média de ${fmt(media[k1])} pontos no grupo.</p>
+                <p><strong>2º estilo mais predominante:</strong> ${dist[k2] > 0
+                    ? `${NOMES[k2]} — ${dist[k2]} pessoa(s) (${pct(dist[k2])}), com média de ${fmt(media[k2])} pontos.`
+                    : `nenhum outro estilo aparece como predominante nesta equipe (pela média, o segundo mais valorizado é ${NOMES[k2]}, com ${fmt(media[k2])} pontos).`}</p>
+                ${temMomentos ? `<p><strong>Variáveis predominantes por momento do atendimento:</strong> ${momentosTxt}</p>` : ''}
                 <p><strong>Perfil do grupo:</strong> entre os ${n} profissionais avaliados, o estilo predominante mais
-                comum é <strong>${NOMES[kTop]}</strong> (${dist[kTop]} pessoa(s), ${pct(dist[kTop])}). Na média das
+                comum é <strong>${NOMES[k1]}</strong> (${dist[k1]} pessoa(s), ${pct(dist[k1])}). Na média das
                 pontuações, a variável mais valorizada pelo grupo é <strong>${NOMES[kMedTop]}</strong>
                 (${fmt(media[kMedTop])} pontos) e a menos valorizada é <strong>${NOMES[kMedBaixa]}</strong>
                 (${fmt(media[kMedBaixa])} pontos) — quando ${NOMES[kMedBaixa] === 'Equilibrado' ? 'o estilo Equilibrado' : 'uma variável'}
@@ -579,15 +629,26 @@
                 já demonstra(m) equilíbrio entre as variáveis. ${(porRegra.FLEXIVEL || 0)} pessoa(s) transita(m) entre
                 estilos conforme a situação.</p>
                 <p><strong>Perfil mais singular:</strong> <strong>${this.esc(maisSingular.nome)}</strong> é quem mais se
-                distancia da média do grupo (somando as diferenças nas quatro variáveis) — um perfil complementar que
-                pode enriquecer a equipe, e cujo relatório individual merece leitura atenta.</p>
+                distancia da média do grupo (somando as diferenças nas quatro variáveis). <em>O que isso significa:</em>
+                é a pessoa cujo jeito de atender menos se parece com o padrão coletivo — não é um defeito, e sim um
+                indicador de diversidade: perfis assim enxergam o atendimento por outra lente e tendem a cobrir
+                necessidades do cliente que o padrão dominante da equipe deixa descobertas. Vale ler o relatório
+                individual com atenção e aproveitá-lo(a) em duplas de aprendizagem com colegas de perfil típico.</p>
+                <h3 class="est">Recomendações de atendimento para a equipe</h3>
+                <p>Práticas coletivas, comuns a cada integrante, geradas a partir dos números desta equipe:</p>
+                <ol style="padding-left:20px;display:grid;gap:10px">${recs.map(x => `<li>${x}</li>`).join('')}</ol>
                 <p class="muted" style="font-size:12px">Estudo gerado automaticamente a partir dos diagnósticos registrados
-                (${n} IPA). Médias sobre o máximo teórico de 90 pontos por variável. Uso recomendado: desenvolvimento de
-                equipe — não decisões punitivas. Consulta somente leitura.</p>`;
+                (${n} IPA). Médias sobre o máximo teórico de 90 pontos por variável (30 por momento). Uso recomendado:
+                desenvolvimento de equipe — não decisões punitivas. Consulta somente leitura.</p>`;
 
             corpo.innerHTML = `
                 <h3 class="est">1 · Distribuição dos estilos predominantes</h3>${distHtml}
                 <h3 class="est">2 · Média do grupo por variável</h3>${mediaHtml}
+                <p class="est-prose" style="margin-top:10px"><strong>Como esta média é usada no quadro 3:</strong> ela é a
+                linha de referência do grupo. No quadro seguinte, a pontuação de cada pessoa é comparada a estas médias —
+                o <strong>Δ</strong> mostra quantos pontos cada um está <span class="delta-pos">acima (+)</span> ou
+                <span class="delta-neg">abaixo (−)</span> da média da equipe em cada variável, revelando quem puxa o
+                coletivo em cada estilo e quem se afasta do padrão do grupo.</p>
                 <h3 class="est">3 · Cada pessoa em relação à média do grupo</h3>${pessoaHtml}
                 <h3 class="est">4 · Análise de flexibilidade</h3>${flexHtml}
                 <h3 class="est">Leitura do estudo</h3><div class="est-prose">${leitura}</div>`;

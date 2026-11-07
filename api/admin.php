@@ -363,11 +363,26 @@ try {
         $av360 = $st->fetchAll();
         foreach ($av360 as &$a) { $a['n'] = (int)$a['n']; }
 
+        /* soma coletiva por momento × estilo (para a leitura por momento do
+           estudo da Visão Coletiva) — consulta somente leitura */
+        $momentos = [1 => ['A'=>0,'C'=>0,'P'=>0,'E'=>0], 2 => ['A'=>0,'C'=>0,'P'=>0,'E'=>0], 3 => ['A'=>0,'C'=>0,'P'=>0,'E'=>0]];
+        try {
+            $st = db()->prepare(
+                'SELECT p.quadro, p.estilo, SUM(p.peso) AS n
+                 FROM ipa_respostas_palavras p
+                 JOIN ipa_respostas r ON r.id = p.resposta_id
+                 WHERE r.empresa_id = ?
+                 GROUP BY p.quadro, p.estilo');
+            $st->execute([$empresaId]);
+            foreach ($st->fetchAll() as $m) $momentos[(int)$m['quadro']][$m['estilo']] = (int)$m['n'];
+        } catch (Throwable $e) { /* sem detalhe por palavra: o estudo omite a parte por momento */ }
+
         out(['ok' => true,
              'empresa' => ['id' => (int)$empresa['id'], 'nome' => $empresa['nome'],
                            'codigo' => e_admin() ? $empresa['codigo'] : null],
              'funcionarios' => $funcionarios,
              'avaliacoes360' => $av360,
+             'momentos' => $momentos,
              'csrf' => csrf_token()]);
     }
 
