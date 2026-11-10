@@ -86,7 +86,7 @@
         @media (prefers-reduced-motion: reduce) { * { animation:none !important; } }
         .sec-note { background:var(--accent-soft); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
         /* ----- estudo coletivo ----- */
-        .est-bar-row { display:grid; grid-template-columns:130px 1fr 110px; gap:10px; align-items:center; margin:6px 0; font-size:13.5px; }
+        .est-bar-row { display:grid; grid-template-columns:165px 1fr 110px; gap:10px; align-items:center; margin:6px 0; font-size:13.5px; }
         .est-lbl { font-weight:700; display:flex; align-items:center; gap:7px; }
         .est-track { background:var(--surface); border-radius:6px; height:14px; overflow:hidden; }
         .est-bar { height:100%; border-radius:6px; }
@@ -529,10 +529,12 @@
                 <span class="est-val">${dist[k]} pessoa(s) · ${pct(dist[k])}</span>
             </div>`).join('');
 
-            /* 2 · média do grupo por variável (máximo teórico: 90 por estilo) */
+            /* 2 · média do grupo por variável — em ORDEM DECRESCENTE (Zuvela 08/nov),
+               mantendo as barras (máximo teórico: 90 por estilo) */
             const media = {}; K.forEach(k => { media[k] = f.reduce((s, x) => s + x[k], 0) / n; });
-            const mediaHtml = K.map(k => `<div class="est-bar-row">
-                <span class="est-lbl"><span class="sw" style="background:${CORES[k]}"></span>${NOMES[k]}</span>
+            const rankMedia = [...K].sort((a, b) => media[b] - media[a]);
+            const mediaHtml = rankMedia.map((k, i) => `<div class="est-bar-row">
+                <span class="est-lbl"><span class="sw" style="background:${CORES[k]}"></span>${i + 1} - ${NOMES[k]}</span>
                 <div class="est-track"><div class="est-bar" style="width:${(media[k] / 90 * 100).toFixed(1)}%;background:${CORES[k]}"></div></div>
                 <span class="est-val">média ${fmt(media[k])} pts</span>
             </div>`).join('');
@@ -560,107 +562,135 @@
                 <span class="est-val">${porRegra[k] || 0} pessoa(s) · ${pct(porRegra[k] || 0)}</span>
             </div>`).join('');
 
-            /* leitura automática */
+            /* leitura automática (estrutura e textos conforme Zuvela 08/nov/26) */
+            const NOMES_LONGO = { A: 'Centrado na Atenção', C: 'Centrado na Comunicação', P: 'Centrado no Procedimento', E: 'Equilibrado' };
             const rank = [...K].sort((a, b) => dist[b] - dist[a] || media[b] - media[a]);
-            const k1 = rank[0], k2 = rank[1];
-            const kMedTop = K.reduce((a, b) => media[a] >= media[b] ? a : b);
-            const kMedBaixa = K.reduce((a, b) => media[a] <= media[b] ? a : b);
+            const k1 = rank[0];
+            const k2med = rankMedia[0] === k1 ? rankMedia[1] : rankMedia.filter(k => k !== k1)[0];
+            const kMedTop = rankMedia[0];
+            const kMedBaixa = rankMedia[rankMedia.length - 1];
             const nApego = porRegra.FORTE_APEGO || 0;
+            const nFlex = porRegra.FLEXIVEL || 0;
             const nEquil = (porRegra.EQUILIBRADO_NATURAL || 0) + (porRegra.EQUILIBRADO_MODELO || 0);
 
             /* por momento: líder coletivo × o que o momento tipicamente pede */
             const M = r.momentos || null;
             const ESPERADO = { 1: 'A', 2: 'P', 3: 'C' };
-            const NOMES_Q = { 1: 'Início', 2: 'Durante', 3: 'Término' };
+            const NOMES_Q = { 1: 'No Início do Atendimento', 2: 'Durante o Atendimento', 3: 'Ao Término do Atendimento' };
+            const NOMES_Q_CURTO = { 1: 'Início', 2: 'Durante', 3: 'Término' };
             const NECESS = { A: 'autoestima', C: 'segurança', P: 'tratamento justo', E: 'integração das três variáveis' };
             const temMomentos = M && [1, 2, 3].some(q => K.some(k => (M[q] || {})[k] > 0));
-            let momentosTxt = '';
             const lideresQ = {};
+            let momentosHtml = '';
             if (temMomentos) {
-                momentosTxt = [1, 2, 3].map(q => {
+                momentosHtml = [1, 2, 3].map(q => {
                     const lq = K.reduce((a, b) => M[q][a] >= M[q][b] ? a : b);
                     lideresQ[q] = lq;
                     const alinhado = lq === ESPERADO[q];
-                    return `<strong>${NOMES_Q[q]}:</strong> ${NOMES[lq]} (média de ${fmt(M[q][lq] / n)} pts por pessoa)${alinhado
-                        ? ' — alinhada ao que este momento tipicamente pede'
-                        : ` — este momento tipicamente pede destaque em ${NOMES[ESPERADO[q]]}`}`;
-                }).join('; ') + '.';
+                    return `<p><strong>${NOMES_Q[q]}:</strong><br>A ${NOMES[lq]} se mostra com a maior valorização
+                        (média de ${fmt(M[q][lq] / n)} pts por pessoa). ${alinhado
+                        ? 'Ela está alinhada ao que este momento tipicamente pede.'
+                        : `Ela não está alinhada a este momento, que tipicamente pede destaque em ${NOMES[ESPERADO[q]]}.`}</p>`;
+                }).join('');
             }
 
-            /* recomendações comuns à equipe — o atendimento é sempre INDIVIDUAL:
-               cada prática é aplicada por cada profissional nos próprios
-               atendimentos; a equipe entra no reforço (reunião e feedback) */
+            /* recomendações comuns — textos do Zuvela: o atendimento é sempre
+               individual; a liderança conduz o reforço em equipe */
             const recs = [];
             if (temMomentos) [1, 2, 3].forEach(q => {
                 if (lideresQ[q] !== ESPERADO[q]) {
-                    recs.push(`<strong>No momento ${NOMES_Q[q]}:</strong> a ênfase do grupo está em ${NOMES[lideresQ[q]]},
-                        mas esse momento tipicamente pede ${NOMES[ESPERADO[q]]} (necessidade de ${NECESS[ESPERADO[q]]} do cliente).
-                        Recomendação comum: cada integrante, nos próprios atendimentos, modere a força atual e valorize, ao
-                        mesmo tempo, comportamentos de ${NOMES[ESPERADO[q]]} nesse momento — e a equipe acompanhe os relatos
-                        na reunião periódica.`);
+                    recs.push(`<strong>No momento ${NOMES_Q_CURTO[q]}:</strong> a ênfase do grupo está em
+                        <em>${NOMES[lideresQ[q]]}</em>, mas esse momento tipicamente pede <em>${NOMES[ESPERADO[q]]}</em>
+                        (atendimento à necessidade de ${NECESS[ESPERADO[q]]} do cliente).
+                        <em>Recomendação comum:</em> cada integrante, nos próprios atendimentos, deve moderar a força atual
+                        e valorizar, nesse momento e ao mesmo tempo, comportamentos relacionados a ${NOMES[ESPERADO[q]]}.
+                        Em equipe, a liderança deve acompanhar os relatos na reunião periódica de gestão.`);
                 }
             });
-            recs.push(`<strong>Fortalecer ${NOMES[kMedBaixa]}:</strong> é a variável menos valorizada do grupo
-                (${fmt(media[kMedBaixa])} pts). Combinem na equipe um exercício comum: cada pessoa escolhe um atendimento
-                por dia para praticá-la conscientemente e relata o efeito na reunião de equipe.`);
-            recs.push(`<strong>Moderar ${NOMES[kMedTop]}:</strong> é a força do grupo (${fmt(media[kMedTop])} pts) — e, como
-                todo atendimento é individual, o excesso aparece um a um: cada profissional tende a aplicá-la além do que a
-                situação pede. Recomendação comum: cada integrante observe, nos próprios atendimentos, os sinais de excesso
-                de ${NOMES[kMedTop]} na reação do cliente e calibre a intensidade; a equipe reforça essa calibragem fora do
-                atendimento, com lembretes e feedback entre colegas.`);
+            recs.push(`<strong>Fortalecer a variável ${NOMES[kMedBaixa]}:</strong> é a variável menos valorizada do grupo
+                (${fmt(media[kMedBaixa])} pts).
+                <em>Recomendação comum:</em> vale realizar uma análise mais profunda com a equipe para verificar as práticas
+                atuais no uso dos comportamentos de ${NOMES[kMedBaixa]} relacionados às necessidades dos clientes,
+                identificar o que é comum (faz parte dos padrões definidos), o que requer diferenciação e o que pode ser
+                incorporado como inovação.`);
+            recs.push(`<strong>Moderar a variável ${NOMES[kMedTop]}:</strong> é a grande força do grupo
+                (${fmt(media[kMedTop])} pts) e, como todo atendimento é individual, o excesso aparece um a um: cada
+                profissional tende a aplicá-la além do que a situação possa estar pedindo.
+                <em>Recomendação comum:</em> a liderança deve trazer o assunto para ser analisado com a equipe e solicitar
+                que cada integrante observe, nos próprios atendimentos, os sinais de excesso de ${NOMES[kMedTop]} na reação
+                do cliente e calibre a intensidade. Posteriormente, em reuniões com a equipe, analisar como foram essas
+                práticas e seus impactos na satisfação dos clientes e como incorporá-las nos novos atendimentos.`);
             if (n > 0 && nApego / n >= 0.3) {
-                recs.push(`<strong>Versatilidade:</strong> ${pct(nApego)} da equipe tem forte apego ao próprio estilo.
-                    Promovam simulações de atendimento (fora do atendimento real) com estilos trocados, acompanhadas de
-                    feedback entre pares — cada um leva o aprendizado para os próprios atendimentos.`);
+                recs.push(`<strong>Incrementar a versatilidade:</strong> ${pct(nApego)} da equipe tem forte apego ao próprio
+                    estilo. <em>Recomendação comum:</em> em situações de treinamento, realizar simulações de atendimento
+                    (fora do atendimento real) com estilos trocados, acompanhadas de feedback da equipe e do facilitador —
+                    cada um leva o aprendizado para os próprios atendimentos.`);
             }
-            recs.push(`<strong>Feedback contínuo:</strong> instituam a rotina quinzenal em duplas — "em que momento você me
-                viu rígido(a) no meu jeito habitual? E em que momento me viu me adaptar bem ao cliente?" — registrando as
-                respostas. O Estilo Equilibrado, nas pesquisas da Abordagem ACP, nasce de feedbacks reais.`);
+            recs.push(`<strong>Feedback contínuo:</strong> incorporado às práticas de gestão das lideranças (por exemplo,
+                fazendo parte da rotina quinzenal da equipe).
+                <em>Recomendação comum:</em> troca de experiências entre os participantes da equipe sobre as experiências
+                com os clientes.`);
 
-            const leitura = `
-                <p><strong>1º estilo mais predominante:</strong> ${NOMES[k1]} — ${dist[k1]} pessoa(s) (${pct(dist[k1])}),
-                   com média de ${fmt(media[k1])} pontos no grupo.</p>
-                <p><strong>2º estilo mais predominante:</strong> ${dist[k2] > 0
-                    ? `${NOMES[k2]} — ${dist[k2]} pessoa(s) (${pct(dist[k2])}), com média de ${fmt(media[k2])} pontos.`
-                    : `nenhum outro estilo aparece como predominante nesta equipe (pela média, o segundo mais valorizado é ${NOMES[k2]}, com ${fmt(media[k2])} pontos).`}</p>
-                ${temMomentos ? `<p><strong>Variáveis predominantes por momento do atendimento:</strong> ${momentosTxt}</p>` : ''}
-                <p><strong>Perfil do grupo:</strong> entre os ${n} profissionais avaliados, o estilo predominante mais
-                comum é <strong>${NOMES[k1]}</strong> (${dist[k1]} pessoa(s), ${pct(dist[k1])}). Na média das
+            const leituraFlex = `
+                <p><strong>Leitura:</strong> o primeiro estilo mais predominante é o
+                <strong>${NOMES_LONGO[k1]}</strong> — ${dist[k1]} profissional(is) (${pct(dist[k1])} da amostra estudada),
+                com média de ${fmt(media[k1])} pontos na equipe. O segundo estilo valorizado nesta equipe (pela média) é o
+                <strong>${NOMES_LONGO[k2med]}</strong>, com ${fmt(media[k2med])} pontos.</p>`;
+
+            const resumo = `
+                <p>Considerando os ${n} profissionais avaliados, o <strong><em>estilo predominante</em></strong> comum é o
+                <strong>${NOMES_LONGO[k1]}</strong> — ${dist[k1]} pessoa(s), ${pct(dist[k1])} da amostra. Na média das
                 pontuações, a variável mais valorizada pelo grupo é <strong>${NOMES[kMedTop]}</strong>
                 (${fmt(media[kMedTop])} pontos) e a menos valorizada é <strong>${NOMES[kMedBaixa]}</strong>
-                (${fmt(media[kMedBaixa])} pontos) — quando ${NOMES[kMedBaixa] === 'Equilibrado' ? 'o estilo Equilibrado' : 'uma variável'}
-                fica em segundo plano no coletivo, vale observar se a necessidade do cliente associada a ela está sendo
-                coberta pela equipe.</p>
-                <p><strong>Flexibilidade:</strong> ${nApego} pessoa(s) (${pct(nApego)}) apresenta(m) forte apego ao próprio
-                estilo — prioridade natural para o desenvolvimento de versatilidade — e ${nEquil} (${pct(nEquil)})
-                já demonstra(m) equilíbrio entre as variáveis. ${(porRegra.FLEXIVEL || 0)} pessoa(s) transita(m) entre
-                estilos conforme a situação.</p>
-                <p><strong>Perfil mais singular:</strong> <strong>${this.esc(maisSingular.nome)}</strong> é quem mais se
-                distancia da média do grupo (somando as diferenças nas quatro variáveis). <em>O que isso significa:</em>
-                é a pessoa cujo jeito de atender menos se parece com o padrão coletivo — não é um defeito, e sim um
-                indicador de diversidade: perfis assim enxergam o atendimento por outra lente e tendem a cobrir
-                necessidades do cliente que o padrão dominante da equipe deixa descobertas. Vale ler o relatório
-                individual com atenção e aproveitá-lo(a) em duplas de aprendizagem com colegas de perfil típico.</p>
-                <h3 class="est">Recomendações de atendimento para a equipe</h3>
-                <p>Recomendações comuns a todos os integrantes — como todo atendimento é <strong>individual</strong>,
-                   cada prática é aplicada por cada profissional nos próprios atendimentos; a equipe entra no reforço
-                   (reuniões, lembretes e feedback):</p>
-                <ol style="padding-left:20px;display:grid;gap:10px">${recs.map(x => `<li>${x}</li>`).join('')}</ol>
-                <p class="muted" style="font-size:12px">Estudo gerado automaticamente a partir dos diagnósticos registrados
-                (${n} IPA). Médias sobre o máximo teórico de 90 pontos por variável (30 por momento). Uso recomendado:
-                desenvolvimento de equipe — não decisões punitivas. Consulta somente leitura.</p>`;
+                (${fmt(media[kMedBaixa])} pontos).</p>
+                <p><em>Recomendação: quando uma variável fica em segundo plano no coletivo, vale observar se a necessidade
+                dos clientes associada a ela está sendo coberta pela equipe.</em></p>
+                <p>Considerando <strong><em>a flexibilidade</em></strong> no uso dos estilos, temos ${nApego} pessoa(s)
+                (${pct(nApego)} da amostra) que apresenta(m) forte apego ao próprio estilo e ${nFlex} pessoa(s) que
+                transita(m) entre os diferentes estilos conforme as características do cliente e da situação${nEquil > 0
+                    ? `, além de ${nEquil} pessoa(s) que já demonstra(m) equilíbrio entre as variáveis` : ''}.</p>
+                ${nApego > 0 ? `<p><em>Recomendação: esta condição indica prioridade natural para o desenvolvimento de
+                versatilidade no uso dos estilos, buscando o equilíbrio no uso das variáveis.</em></p>` : ''}`;
+
+            const destaque = `
+                <p>O perfil mais singular é o de <strong>${this.esc(maisSingular.nome)}</strong> — é quem mais se distancia
+                da média do grupo (somando as diferenças nas quatro variáveis).</p>
+                <p><em>O que isso significa:</em> é a pessoa cujo jeito de atender menos se parece com o padrão coletivo —
+                não é um defeito, e sim um indicador de diversidade: perfis assim enxergam o atendimento por outra lente e
+                tendem a cobrir necessidades do cliente que o padrão dominante da equipe pode deixar descobertas. Vale ler
+                o relatório individual com atenção e aproveitá-lo(a) como aprendizado comum com a equipe de colegas de
+                perfil típico.</p>`;
 
             corpo.innerHTML = `
                 <h3 class="est">1 · Distribuição dos estilos predominantes</h3>${distHtml}
-                <h3 class="est">2 · Média do grupo por variável</h3>${mediaHtml}
-                <p class="est-prose" style="margin-top:10px"><strong>Como esta média é usada no quadro 3:</strong> ela é a
-                linha de referência do grupo. No quadro seguinte, a pontuação de cada pessoa é comparada a estas médias —
-                o <strong>Δ</strong> mostra quantos pontos cada um está <span class="delta-pos">acima (+)</span> ou
-                <span class="delta-neg">abaixo (−)</span> da média da equipe em cada variável, revelando quem puxa o
-                coletivo em cada estilo e quem se afasta do padrão do grupo.</p>
+                <h3 class="est">2 · Média do grupo por variável <span style="font-weight:600;color:var(--ink-3)">(ordem decrescente)</span></h3>${mediaHtml}
+                <div class="est-prose" style="margin-top:10px">
+                    <p><strong>Comentário:</strong> a média é a linha de referência para as análises da valorização das
+                    variáveis pela equipe. No quadro seguinte, a pontuação de cada pessoa é comparada a estas médias — o
+                    <strong>Δ</strong> mostra quantos pontos cada um está <span class="delta-pos">acima (+)</span> ou
+                    <span class="delta-neg">abaixo (−)</span> da média da equipe em cada variável, revelando quem possa
+                    estar influenciando a equipe mediante o seu comportamento, na medida em que a variável esteja sendo
+                    usada como a predominante em cada um dos estilos individuais.</p>
+                    <p>O quadro 3 indica como esta média é usada pelas pessoas em relação à média do grupo:</p>
+                </div>
                 <h3 class="est">3 · Cada pessoa em relação à média do grupo</h3>${pessoaHtml}
                 <h3 class="est">4 · Análise de flexibilidade</h3>${flexHtml}
-                <h3 class="est">Leitura do estudo</h3><div class="est-prose">${leitura}</div>`;
+                <div class="est-prose">${leituraFlex}</div>
+                ${temMomentos ? `<h3 class="est">5 · Variáveis predominantes por momento do atendimento</h3>
+                <div class="est-prose">${momentosHtml}</div>` : ''}
+                <h3 class="est">${temMomentos ? '6' : '5'} · Resumo descritivo do perfil da equipe</h3>
+                <div class="est-prose">${resumo}</div>
+                <h3 class="est">Destaque</h3>
+                <div class="est-prose">${destaque}</div>
+                <h3 class="est">Recomendações comuns a todos os integrantes</h3>
+                <div class="est-prose"><p>Como todo atendimento é <strong>individual</strong>, cada prática é aplicada por
+                cada profissional nos próprios atendimentos; a equipe entra no processo de desenvolvimento como um reforço
+                e referência coletiva para o aprendizado — através de reuniões de planejamento, de referências operacionais
+                e recomendações da liderança e de feedback coletivo de desempenhos, entre outras práticas de gestão.</p></div>
+                <ol style="padding-left:20px;display:grid;gap:10px" class="est-prose">${recs.map(x => `<li>${x}</li>`).join('')}</ol>
+                <p class="muted" style="font-size:12px">Estudo gerado automaticamente a partir dos diagnósticos registrados
+                (${n} IPA). Médias sobre o máximo teórico de 90 pontos por variável (30 por momento). Uso recomendado:
+                desenvolvimento de equipe — não decisões punitivas. Consulta somente leitura.</p>`;
         }
     };
     Admin.init();
