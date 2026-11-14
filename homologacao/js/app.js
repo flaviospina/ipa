@@ -249,8 +249,38 @@ const App = {
             <div class="spinner" aria-hidden="true"></div>
             <h2>Escrevendo o seu relatório…</h2>
             <p class="muted" id="ia-status">${msg}</p>
-            <p class="muted" style="font-size:12.5px">A IA está redigindo um relatório único e personalizado para você,
-            com base na metodologia ACP. Isso pode levar de 1 a 3 minutos — não feche esta página.</p></div>`;
+            <p style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin:8px 0" id="ia-cronometro">00:00</p>
+            <p class="muted" id="ia-etapa" style="min-height:20px">Preparando…</p>
+            <p class="muted" style="font-size:12.5px">A IA está redigindo um relatório <strong>único e personalizado</strong> para você,
+            com base na metodologia ACP. O processo costuma levar de 1 a 3 minutos —
+            <strong>não feche esta página</strong>: suas respostas já estão salvas e o relatório chega sozinho.</p></div>`;
+    },
+
+    /* cronômetro + etapas rotativas enquanto a IA escreve */
+    iniciarCronometro() {
+        this.pararCronometro();
+        const t0 = Date.now();
+        const etapas = [
+            '📖 A IA está lendo a metodologia ACP e as suas pontuações…',
+            '🧭 Interpretando o seu estilo predominante…',
+            '⏱️ Analisando os três momentos do atendimento…',
+            '💪 Descrevendo os seus talentos comportamentais…',
+            '🌱 Elaborando os focos de desenvolvimento…',
+            '📝 Escrevendo as recomendações e o plano de ação…',
+            '🔎 Revisando o texto final do relatório…'
+        ];
+        this.cronometroIA = setInterval(() => {
+            const s = Math.floor((Date.now() - t0) / 1000);
+            const mm = String(Math.floor(s / 60)).padStart(2, '0');
+            const ss = String(s % 60).padStart(2, '0');
+            const elC = document.getElementById('ia-cronometro');
+            if (elC) elC.textContent = mm + ':' + ss;
+            const elE = document.getElementById('ia-etapa');
+            if (elE) elE.textContent = etapas[Math.min(Math.floor(s / 18), etapas.length - 1)];
+        }, 1000);
+    },
+    pararCronometro() {
+        if (this.cronometroIA) { clearInterval(this.cronometroIA); this.cronometroIA = null; }
     },
 
     telaErro(titulo, texto) {
@@ -271,19 +301,27 @@ const App = {
         ind.className = 'sync-indicator pending';
         ind.textContent = 'Gerando o relatório com a IA…';
 
+        this.iniciarCronometro();
         const out = await this.send({ schema: IPA_CONFIG.SCHEMA_VERSION, action: 'ia', id, website: '' });
+        this.pararCronometro();
         if (!out || out.ok !== true || !out.ia) {
-            // alta demanda na IA: re-tenta sozinho, com contagem regressiva (até 4 vezes)
-            if (out && out.code === 'ia_ocupada' && (this.autoTentativas = (this.autoTentativas || 0) + 1) <= 4) {
+            // alta demanda OU conexão encerrada no meio: re-tenta sozinho (até 6 vezes).
+            // Se o servidor tiver concluído nesse meio-tempo, a re-tentativa pega o
+            // relatório pronto do cache instantaneamente.
+            const reTentavel = !out || out.code === 'ia_ocupada' || out.code === 'ia_sem_conexao';
+            if (reTentavel && (this.autoTentativas = (this.autoTentativas || 0) + 1) <= 6) {
                 ind.className = 'sync-indicator pending';
-                ind.textContent = 'IA com alta demanda — nova tentativa automática…';
-                const segundos = 20 + 10 * this.autoTentativas;
+                ind.textContent = 'Nova tentativa automática em instantes…';
+                const semResposta = !out || out.code === 'ia_sem_conexao';
+                const segundos = semResposta ? 12 : 20 + 8 * this.autoTentativas;
                 document.getElementById('report').innerHTML = `<div class="card card-narrow center" style="margin:40px auto">
                     <div class="spinner" aria-hidden="true"></div>
-                    <h2>A IA está com alta demanda</h2>
-                    <p class="muted">Pico temporário no serviço do Google. Suas respostas estão registradas com segurança.</p>
-                    <p class="muted">Nova tentativa automática em <strong id="ia-contagem">${segundos}</strong> s
-                       (tentativa ${this.autoTentativas} de 4)…</p>
+                    <h2>${semResposta ? 'A resposta demorou mais que o esperado' : 'A IA está com alta demanda'}</h2>
+                    <p class="muted">${semResposta
+                        ? 'A conexão foi encerrada enquanto a IA escrevia — é possível que o relatório já esteja pronto no servidor; vamos verificar.'
+                        : 'Pico temporário no serviço do Google.'} Suas respostas estão registradas com segurança — <strong>não feche esta página</strong>.</p>
+                    <p class="muted">Nova verificação automática em <strong id="ia-contagem">${segundos}</strong> s
+                       (tentativa ${this.autoTentativas} de 6)…</p>
                     <button class="btn btn-ghost" onclick="App.tentarIA()">Tentar agora</button></div>`;
                 let restante = segundos;
                 this.contagemIA = setInterval(() => {

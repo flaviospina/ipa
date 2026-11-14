@@ -222,16 +222,19 @@ function chamar_ia(string $prompt): array {
         'gemini-flash-latest',
         'gemini-flash-lite-latest',
     ])));
+    /* REQUISIÇÃO CURTA: uma tentativa por modelo, sem esperas no servidor —
+       quem insiste é a tela (re-tentativa automática com contagem), evitando
+       que o proxy da hospedagem derrube chamadas longas. Orçamento ~110s. */
+    $inicio = time();
     $resp = false; $http = 0; $j = null; $ultimoErro = ''; $sucesso = false; $foiOcupado = false;
     foreach ($modelos as $modelo) {
-        /* até 3 tentativas por modelo quando o erro for de capacidade
-           ("high demand"/429/503), com espera progressiva */
-        for ($t = 0; $t < 3; $t++) {
+        if (time() - $inicio > 110) { $foiOcupado = true; break; }
+        for ($t = 0; $t < 1; $t++) {
             $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $modelo . ':generateContent?key=' . GEMINI_API_KEY);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 240,
+                CURLOPT_TIMEOUT => 100,
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
                 CURLOPT_POSTFIELDS => json_encode([
                     'contents' => [['parts' => [['text' => $prompt]]]],
@@ -259,7 +262,7 @@ function chamar_ia(string $prompt): array {
                 || stripos($ultimoErro, 'no longer available') !== false
                 || stripos($ultimoErro, 'not found') !== false
                 || stripos($ultimoErro, 'not supported') !== false;
-            if ($ocupado) { $foiOcupado = true; if ($t < 2) { sleep(5 + 5 * $t); continue; } break; }
+            if ($ocupado) { $foiOcupado = true; break; }   /* próximo modelo, sem esperar */
             if ($indisponivel) break;      /* próximo modelo */
             break 2;                       /* erro definitivo (ex.: chave inválida) */
         }
@@ -267,7 +270,7 @@ function chamar_ia(string $prompt): array {
     if (!$sucesso) {
         if ($foiOcupado) {
             return ['ok' => false, 'code' => 'ia_ocupada',
-                    'dica' => 'O serviço de IA está com alta demanda neste momento (pico temporário do Google). O sistema já tentou algumas vezes — uma nova tentativa automática será feita em instantes.',
+                    'dica' => 'O serviço de IA está com alta demanda neste momento (pico temporário do Google). Uma nova tentativa automática será feita em instantes — suas respostas estão seguras.',
                     'detalhe' => mb_substr($ultimoErro, 0, 200)];
         }
         return ['ok' => false, 'code' => 'ia_http_' . $http,
