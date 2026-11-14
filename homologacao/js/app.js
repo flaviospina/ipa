@@ -273,6 +273,27 @@ const App = {
 
         const out = await this.send({ schema: IPA_CONFIG.SCHEMA_VERSION, action: 'ia', id, website: '' });
         if (!out || out.ok !== true || !out.ia) {
+            // alta demanda na IA: re-tenta sozinho, com contagem regressiva (até 4 vezes)
+            if (out && out.code === 'ia_ocupada' && (this.autoTentativas = (this.autoTentativas || 0) + 1) <= 4) {
+                ind.className = 'sync-indicator pending';
+                ind.textContent = 'IA com alta demanda — nova tentativa automática…';
+                const segundos = 20 + 10 * this.autoTentativas;
+                document.getElementById('report').innerHTML = `<div class="card card-narrow center" style="margin:40px auto">
+                    <div class="spinner" aria-hidden="true"></div>
+                    <h2>A IA está com alta demanda</h2>
+                    <p class="muted">Pico temporário no serviço do Google. Suas respostas estão registradas com segurança.</p>
+                    <p class="muted">Nova tentativa automática em <strong id="ia-contagem">${segundos}</strong> s
+                       (tentativa ${this.autoTentativas} de 4)…</p>
+                    <button class="btn btn-ghost" onclick="App.tentarIA()">Tentar agora</button></div>`;
+                let restante = segundos;
+                this.contagemIA = setInterval(() => {
+                    restante--;
+                    const el = document.getElementById('ia-contagem');
+                    if (el) el.textContent = restante;
+                    if (restante <= 0) { clearInterval(this.contagemIA); this.tentarIA(); }
+                }, 1000);
+                return;
+            }
             ind.className = 'sync-indicator err';
             ind.textContent = 'Falha na geração do relatório pela IA.';
             document.getElementById('report').innerHTML = this.telaErro('Não foi possível gerar o relatório agora',
@@ -280,6 +301,7 @@ const App = {
                 'Suas respostas estão registradas com segurança — tente novamente em instantes.');
             return;
         }
+        this.autoTentativas = 0;
 
         const reportHtml = Engine.renderRelatorioIA(this.state.dados, r, out.ia);
         document.getElementById('report').innerHTML = reportHtml;
@@ -301,6 +323,7 @@ const App = {
     },
 
     tentarIA() {
+        if (this.contagemIA) { clearInterval(this.contagemIA); this.contagemIA = null; }
         if (!this.ultimoId || !this.ultimoR) { location.reload(); return; }
         document.getElementById('report').innerHTML = this.telaProgresso('Reconectando…');
         this.gerarIA(this.ultimoId, this.ultimoR);

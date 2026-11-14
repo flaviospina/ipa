@@ -220,39 +220,56 @@ function chamar_ia(string $prompt): array {
         defined('IA_MODELO') ? IA_MODELO : '',
         'gemini-3.8-flash',
         'gemini-flash-latest',
+        'gemini-flash-lite-latest',
     ])));
-    $resp = false; $http = 0; $j = null; $ultimoErro = '';
+    $resp = false; $http = 0; $j = null; $ultimoErro = ''; $sucesso = false; $foiOcupado = false;
     foreach ($modelos as $modelo) {
-        $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $modelo . ':generateContent?key=' . GEMINI_API_KEY);
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 240,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            CURLOPT_POSTFIELDS => json_encode([
-                'contents' => [['parts' => [['text' => $prompt]]]],
-                'generationConfig' => [
-                    'temperature' => 0.7,
-                    'maxOutputTokens' => 8192,
-                    'responseMimeType' => 'application/json',
-                ],
-            ], JSON_UNESCAPED_UNICODE),
-        ]);
-        $resp = curl_exec($ch);
-        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($resp === false) return ['ok' => false, 'code' => 'ia_sem_conexao'];
-        $j = json_decode($resp, true);
-        if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) break;
-        $ultimoErro = (string)($j['error']['message'] ?? $resp);
-        /* modelo indisponível/descontinuado: tenta o próximo; outros erros param */
-        $indisponivel = $http === 404
-            || stripos($ultimoErro, 'no longer available') !== false
-            || stripos($ultimoErro, 'not found') !== false
-            || stripos($ultimoErro, 'not supported') !== false;
-        if (!$indisponivel) break;
+        /* até 3 tentativas por modelo quando o erro for de capacidade
+           ("high demand"/429/503), com espera progressiva */
+        for ($t = 0; $t < 3; $t++) {
+            $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $modelo . ':generateContent?key=' . GEMINI_API_KEY);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 240,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS => json_encode([
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                    'generationConfig' => [
+                        'temperature' => 0.7,
+                        'maxOutputTokens' => 8192,
+                        'responseMimeType' => 'application/json',
+                    ],
+                ], JSON_UNESCAPED_UNICODE),
+            ]);
+            $resp = curl_exec($ch);
+            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($resp === false) return ['ok' => false, 'code' => 'ia_sem_conexao'];
+            $j = json_decode($resp, true);
+            if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) { $sucesso = true; break 2; }
+            $ultimoErro = (string)($j['error']['message'] ?? $resp);
+            $ocupado = in_array($http, [429, 500, 503], true)
+                || stripos($ultimoErro, 'high demand') !== false
+                || stripos($ultimoErro, 'overloaded') !== false
+                || stripos($ultimoErro, 'try again later') !== false
+                || stripos($ultimoErro, 'RESOURCE_EXHAUSTED') !== false
+                || stripos($ultimoErro, 'UNAVAILABLE') !== false;
+            $indisponivel = $http === 404
+                || stripos($ultimoErro, 'no longer available') !== false
+                || stripos($ultimoErro, 'not found') !== false
+                || stripos($ultimoErro, 'not supported') !== false;
+            if ($ocupado) { $foiOcupado = true; if ($t < 2) { sleep(5 + 5 * $t); continue; } break; }
+            if ($indisponivel) break;      /* próximo modelo */
+            break 2;                       /* erro definitivo (ex.: chave inválida) */
+        }
     }
-    if ($http !== 200 || !isset($j['candidates'][0]['content']['parts'][0]['text'])) {
+    if (!$sucesso) {
+        if ($foiOcupado) {
+            return ['ok' => false, 'code' => 'ia_ocupada',
+                    'dica' => 'O serviço de IA está com alta demanda neste momento (pico temporário do Google). O sistema já tentou algumas vezes — uma nova tentativa automática será feita em instantes.',
+                    'detalhe' => mb_substr($ultimoErro, 0, 200)];
+        }
         return ['ok' => false, 'code' => 'ia_http_' . $http,
                 'dica' => mb_substr($ultimoErro, 0, 200)];
     }
