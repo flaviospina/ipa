@@ -257,6 +257,8 @@ try {
             $st = ['ok' => true, 'code' => 'status', 'v' => VERSAO, 'php' => PHP_VERSION,
                    'config' => true, 'banco' => false, 'tabelas' => [],
                    'referencias' => count(glob(__DIR__ . '/referencia/*.md') ?: []),
+                   'gestor_key' => (defined('GESTOR_KEY') && GESTOR_KEY !== '' && strpos(GESTOR_KEY, 'TROQUE') !== 0) ? 'configurada' : 'NAO CONFIGURADA',
+                   'n8n' => (defined('N8N_WEBHOOK_URL') && N8N_WEBHOOK_URL !== '') ? 'configurado' : 'NAO CONFIGURADO',
                    'ia' => defined('IA_SIMULADA') && IA_SIMULADA ? 'SIMULADA'
                          : ((defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') ? (defined('IA_MODELO') ? IA_MODELO : 'gemini-2.0-flash') : 'SEM CHAVE')];
             try {
@@ -306,9 +308,13 @@ try {
 
     /* ===== Área do Gestor (cadastro de funcionários) — exige GESTOR_KEY ===== */
     if (strpos($action, 'gestor_') === 0) {
-        $chaveOk = defined('GESTOR_KEY') && GESTOR_KEY !== '' && strpos(GESTOR_KEY, 'TROQUE') !== 0
-                   && hash_equals(GESTOR_KEY, (string)($data['key'] ?? ''));
-        if (!$chaveOk) out(['ok' => false, 'code' => 'nao_autorizado']);
+        if (!defined('GESTOR_KEY') || GESTOR_KEY === '' || strpos(GESTOR_KEY, 'TROQUE') === 0) {
+            out(['ok' => false, 'code' => 'gestor_key_nao_configurada',
+                 'dica' => 'Defina a constante GESTOR_KEY no arquivo homologacao/api/config.php do servidor (invente uma chave longa). Ela ainda está ausente ou com o valor padrão.']);
+        }
+        if (!hash_equals(GESTOR_KEY, (string)($data['key'] ?? ''))) {
+            out(['ok' => false, 'code' => 'nao_autorizado']);
+        }
 
         if ($action === 'gestor_func_create') {
             $nome = limpar($data['nome'] ?? '');
@@ -500,18 +506,16 @@ try {
     $erro = validar_respostas($data['respostas'] ?? null);
     if ($erro) out(['ok' => false, 'code' => $erro]);
 
-    /* Regra Zuvela: um novo preenchimento da mesma pessoa só após 6 meses
-       (motivos prático e conceitual). Com link pessoal, a checagem é pelo
-       cadastro do funcionário; sem link, por nome + organização. */
-    $limite = gmdate('Y-m-d H:i:s', strtotime('-' . MESES_REPETICAO . ' months'));
+    /* Regra Zuvela: um novo preenchimento só após 6 meses — aplicada
+       SOMENTE a funcionário cadastrado que acessa pelo código exclusivo
+       (quem preenche manualmente, sem código, não é bloqueado). */
+    $recente = false;
     if ($funcionarioId) {
+        $limite = gmdate('Y-m-d H:i:s', strtotime('-' . MESES_REPETICAO . ' months'));
         $st = db()->prepare('SELECT criado_em FROM ipa_respostas WHERE funcionario_id = ? AND criado_em > ? ORDER BY criado_em DESC LIMIT 1');
         $st->execute([$funcionarioId, $limite]);
-    } else {
-        $st = db()->prepare('SELECT criado_em FROM ipa_respostas WHERE nome = ? AND organizacao = ? AND criado_em > ? ORDER BY criado_em DESC LIMIT 1');
-        $st->execute([$nome, $org, $limite]);
+        $recente = $st->fetchColumn();
     }
-    $recente = $st->fetchColumn();
     if ($recente) {
         $proxima = gmdate('d/m/Y', strtotime((string)$recente . ' +' . MESES_REPETICAO . ' months'));
         out(['ok' => false, 'code' => 'preenchimento_recente',

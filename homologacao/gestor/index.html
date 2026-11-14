@@ -131,11 +131,17 @@
         async entrar(ev) {
             ev.preventDefault();
             this.key = document.getElementById('in-key').value;
-            const r = await this.post({ action: 'gestor_func_list' });
-            if (!r.ok) {
+            const r = await this.post({ action: 'gestor_func_list' }).catch(() => null);
+            if (!r || !r.ok) {
                 this.key = '';
-                return Msg.fire({ icon: 'error', titulo: 'Chave incorreta',
-                    html: 'Verifique a chave do gestor (GESTOR_KEY no config.php da homologação).' });
+                const mapa = {
+                    gestor_key_nao_configurada: 'A chave do gestor ainda não foi configurada no servidor.',
+                    config_ausente: 'O arquivo homologacao/api/config.php não existe no servidor — copie o config.example.php e preencha.',
+                    db_error: 'A chave está certa, mas o banco da homologação não respondeu — confira os dados do banco no config.php e se o schema.sql foi importado.',
+                    nao_autorizado: 'A chave digitada não confere com a GESTOR_KEY do homologacao/api/config.php (atenção a espaços e maiúsculas).'
+                };
+                return Msg.fire({ icon: 'error', titulo: 'Não foi possível entrar',
+                    html: this.esc((r && (r.dica || mapa[r.code])) || mapa[(r && r.code) || 'nao_autorizado'] || 'Falha de conexão com a API da homologação.') });
             }
             document.getElementById('tela-login').classList.add('hidden');
             document.getElementById('tela-gestor').classList.remove('hidden');
