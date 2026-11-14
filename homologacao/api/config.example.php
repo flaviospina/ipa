@@ -13,7 +13,7 @@ const DB_PASS = 'TROQUE-ESTA-SENHA';
 
 /* IA que escreve os relatórios (Google Gemini — aistudio.google.com/apikey) */
 const GEMINI_API_KEY = '';
-const IA_MODELO = 'gemini-2.0-flash';
+const IA_MODELO = 'gemini-3.8-flash';
 
 /* Chave da Área do Gestor (cadastro de funcionários) — invente uma longa */
 const GESTOR_KEY = 'TROQUE-POR-UMA-CHAVE-LONGA-E-ALEATORIA';

@@ -214,30 +214,47 @@ function chamar_ia(string $prompt): array {
         return ['ok' => false, 'code' => 'ia_sem_chave', 'dica' => 'Preencha GEMINI_API_KEY no config.php da homologação.'];
     }
     set_time_limit(300);
-    $modelo = defined('IA_MODELO') ? IA_MODELO : 'gemini-2.0-flash';
-    $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $modelo . ':generateContent?key=' . GEMINI_API_KEY);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 240,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_POSTFIELDS => json_encode([
-            'contents' => [['parts' => [['text' => $prompt]]]],
-            'generationConfig' => [
-                'temperature' => 0.7,
-                'maxOutputTokens' => 8192,
-                'responseMimeType' => 'application/json',
-            ],
-        ], JSON_UNESCAPED_UNICODE),
-    ]);
-    $resp = curl_exec($ch);
-    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    if ($resp === false) return ['ok' => false, 'code' => 'ia_sem_conexao'];
-    $j = json_decode($resp, true);
+    /* modelo configurado + substitutos automáticos: se o Google
+       descontinuar um modelo, a API tenta o próximo da lista sozinha */
+    $modelos = array_values(array_unique(array_filter([
+        defined('IA_MODELO') ? IA_MODELO : '',
+        'gemini-3.8-flash',
+        'gemini-flash-latest',
+    ])));
+    $resp = false; $http = 0; $j = null; $ultimoErro = '';
+    foreach ($modelos as $modelo) {
+        $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $modelo . ':generateContent?key=' . GEMINI_API_KEY);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 240,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS => json_encode([
+                'contents' => [['parts' => [['text' => $prompt]]]],
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'maxOutputTokens' => 8192,
+                    'responseMimeType' => 'application/json',
+                ],
+            ], JSON_UNESCAPED_UNICODE),
+        ]);
+        $resp = curl_exec($ch);
+        $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($resp === false) return ['ok' => false, 'code' => 'ia_sem_conexao'];
+        $j = json_decode($resp, true);
+        if ($http === 200 && isset($j['candidates'][0]['content']['parts'][0]['text'])) break;
+        $ultimoErro = (string)($j['error']['message'] ?? $resp);
+        /* modelo indisponível/descontinuado: tenta o próximo; outros erros param */
+        $indisponivel = $http === 404
+            || stripos($ultimoErro, 'no longer available') !== false
+            || stripos($ultimoErro, 'not found') !== false
+            || stripos($ultimoErro, 'not supported') !== false;
+        if (!$indisponivel) break;
+    }
     if ($http !== 200 || !isset($j['candidates'][0]['content']['parts'][0]['text'])) {
         return ['ok' => false, 'code' => 'ia_http_' . $http,
-                'dica' => mb_substr((string)($j['error']['message'] ?? $resp), 0, 200)];
+                'dica' => mb_substr($ultimoErro, 0, 200)];
     }
     $ia = json_decode($j['candidates'][0]['content']['parts'][0]['text'], true);
     if (!is_array($ia)) return ['ok' => false, 'code' => 'ia_json_invalido'];
@@ -260,7 +277,7 @@ try {
                    'gestor_key' => (defined('GESTOR_KEY') && GESTOR_KEY !== '' && strpos(GESTOR_KEY, 'TROQUE') !== 0) ? 'configurada' : 'NAO CONFIGURADA',
                    'n8n' => (defined('N8N_WEBHOOK_URL') && N8N_WEBHOOK_URL !== '') ? 'configurado' : 'NAO CONFIGURADO',
                    'ia' => defined('IA_SIMULADA') && IA_SIMULADA ? 'SIMULADA'
-                         : ((defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') ? (defined('IA_MODELO') ? IA_MODELO : 'gemini-2.0-flash') : 'SEM CHAVE')];
+                         : ((defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') ? (defined('IA_MODELO') ? IA_MODELO : 'gemini-3.8-flash') : 'SEM CHAVE')];
             try {
                 db();
                 $st['banco'] = true;
