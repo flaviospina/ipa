@@ -19,11 +19,18 @@ INSTALAÇÃO
   2. Em api/, copie config.example.php para config.php e preencha:
      banco, GEMINI_API_KEY (aistudio.google.com/apikey), GESTOR_KEY,
      N8N_WEBHOOK_URL (abaixo) e BASE_URL (endereço público da pasta).
-  3. Teste: homologacao/api/api.php?action=status → banco ok,
-     referencias: 5, ia: gemini-2.0-flash.
+  3. Já tem o banco antigo? Importe TAMBÉM api/migracao-login-gestor.sql
+     (cria só a tabela ipa_gestores — não mexe em nada existente).
+  4. Teste: homologacao/api/api.php?action=status → banco ok,
+     referencias: 5, ia: gemini-3.8-flash.
 
 ÁREA DO GESTOR (homologacao/gestor/)
-  - Entra com a GESTOR_KEY.
+  - LOGIN COM E-MAIL E SENHA (como na produção). A GESTOR_KEY virou a
+    CHAVE MESTRA: use-a no primeiro acesso (aba "Chave mestra") e crie
+    as contas no quadro "Contas de acesso do gestor" (senha ≥ 10
+    caracteres, Argon2id). Depois, entre pela aba "E-mail e senha".
+    Sessão de 30 min com proteção CSRF; a chave mestra continua valendo
+    como recuperação.
   - Cadastra funcionários: nome completo, e-mail, organização,
     cargo/função, área de atuação, segmento e observações.
   - Cada cadastro gera um CÓDIGO EXCLUSIVO: o link pessoal
@@ -42,6 +49,18 @@ INTEGRAÇÃO N8N (envio dos e-mails)
      webhook}}, HTML={{html}}. Pronto.
   4. Segurança (opcional): defina N8N_TOKEN no config.php e valide no
      n8n o cabeçalho X-Ipa-Token no início do fluxo.
+
+RELATÓRIO INSTANTÂNEO (velocidade)
+  - Como na produção: ao enviar as respostas, o relatório aparece NA HORA
+    com todos os números, tabelas e gráficos. Os textos personalizados da
+    IA chegam em seguida e preenchem os espaços marcados, com um banner
+    no topo mostrando o cronômetro e as etapas.
+  - A IA agora recebe um contexto enxuto (síntese da metodologia + o
+    documento do estilo predominante + mudança comportamental) e escreve
+    textos mais curtos — a resposta fica muito mais rápida e estável.
+  - Se o Gemini gratuito estiver em pico, o sistema re-tenta sozinho
+    (até 6 vezes) sem tirar o relatório da tela; o texto pronto fica em
+    cache no banco e nunca é gerado duas vezes.
 
 TESTES SEM CUSTO
   - IA_SIMULADA = true gera textos fictícios sem chamar a IA.

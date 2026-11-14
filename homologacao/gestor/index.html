@@ -37,29 +37,67 @@
         .tag-on { background:#e7f6ef; color:var(--ok); } .tag-off { background:#fdeceb; color:var(--danger); }
         .tag-pend { background:#fff4d6; color:#8a6400; }
         .hidden { display:none !important; }
-        .login-box { max-width:430px; margin:60px auto; }
         .tbl-scroll { overflow-x:auto; }
         a.lnk { color:var(--accent); font-weight:700; }
         .envio { background:var(--accent-soft); border-radius:12px; padding:16px 18px; margin-top:16px; }
+
+        /* ===== Login split (molde da produção) ===== */
+        .login-wrap { min-height:calc(100vh - 90px); display:grid; grid-template-columns:1.05fr 1fr; }
+        .login-hero { background:linear-gradient(145deg, #16213a 0%, #1e3a8a 62%, #2952cc 100%); color:#fff; padding:56px 52px; display:flex; flex-direction:column; justify-content:center; }
+        .login-hero h1 { font-size:30px; color:#fff; line-height:1.25; margin:0 0 14px; }
+        .login-hero p { color:#c7d2ef; font-size:14.5px; line-height:1.65; max-width:460px; }
+        .hero-itens { margin-top:26px; display:grid; gap:12px; }
+        .hero-item { display:flex; gap:11px; align-items:flex-start; color:#dbe4fa; font-size:13.5px; }
+        .hero-item .ic { width:30px; height:30px; flex:0 0 30px; border-radius:9px; background:rgba(255,255,255,.12); display:grid; place-items:center; }
+        .login-side { display:grid; place-items:center; padding:40px 24px; }
+        .login-card { width:100%; max-width:410px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:30px 28px; box-shadow:0 18px 50px -24px rgba(22,33,58,.35); }
+        .login-tabs { display:flex; gap:6px; background:var(--surface); border-radius:11px; padding:5px; margin:18px 0 4px; }
+        .login-tabs button { flex:1; font:inherit; font-weight:700; font-size:12.5px; border:0; border-radius:8px; padding:9px 6px; cursor:pointer; background:transparent; color:var(--ink-3); }
+        .login-tabs button.on { background:#fff; color:var(--accent); box-shadow:0 2px 8px -3px rgba(22,33,58,.25); }
+        @media (max-width:860px) { .login-wrap { grid-template-columns:1fr; } .login-hero { padding:38px 26px; } }
     </style>
 </head>
 <body>
     <div class="top">
         <div class="brand"><span class="mark">V</span> VIPEDia · <span style="color:var(--ink-3)">Área do Gestor — IPA</span></div>
-        <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="location.reload()">Sair</button>
+        <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="Gestor.sair()">Sair</button>
     </div>
     <div class="hml">🧪 AMBIENTE DE HOMOLOGAÇÃO</div>
 
     <!-- LOGIN -->
-    <div class="wrap login-box" id="tela-login">
-        <div class="card">
-            <h1>Área do Gestor</h1>
-            <p class="muted">Cadastre os funcionários, gere os links exclusivos e envie os convites por e-mail (via n8n).</p>
-            <form onsubmit="Gestor.entrar(event)">
-                <label for="in-key">Chave do gestor</label>
-                <input type="password" id="in-key" required autocomplete="current-password">
-                <div style="margin-top:16px"><button class="btn" type="submit">Entrar</button></div>
-            </form>
+    <div class="login-wrap" id="tela-login">
+        <div class="login-hero">
+            <h1>Área do Gestor<br>IPA · Abordagem ACP</h1>
+            <p>Cadastre os funcionários, gere os links exclusivos do IPA e envie os convites por e-mail. Os relatórios são redigidos por IA, com base na metodologia ACP.</p>
+            <div class="hero-itens">
+                <div class="hero-item"><span class="ic">👤</span><span>Cada funcionário recebe um <strong>código exclusivo</strong> e um link pessoal de acesso.</span></div>
+                <div class="hero-item"><span class="ic">📧</span><span>Convites por e-mail — individual, por área, por segmento ou para todos (via n8n).</span></div>
+                <div class="hero-item"><span class="ic">🔒</span><span>Acesso com e-mail e senha, sessão protegida e dados tratados conforme a LGPD.</span></div>
+            </div>
+        </div>
+        <div class="login-side">
+            <div class="login-card">
+                <h2 style="margin:0 0 2px">Entrar</h2>
+                <p class="muted" style="margin:0">Use a sua conta de gestor ou a chave mestra.</p>
+                <div class="login-tabs">
+                    <button type="button" id="tab-conta" class="on" onclick="Gestor.modoLogin('conta')">E-mail e senha</button>
+                    <button type="button" id="tab-chave" onclick="Gestor.modoLogin('chave')">Chave mestra</button>
+                </div>
+                <form onsubmit="Gestor.entrar(event)">
+                    <div id="box-conta">
+                        <label for="in-email">E-mail</label>
+                        <input type="email" id="in-email" autocomplete="username" maxlength="190">
+                        <label for="in-senha">Senha</label>
+                        <input type="password" id="in-senha" autocomplete="current-password">
+                    </div>
+                    <div id="box-chave" class="hidden">
+                        <label for="in-key">Chave mestra (GESTOR_KEY)</label>
+                        <input type="password" id="in-key" autocomplete="off">
+                        <p class="muted" style="margin:8px 0 0">A chave mestra fica no <code>homologacao/api/config.php</code> e serve para o primeiro acesso e para criar as contas de gestor.</p>
+                    </div>
+                    <div style="margin-top:18px"><button class="btn" type="submit" style="width:100%">Entrar</button></div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -114,6 +152,25 @@
                 <tbody id="tb-func"><tr><td colspan="7" class="muted">Carregando…</td></tr></tbody>
             </table>
         </div>
+
+        <div class="card">
+            <h2>🔐 Contas de acesso do gestor</h2>
+            <p class="muted" style="margin:0 0 6px">Crie contas com e-mail e senha para acessar esta área sem a chave mestra. Senha com pelo menos 10 caracteres.</p>
+            <form onsubmit="Gestor.criarConta(event)">
+                <div class="row">
+                    <div><label for="gc-nome">Nome</label><input id="gc-nome" required maxlength="120"></div>
+                    <div><label for="gc-email">E-mail</label><input id="gc-email" type="email" required maxlength="190" autocomplete="off"></div>
+                    <div><label for="gc-senha">Senha</label><input id="gc-senha" type="password" required minlength="10" autocomplete="new-password"></div>
+                    <div style="flex:0"><button class="btn" type="submit">Criar conta</button></div>
+                </div>
+            </form>
+            <div class="tbl-scroll" style="margin-top:14px">
+                <table>
+                    <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th></th></tr></thead>
+                    <tbody id="tb-contas"><tr><td colspan="4" class="muted">Carregando…</td></tr></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
@@ -121,36 +178,65 @@
     <script>
     const API = '../api/api.php';
     const Gestor = {
-        key: '', rows: [],
+        csrf: '', rows: [],
         async post(body) {
-            body.key = this.key;
-            const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+            if (this.csrf) body.csrf = this.csrf;
+            const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body), credentials: 'same-origin' });
             return r.json();
         },
         esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
+        modoLogin(m) {
+            document.getElementById('tab-conta').classList.toggle('on', m === 'conta');
+            document.getElementById('tab-chave').classList.toggle('on', m === 'chave');
+            document.getElementById('box-conta').classList.toggle('hidden', m !== 'conta');
+            document.getElementById('box-chave').classList.toggle('hidden', m !== 'chave');
+        },
+        async iniciar() {
+            const r = await this.post({ action: 'gestor_ping' }).catch(() => null);
+            if (r && r.ok && r.logado) { this.csrf = r.csrf; this.abrirPainel(); }
+        },
         async entrar(ev) {
             ev.preventDefault();
-            this.key = document.getElementById('in-key').value;
-            const r = await this.post({ action: 'gestor_func_list' }).catch(() => null);
+            const porConta = !document.getElementById('box-conta').classList.contains('hidden');
+            const body = { action: 'gestor_login' };
+            if (porConta) {
+                body.email = document.getElementById('in-email').value.trim();
+                body.senha = document.getElementById('in-senha').value;
+                if (!body.email || !body.senha) return Msg.fire({ icon: 'info', titulo: 'Preencha os campos', html: 'Informe e-mail e senha.' });
+            } else {
+                body.key = document.getElementById('in-key').value;
+                if (!body.key) return Msg.fire({ icon: 'info', titulo: 'Informe a chave', html: 'Digite a chave mestra (GESTOR_KEY).' });
+            }
+            const r = await this.post(body).catch(() => null);
             if (!r || !r.ok) {
-                this.key = '';
                 const mapa = {
-                    gestor_key_nao_configurada: 'A chave do gestor ainda não foi configurada no servidor.',
+                    credenciais_invalidas: porConta ? 'E-mail ou senha incorretos, ou conta desativada.'
+                        : 'A chave digitada não confere com a GESTOR_KEY do homologacao/api/config.php (atenção a espaços e maiúsculas).',
+                    tabela_gestores_ausente: 'A tabela de contas ainda não existe no banco — importe api/migracao-login-gestor.sql no phpMyAdmin, ou entre com a chave mestra.',
                     config_ausente: 'O arquivo homologacao/api/config.php não existe no servidor — copie o config.example.php e preencha.',
-                    db_error: 'A chave está certa, mas o banco da homologação não respondeu — confira os dados do banco no config.php e se o schema.sql foi importado.',
-                    nao_autorizado: 'A chave digitada não confere com a GESTOR_KEY do homologacao/api/config.php (atenção a espaços e maiúsculas).'
+                    db_error: 'O banco da homologação não respondeu — confira os dados do banco no config.php e se o schema.sql foi importado.'
                 };
                 return Msg.fire({ icon: 'error', titulo: 'Não foi possível entrar',
-                    html: this.esc((r && (r.dica || mapa[r.code])) || mapa[(r && r.code) || 'nao_autorizado'] || 'Falha de conexão com a API da homologação.') });
+                    html: this.esc((r && (r.dica || mapa[r.code])) || 'Falha de conexão com a API da homologação.') });
             }
+            this.csrf = r.csrf;
+            this.abrirPainel();
+        },
+        async abrirPainel() {
             document.getElementById('tela-login').classList.add('hidden');
             document.getElementById('tela-gestor').classList.remove('hidden');
             document.getElementById('btn-sair').classList.remove('hidden');
-            this.render(r.rows);
+            this.recarregar();
+            this.recarregarContas();
+        },
+        async sair() {
+            await this.post({ action: 'gestor_logout' }).catch(() => null);
+            location.reload();
         },
         async recarregar() {
             const r = await this.post({ action: 'gestor_func_list' });
             if (r.ok) this.render(r.rows);
+            else if (r.code === 'nao_autorizado') location.reload();
         },
         linkPessoal(codigo) { return new URL('../index.html?f=' + codigo, location.href).href; },
         render(rows) {
@@ -244,8 +330,45 @@
                 html: this.esc(r.dica || ('Código: ' + (r.code || 'erro'))) });
             Msg.fire({ icon: 'success', titulo: r.simulado ? 'Envio simulado (teste local)' : 'Convites entregues ao n8n!',
                 html: `<strong>${r.enviados}</strong> e-mail(s) na fila de envio${r.simulado ? ' (nenhum e-mail real foi disparado)' : ' — o n8n fará o disparo'}.` });
+        },
+        /* ===== contas de acesso ===== */
+        async criarConta(ev) {
+            ev.preventDefault();
+            const r = await this.post({ action: 'gestor_conta_create',
+                nome: document.getElementById('gc-nome').value,
+                email: document.getElementById('gc-email').value,
+                senha: document.getElementById('gc-senha').value }).catch(() => null);
+            if (!r || !r.ok) {
+                const mapa = { senha_curta: 'A senha precisa ter pelo menos 10 caracteres.',
+                               email_invalido: 'E-mail inválido.', dados_invalidos: 'Confira o nome informado.' };
+                return Msg.fire({ icon: 'error', titulo: 'Não foi possível criar a conta',
+                    html: this.esc((r && (r.dica || mapa[r.code])) || 'Se a tabela de contas ainda não existe, importe api/migracao-login-gestor.sql no phpMyAdmin (e-mails também não podem se repetir).') });
+            }
+            Msg.toast('Conta criada!');
+            ['gc-nome', 'gc-email', 'gc-senha'].forEach(i => { document.getElementById(i).value = ''; });
+            this.recarregarContas();
+        },
+        async recarregarContas() {
+            const tb = document.getElementById('tb-contas');
+            const r = await this.post({ action: 'gestor_conta_list' }).catch(() => null);
+            if (!r || !r.ok) {
+                tb.innerHTML = '<tr><td colspan="4" class="muted">A tabela de contas ainda não existe no banco — importe <code>api/migracao-login-gestor.sql</code> no phpMyAdmin. Enquanto isso, o acesso segue pela chave mestra.</td></tr>';
+                return;
+            }
+            tb.innerHTML = r.rows.length ? r.rows.map(g => `<tr>
+                <td><strong>${this.esc(g.nome)}</strong></td>
+                <td>${this.esc(g.email)}</td>
+                <td>${g.ativo ? '<span class="tag tag-on">Ativa</span>' : '<span class="tag tag-off">Desativada</span>'}</td>
+                <td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="Gestor.toggleConta(${g.id}, ${g.ativo ? 0 : 1})">${g.ativo ? 'Desativar' : 'Reativar'}</button></td>
+            </tr>`).join('') : '<tr><td colspan="4" class="muted">Nenhuma conta criada ainda — o acesso segue pela chave mestra.</td></tr>';
+        },
+        async toggleConta(id, ativo) {
+            const r = await this.post({ action: 'gestor_conta_toggle', id, ativo });
+            if (!r.ok) Msg.fire({ icon: 'error', titulo: 'Não foi possível alterar', html: this.esc(r.dica || r.code || 'erro') });
+            this.recarregarContas();
         }
     };
+    Gestor.iniciar();
     </script>
 </body>
 </html>

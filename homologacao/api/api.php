@@ -36,6 +36,21 @@ if (!is_file(__DIR__ . '/config.php')) {
 }
 require __DIR__ . '/config.php';
 
+/* ---------- sessão do gestor (molde da produção) ---------- */
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+      || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+session_name('IPAHMLSESS');
+session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'httponly' => true,
+                           'secure' => $https, 'samesite' => 'Strict']);
+session_start();
+if (isset($_SESSION['ult']) && time() - (int)$_SESSION['ult'] > 1800) { session_unset(); session_destroy(); session_start(); }
+$_SESSION['ult'] = time();
+function hml_csrf(): string {
+    if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    return $_SESSION['csrf'];
+}
+function hml_gestor_ok(): bool { return !empty($_SESSION['hml_gestor']); }
+
 const VERSAO = 'HML-1';
 const MESES_REPETICAO = 6;            // regra Zuvela: novo preenchimento só após 6 meses
 const MAX_RELATORIO_BYTES = 900000;
@@ -122,11 +137,17 @@ function classificar(array $s): array {
 
 /* ---------- IA: montagem do contexto e chamada ---------- */
 
-function referencia(): string {
-    $txt = '';
-    foreach (glob(__DIR__ . '/referencia/*.md') ?: [] as $f) {
-        $txt .= "\n\n===== DOCUMENTO DE REFERÊNCIA: " . basename($f) . " =====\n\n" . file_get_contents($f);
-    }
+/* Contexto ENXUTO para a IA (velocidade): síntese operacional completa +
+   Revisão Final apenas do estilo predominante + mudança comportamental.
+   Os documentos integrais seguem em referencia/ para consulta humana. */
+function contexto_ia(string $predKey): string {
+    $mapa = ['A' => '01-estilo-atencao.md', 'C' => '02-estilo-comunicacao.md',
+             'P' => '03-estilo-procedimento.md', 'E' => '04-estilo-equilibrado.md'];
+    $txt = "\n\n===== SÍNTESE DA METODOLOGIA =====\n\n" . (string)@file_get_contents(__DIR__ . '/resumo-metodologia.md');
+    $doc = __DIR__ . '/referencia/' . ($mapa[$predKey] ?? $mapa['A']);
+    if (is_file($doc)) $txt .= "\n\n===== REVISÃO FINAL DO ESTILO PREDOMINANTE =====\n\n" . file_get_contents($doc);
+    $mud = __DIR__ . '/referencia/05-mudanca-comportamental.md';
+    if (is_file($mud)) $txt .= "\n\n===== MUDANÇA COMPORTAMENTAL =====\n\n" . file_get_contents($mud);
     return $txt;
 }
 
@@ -148,6 +169,7 @@ function dados_do_respondente(array $row, array $respostas): array {
         }
     }
     arsort($s);
+    $predKey = (string)array_key_first($s);
     $rank = [];
     foreach ($s as $k => $v) $rank[] = NOMES_ESTILO[$k] . ' = ' . $v . ' pontos (' . round($v / 198 * 100, 1) . '%)';
     $momentos = [];
@@ -159,7 +181,7 @@ function dados_do_respondente(array $row, array $respostas): array {
     }
     return [
         'nome' => $row['nome'], 'funcao' => $row['funcao'], 'organizacao' => $row['organizacao'],
-        'ranking' => $rank, 'predominante' => $pred, 'regra' => $regra,
+        'ranking' => $rank, 'predominante' => $pred, 'pred_key' => $predKey, 'regra' => $regra,
         'momentos' => $momentos, 'altas' => $altas, 'baixas' => $baixas,
     ];
 }
@@ -170,7 +192,7 @@ function prompt_ia(array $d): string {
     };
     return
 "Você é um Consultor Sênior de Desenvolvimento Humano, mestre na Abordagem ACP (Atenção, Comunicação e Procedimento — metodologia Zuvela). Os DOCUMENTOS DE REFERÊNCIA abaixo são a sua única fonte conceitual: fundamente TODO o texto neles.\n" .
-referencia() . "\n\n" .
+contexto_ia($d['pred_key'] ?? 'A') . "\n\n" .
 "===== REGRAS EDITORIAIS OBRIGATÓRIAS =====\n" .
 "1. TOM CONDICIONAL, NUNCA TAXATIVO: jamais defina a pessoa de forma categórica. Use sempre formulações como 'pode ser que você...', 'é possível que...', 'você tende a...', 'os resultados sugerem que...', 'talvez você perceba que...'. A pessoa não pode se sentir rotulada ou ofendida.\n" .
 "2. SEMPRE O POSITIVO ANTES DO NEGATIVO: em toda seção, apresente primeiro as forças e aspectos positivos; só depois, com respeito e de forma construtiva, os pontos de desenvolvimento. Seja direto, mas jamais depreciativo — pontos baixos são 'focos de desenvolvimento', nunca falhas ou defeitos.\n" .
@@ -187,16 +209,16 @@ referencia() . "\n\n" .
 "Comportamentos menos valorizados (pontuação 0 a 2):\n" . (implode("\n", array_map($fmtItem, $d['baixas'])) ?: 'nenhum') . "\n\n" .
 "===== TAREFA =====\n" .
 "Escreva os textos do relatório individual, personalizado e único deste profissional. Responda APENAS com um JSON válido com EXATAMENTE estas chaves (strings com parágrafos separados por \\n\\n, sem markdown, sem títulos dentro do texto):\n" .
-'{"f1_apresentacao": "2 parágrafos apresentando a Abordagem ACP e o propósito do relatório, personalizado ao contexto do profissional",' .
-'"f3_resultados": "2 parágrafos lendo o ranking de pontuações e o que o estilo predominante sugere",' .
-'"f4_predominante": "3 a 4 parágrafos interpretando em profundidade o estilo predominante deste profissional, com base na Revisão Final do estilo (forças primeiro, depois vigilâncias, em tom condicional)",' .
+'{"f1_apresentacao": "1 parágrafo apresentando a Abordagem ACP e o propósito do relatório, personalizado ao contexto do profissional",' .
+'"f3_resultados": "1 parágrafo lendo o ranking de pontuações e o que o estilo predominante sugere",' .
+'"f4_predominante": "2 parágrafos interpretando o estilo predominante deste profissional, com base na Revisão Final do estilo (forças primeiro, depois vigilâncias, em tom condicional)",' .
 '"f4_secundario": "1 a 2 parágrafos sobre o papel do estilo secundário",' .
-'"f5_momentos": "2 a 3 parágrafos analisando a distribuição nos 3 momentos, comparando com o que cada momento tipicamente pede",' .
-'"f5_grafico": "1 a 2 parágrafos de leitura da trajetória (como as ênfases variam do Início ao Término)",' .
-'"f6_talentos": "2 parágrafos sobre as forças comportamentais reveladas (sem citar palavras do instrumento)",' .
-'"f6_desenvolver": "2 parágrafos sobre os focos de desenvolvimento, construtivos e condicionais",' .
-'"f7_recomendacoes": "3 a 4 parágrafos de recomendações de desenvolvimento, aplicando a lógica de Lewin e a mudança comportamental da referência",' .
-'"f8_plano": [{"titulo": "título curto da ação", "como": "como fazer na prática, 2 a 4 frases"} — EXATAMENTE 4 itens, ordenados do fortalecimento de forças para os focos de desenvolvimento],' .
+'"f5_momentos": "1 a 2 parágrafos analisando a distribuição nos 3 momentos, comparando com o que cada momento tipicamente pede",' .
+'"f5_grafico": "1 parágrafo de leitura da trajetória (como as ênfases variam do Início ao Término)",' .
+'"f6_talentos": "1 a 2 parágrafos sobre as forças comportamentais reveladas (sem citar palavras do instrumento)",' .
+'"f6_desenvolver": "1 a 2 parágrafos sobre os focos de desenvolvimento, construtivos e condicionais",' .
+'"f7_recomendacoes": "2 parágrafos de recomendações de desenvolvimento, aplicando a lógica de Lewin e a mudança comportamental da referência",' .
+'"f8_plano": [{"titulo": "título curto da ação", "como": "como fazer na prática, 2 a 3 frases"} — EXATAMENTE 4 itens, ordenados do fortalecimento de forças para os focos de desenvolvimento],' .
 '"conclusao": "1 parágrafo final encorajador"}';
 }
 
@@ -228,19 +250,19 @@ function chamar_ia(string $prompt): array {
     $inicio = time();
     $resp = false; $http = 0; $j = null; $ultimoErro = ''; $sucesso = false; $foiOcupado = false;
     foreach ($modelos as $modelo) {
-        if (time() - $inicio > 110) { $foiOcupado = true; break; }
+        if (time() - $inicio > 150) { $foiOcupado = true; break; }
         for ($t = 0; $t < 1; $t++) {
             $ch = curl_init('https://generativelanguage.googleapis.com/v1beta/models/' . $modelo . ':generateContent?key=' . GEMINI_API_KEY);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 100,
+                CURLOPT_TIMEOUT => 140,
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
                 CURLOPT_POSTFIELDS => json_encode([
                     'contents' => [['parts' => [['text' => $prompt]]]],
                     'generationConfig' => [
                         'temperature' => 0.7,
-                        'maxOutputTokens' => 8192,
+                        'maxOutputTokens' => 4096,
                         'responseMimeType' => 'application/json',
                     ],
                 ], JSON_UNESCAPED_UNICODE),
@@ -294,7 +316,7 @@ try {
             $st = ['ok' => true, 'code' => 'status', 'v' => VERSAO, 'php' => PHP_VERSION,
                    'config' => true, 'banco' => false, 'tabelas' => [],
                    'referencias' => count(glob(__DIR__ . '/referencia/*.md') ?: []),
-                   'gestor_key' => (defined('GESTOR_KEY') && GESTOR_KEY !== '' && strpos(GESTOR_KEY, 'TROQUE') !== 0) ? 'configurada' : 'NAO CONFIGURADA',
+                   'gestor_chave_mestra' => (defined('GESTOR_KEY') && GESTOR_KEY !== '' && strpos(GESTOR_KEY, 'TROQUE') !== 0) ? 'configurada' : 'NAO CONFIGURADA',
                    'n8n' => (defined('N8N_WEBHOOK_URL') && N8N_WEBHOOK_URL !== '') ? 'configurado' : 'NAO CONFIGURADO',
                    'ia' => defined('IA_SIMULADA') && IA_SIMULADA ? 'SIMULADA'
                          : ((defined('GEMINI_API_KEY') && GEMINI_API_KEY !== '') ? (defined('IA_MODELO') ? IA_MODELO : 'gemini-3.8-flash') : 'SEM CHAVE')];
@@ -343,14 +365,73 @@ try {
     if (!empty($data['website'])) out(['ok' => false, 'code' => 'rejected']);
     $action = (string)($data['action'] ?? '');
 
-    /* ===== Área do Gestor (cadastro de funcionários) — exige GESTOR_KEY ===== */
-    if (strpos($action, 'gestor_') === 0) {
-        if (!defined('GESTOR_KEY') || GESTOR_KEY === '' || strpos(GESTOR_KEY, 'TROQUE') === 0) {
-            out(['ok' => false, 'code' => 'gestor_key_nao_configurada',
-                 'dica' => 'Defina a constante GESTOR_KEY no arquivo homologacao/api/config.php do servidor (invente uma chave longa). Ela ainda está ausente ou com o valor padrão.']);
+    /* ===== Área do Gestor — login por E-MAIL E SENHA (contas na tabela
+       ipa_gestores), com a GESTOR_KEY como CHAVE MESTRA de bootstrap/
+       recuperação, no mesmo molde da produção. ===== */
+    if ($action === 'gestor_ping') {
+        out(['ok' => true, 'logado' => hml_gestor_ok(),
+             'nome' => hml_gestor_ok() ? (string)($_SESSION['hml_gestor_nome'] ?? 'Gestor') : null,
+             'csrf' => hml_csrf()]);
+    }
+    if ($action === 'gestor_login') {
+        $email = mb_strtolower(trim((string)($data['email'] ?? '')));
+        $okLogin = false; $nomeG = 'Gestor';
+        if ($email !== '') {
+            $senha = (string)($data['senha'] ?? '');
+            try {
+                $st = db()->prepare('SELECT nome, senha_hash FROM ipa_gestores WHERE email = ? AND ativo = 1 LIMIT 1');
+                $st->execute([$email]);
+                $gst = $st->fetch();
+                $okLogin = $gst && $senha !== '' && password_verify($senha, $gst['senha_hash']);
+                if ($okLogin) $nomeG = $gst['nome'];
+            } catch (Throwable $e) {
+                out(['ok' => false, 'code' => 'tabela_gestores_ausente',
+                     'dica' => 'A tabela ipa_gestores ainda não existe no banco da homologação — importe api/migracao-login-gestor.sql no phpMyAdmin, ou entre com a chave mestra.']);
+            }
+        } else {
+            $chaveM = (string)($data['key'] ?? '');
+            $okLogin = defined('GESTOR_KEY') && GESTOR_KEY !== '' && strpos(GESTOR_KEY, 'TROQUE') !== 0
+                       && hash_equals(GESTOR_KEY, $chaveM);
+            if ($okLogin) $nomeG = 'Chave mestra';
         }
-        if (!hash_equals(GESTOR_KEY, (string)($data['key'] ?? ''))) {
-            out(['ok' => false, 'code' => 'nao_autorizado']);
+        if (!$okLogin) { sleep(1); out(['ok' => false, 'code' => 'credenciais_invalidas']); }
+        session_regenerate_id(true);
+        unset($_SESSION['csrf']);
+        $_SESSION['hml_gestor'] = true;
+        $_SESSION['hml_gestor_nome'] = $nomeG;
+        out(['ok' => true, 'nome' => $nomeG, 'csrf' => hml_csrf()]);
+    }
+    if ($action === 'gestor_logout') { session_unset(); session_destroy(); out(['ok' => true]); }
+
+    if (strpos($action, 'gestor_') === 0) {
+        if (!hml_gestor_ok()) out(['ok' => false, 'code' => 'nao_autorizado']);
+        if (!in_array($action, ['gestor_func_list', 'gestor_conta_list'], true)
+            && !hash_equals($_SESSION['csrf'] ?? '', (string)($data['csrf'] ?? ''))) {
+            out(['ok' => false, 'code' => 'csrf_invalido']);
+        }
+
+        /* contas de gestor (criadas por quem está logado — bootstrap pela chave mestra) */
+        if ($action === 'gestor_conta_create') {
+            $nome = limpar($data['nome'] ?? '');
+            $email = mb_strtolower(trim((string)($data['email'] ?? '')));
+            $senha = (string)($data['senha'] ?? '');
+            if (mb_strlen($nome) < 2) out(['ok' => false, 'code' => 'dados_invalidos']);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) out(['ok' => false, 'code' => 'email_invalido']);
+            if (mb_strlen($senha) < 10) out(['ok' => false, 'code' => 'senha_curta', 'dica' => 'Use pelo menos 10 caracteres.']);
+            $hash = password_hash($senha, defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT);
+            $st = db()->prepare('INSERT INTO ipa_gestores (nome, email, senha_hash) VALUES (?,?,?)');
+            $st->execute([$nome, $email, $hash]);
+            out(['ok' => true, 'id' => (int)db()->lastInsertId()]);
+        }
+        if ($action === 'gestor_conta_list') {
+            $rows = db()->query('SELECT id, nome, email, ativo, criado_em FROM ipa_gestores ORDER BY nome')->fetchAll();
+            foreach ($rows as &$g2) { $g2['id'] = (int)$g2['id']; $g2['ativo'] = (int)$g2['ativo']; }
+            out(['ok' => true, 'rows' => $rows]);
+        }
+        if ($action === 'gestor_conta_toggle') {
+            $st = db()->prepare('UPDATE ipa_gestores SET ativo = ? WHERE id = ?');
+            $st->execute([(int)!empty($data['ativo']), (int)($data['id'] ?? 0)]);
+            out(['ok' => true]);
         }
 
         if ($action === 'gestor_func_create') {

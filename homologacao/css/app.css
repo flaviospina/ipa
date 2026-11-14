@@ -310,3 +310,20 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
 }
 .tut-link { font-size: 12.5px; font-weight: 700; color: var(--accent); text-decoration: none; border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 14px; margin-right: 10px; }
 .tut-link:hover { background: var(--accent-soft); }
+
+/* ===== HOMOLOGAÇÃO — relatório instantâneo (textos da IA em seguida) ===== */
+.ia-banner { position:sticky; top:62px; z-index:9; background:#eaf0fe; border:1.5px solid #c7d6f8;
+             border-radius:14px; padding:14px 18px 10px; margin:0 0 22px; box-shadow:0 10px 26px -18px rgba(22,33,58,.5); }
+.ia-banner-in { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.ia-banner-txt { flex:1; min-width:220px; display:flex; flex-direction:column; gap:3px; font-size:13.5px; }
+.ia-banner-txt .muted { font-size:12.5px; }
+.ia-banner-cron { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; color:#2952cc; }
+.ia-banner-nota { font-size:12px; margin:8px 0 2px; }
+.ia-banner-err { background:transparent; }
+.spinner-sm { width:26px; height:26px; border-width:3px; margin:0; flex:0 0 26px; }
+.rp-ia-pend { background:linear-gradient(90deg, #f3f6fd 25%, #e8eefb 37%, #f3f6fd 63%); background-size:400% 100%;
+              animation:ia-shimmer 1.6s ease infinite; border-radius:10px; padding:10px 14px; color:#6b7a9c; }
+.rp-ia-pend p { margin:4px 0; }
+@keyframes ia-shimmer { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
+@media print { .ia-banner { display:none !important; } .rp-ia-pend { animation:none; } }
+@media (prefers-reduced-motion: reduce) { .rp-ia-pend { animation:none; } }

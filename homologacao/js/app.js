@@ -241,7 +241,41 @@ const App = {
                 motivo + ' Suas respostas ficaram salvas neste navegador — recarregue a página para reenviar.');
             return;
         }
+        // Relatório instantâneo (como na produção): estrutura, números e
+        // gráficos aparecem NA HORA; os textos da IA preenchem em seguida.
+        this.ultimoId = id;
+        this.ultimoR = r;
+        this.mostrarRelatorioParcial(r);
         this.gerarIA(id, r);
+    },
+
+    /* renderiza o relatório com placeholders de prosa + banner de progresso no topo */
+    mostrarRelatorioParcial(r) {
+        const rep = document.getElementById('report');
+        rep.innerHTML = `<div id="ia-banner" class="ia-banner">${this.bannerEscrevendo()}</div>` +
+            Engine.renderRelatorioIA(this.state.dados, r, null);
+        window.scrollTo({ top: 0 });
+    },
+
+    bannerEscrevendo() {
+        return `<div class="ia-banner-in">
+            <div class="spinner spinner-sm" aria-hidden="true"></div>
+            <div class="ia-banner-txt">
+                <strong>Seu relatório já está pronto abaixo — a IA está escrevendo os textos personalizados…</strong>
+                <span class="muted" id="ia-etapa">Preparando…</span>
+            </div>
+            <div class="ia-banner-cron" id="ia-cronometro">00:00</div>
+        </div>
+        <p class="muted ia-banner-nota">Os números, tabelas e gráficos já são definitivos. Os textos chegam sozinhos em instantes — <strong>não feche esta página</strong>.</p>`;
+    },
+
+    bannerSet(html) {
+        let b = document.getElementById('ia-banner');
+        if (!b) {
+            if (this.ultimoR) { this.mostrarRelatorioParcial(this.ultimoR); b = document.getElementById('ia-banner'); }
+            else return;
+        }
+        b.innerHTML = html;
     },
 
     telaProgresso(msg) {
@@ -314,15 +348,14 @@ const App = {
                 ind.textContent = 'Nova tentativa automática em instantes…';
                 const semResposta = !out || out.code === 'ia_sem_conexao';
                 const segundos = semResposta ? 12 : 20 + 8 * this.autoTentativas;
-                document.getElementById('report').innerHTML = `<div class="card card-narrow center" style="margin:40px auto">
-                    <div class="spinner" aria-hidden="true"></div>
-                    <h2>${semResposta ? 'A resposta demorou mais que o esperado' : 'A IA está com alta demanda'}</h2>
-                    <p class="muted">${semResposta
-                        ? 'A conexão foi encerrada enquanto a IA escrevia — é possível que o relatório já esteja pronto no servidor; vamos verificar.'
-                        : 'Pico temporário no serviço do Google.'} Suas respostas estão registradas com segurança — <strong>não feche esta página</strong>.</p>
-                    <p class="muted">Nova verificação automática em <strong id="ia-contagem">${segundos}</strong> s
-                       (tentativa ${this.autoTentativas} de 6)…</p>
-                    <button class="btn btn-ghost" onclick="App.tentarIA()">Tentar agora</button></div>`;
+                this.bannerSet(`<div class="ia-banner-in">
+                    <div class="spinner spinner-sm" aria-hidden="true"></div>
+                    <div class="ia-banner-txt">
+                        <strong>${semResposta ? 'A resposta da IA demorou — verificando se o texto já ficou pronto…' : 'A IA está com alta demanda (pico no serviço do Google)…'}</strong>
+                        <span class="muted">Nova verificação automática em <strong id="ia-contagem">${segundos}</strong> s (tentativa ${this.autoTentativas} de 6).
+                        O relatório abaixo já está pronto — só os textos personalizados estão pendentes.</span>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="App.tentarIA()">Tentar agora</button></div>`);
                 let restante = segundos;
                 this.contagemIA = setInterval(() => {
                     restante--;
@@ -333,20 +366,29 @@ const App = {
                 return;
             }
             ind.className = 'sync-indicator err';
-            ind.textContent = 'Falha na geração do relatório pela IA.';
-            document.getElementById('report').innerHTML = this.telaErro('Não foi possível gerar o relatório agora',
-                ((out && out.dica) ? String(out.dica).replace(/[<>]/g, '') + ' ' : '') +
-                'Suas respostas estão registradas com segurança — tente novamente em instantes.');
+            ind.textContent = 'Falha na geração dos textos pela IA.';
+            this.bannerSet(`<div class="ia-banner-in ia-banner-err">
+                <div class="ia-banner-txt">
+                    <strong>Não foi possível gerar os textos personalizados agora.</strong>
+                    <span class="muted">${((out && out.dica) ? String(out.dica).replace(/[<>]/g, '') + ' ' : '')}Suas respostas e o relatório abaixo estão registrados com segurança.</span>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="App.tentarIA()">Tentar novamente</button></div>`);
             return;
         }
         this.autoTentativas = 0;
 
-        const reportHtml = Engine.renderRelatorioIA(this.state.dados, r, out.ia);
-        document.getElementById('report').innerHTML = reportHtml;
-        window.scrollTo({ top: 0 });
+        /* preenche os textos da IA no relatório que já está na tela */
+        if (document.querySelector('#report [data-ia]')) {
+            Engine.preencherProsaIA(out.ia);
+        } else {
+            document.getElementById('report').innerHTML = Engine.renderRelatorioIA(this.state.dados, r, out.ia);
+            window.scrollTo({ top: 0 });
+        }
+        const banner = document.getElementById('ia-banner');
+        if (banner) banner.remove();
         ind.textContent = '✓ Relatório escrito pela IA · arquivando…';
 
-        const standalone = await Engine.relatorioStandalone(reportHtml, this.state.dados);
+        const standalone = await Engine.relatorioStandalone(document.getElementById('report').innerHTML, this.state.dados);
         const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id, relatorio: standalone, website: '' };
         const out2 = await this.send(arch);
         if (out2 && out2.ok === true) {
@@ -363,7 +405,7 @@ const App = {
     tentarIA() {
         if (this.contagemIA) { clearInterval(this.contagemIA); this.contagemIA = null; }
         if (!this.ultimoId || !this.ultimoR) { location.reload(); return; }
-        document.getElementById('report').innerHTML = this.telaProgresso('Reconectando…');
+        this.bannerSet(this.bannerEscrevendo());
         this.gerarIA(this.ultimoId, this.ultimoR);
     },
 

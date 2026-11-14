@@ -494,7 +494,7 @@ Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
     let css = '';
     try {
         // inline do CSS quando servido via http(s); em file:// segue sem estilo externo
-        const res = await fetch('css/app.css?v=11');
+        const res = await fetch('css/app.css?v=2');
         if (res.ok) css = await res.text();
     } catch (e) { /* segue sem css */ }
     return `<!DOCTYPE html>
@@ -534,11 +534,45 @@ Engine.montarPayload = function (dados, answers, r, consent, id) {
    toda a prosa vem do JSON gerado pela IA (regras editoriais:
    tom condicional e positivo antes do negativo).
    ============================================================ */
+/* prosa de um campo escrito pela IA; sem texto ainda, renderiza um
+   placeholder marcado com data-ia para ser preenchido depois
+   (relatório instantâneo: estrutura e gráficos primeiro, textos em seguida) */
+Engine.prosaIA = function (t, campo) {
+    if (t == null && campo) {
+        return `<div class="rp-prose rp-ia-pend" data-ia="${campo}">
+            <p><em>✍️ A IA está escrevendo este texto…</em></p></div>`;
+    }
+    return `<div class="rp-prose"${campo ? ` data-ia="${campo}"` : ''}>` +
+        String(t || '(texto não gerado)').split(/\n{2,}/).map(p => `<p>${esc(p.trim())}</p>`).join('') + '</div>';
+};
+
+/* itens do plano de ação (Fase 8) escritos pela IA */
+Engine.planoIA = function (lista) {
+    const itens = (Array.isArray(lista) ? lista : []).slice(0, 6).map(x =>
+        `<li><div><strong>${esc(x.titulo || 'Ação')}.</strong> ${esc(x.como || '')}</div></li>`).join('');
+    return itens || '<li><div><em>✍️ A IA está escrevendo o seu plano de ação…</em></div></li>';
+};
+
+/* troca os placeholders pelos textos reais assim que a IA responde */
+Engine.preencherProsaIA = function (ia) {
+    document.querySelectorAll('[data-ia]').forEach(el => {
+        const campo = el.getAttribute('data-ia');
+        if (campo === 'f8_plano') {
+            el.innerHTML = Engine.planoIA(ia.f8_plano);
+            el.classList.remove('rp-ia-pend');
+        } else {
+            const novo = document.createElement('template');
+            novo.innerHTML = Engine.prosaIA(ia[campo], campo);
+            el.replaceWith(novo.content.firstElementChild);
+        }
+    });
+};
+
 Engine.renderRelatorioIA = function (dados, r, ia) {
     const pred = r.ranking[0], sec = r.ranking[1];
     const dataFmt = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-    const prosa = (t) => '<div class="rp-prose">' +
-        String(t || '(texto não gerado)').split(/\n{2,}/).map(p => `<p>${esc(p.trim())}</p>`).join('') + '</div>';
+    ia = ia || {};
+    const prosa = (campo) => Engine.prosaIA(ia[campo] ?? null, campo);
 
     /* tabela e gráfico gerais (Fase 3) — calculados pelo sistema */
     const tabela = r.ranking.map((s, i) => {
@@ -573,9 +607,6 @@ Engine.renderRelatorioIA = function (dados, r, ia) {
         <div class="tbl-scroll"><table class="rp-table rp-table-sm rp-words-tbl">${cabecaMomento}<tbody>${linhas}</tbody></table></div>`;
     }).join('');
 
-    /* plano de ação (Fase 8) — itens escritos pela IA */
-    const plano = (Array.isArray(ia.f8_plano) ? ia.f8_plano : []).slice(0, 6).map(x =>
-        `<li><div><strong>${esc(x.titulo || 'Ação')}.</strong> ${esc(x.como || '')}</div></li>`).join('');
 
     return `
     <div class="rp-cover">
@@ -586,7 +617,7 @@ Engine.renderRelatorioIA = function (dados, r, ia) {
         <p class="rp-meta">${esc(dados.org)}</p>
         <p class="rp-date">${dataFmt}</p>
     </div>
-    <section class="rp-section"><h2>1 · Apresentação</h2>${prosa(ia.f1_apresentacao)}</section>
+    <section class="rp-section"><h2>1 · Apresentação</h2>${prosa('f1_apresentacao')}</section>
     <section class="rp-section"><h2>2 · Resultados da Pesquisa</h2>
         <div class="rp-hero-style" style="background:${pred.cor}">
             <div class="h-label">Seu estilo predominante</div>
@@ -597,23 +628,23 @@ Engine.renderRelatorioIA = function (dados, r, ia) {
             <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Diferença</th><th>Classificação</th></tr></thead>
             <tbody>${tabela}</tbody></table>
         ${pieChart(r.ranking, r.total)}
-        ${prosa(ia.f3_resultados)}</section>
+        ${prosa('f3_resultados')}</section>
     <section class="rp-section"><h2>3 · Interpretação do Perfil</h2>
-        <h3>Estilo predominante — ${esc(ACP.PERFIS[pred.key].titulo)}</h3>${prosa(ia.f4_predominante)}
-        <h3>Estilo secundário — ${esc(ACP.PERFIS[sec.key].titulo)}</h3>${prosa(ia.f4_secundario)}</section>
+        <h3>Estilo predominante — ${esc(ACP.PERFIS[pred.key].titulo)}</h3>${prosa('f4_predominante')}
+        <h3>Estilo secundário — ${esc(ACP.PERFIS[sec.key].titulo)}</h3>${prosa('f4_secundario')}</section>
     <section class="rp-section"><h2>4 · Os Momentos do Atendimento</h2>
-        ${prosa(ia.f5_momentos)}
+        ${prosa('f5_momentos')}
         <h3>Sua pontuação por estilo em cada momento</h3>${matriz}
         <h3>A trajetória dos estilos ao longo do atendimento</h3>
         ${lineChartMomentos(r.porMomento)}
-        <h3>Leitura do gráfico</h3>${prosa(ia.f5_grafico)}</section>
+        <h3>Leitura do gráfico</h3>${prosa('f5_grafico')}</section>
     <section class="rp-section"><h2>5 · Talentos e Pontos a Desenvolver</h2>
-        <h3>Talentos comportamentais (pontuações 9 a 11)</h3>${prosa(ia.f6_talentos)}
+        <h3>Talentos comportamentais (pontuações 9 a 11)</h3>${prosa('f6_talentos')}
         <div class="rp-words">${r.talentos.length ? quadrosPorMomento(r.talentos) : '<p class="rp-prose">Nenhuma pontuação 9 ou superior destacada.</p>'}</div>
-        <h3>Pontos a desenvolver (pontuações 0 a 2)</h3>${prosa(ia.f6_desenvolver)}
+        <h3>Pontos a desenvolver (pontuações 0 a 2)</h3>${prosa('f6_desenvolver')}
         <div class="rp-words">${r.desenvolver.length ? quadrosPorMomento(r.desenvolver) : '<p class="rp-prose">Nenhuma pontuação crítica (0 a 2).</p>'}</div></section>
-    <section class="rp-section"><h2>6 · Recomendações para o Desenvolvimento</h2>${prosa(ia.f7_recomendacoes)}</section>
+    <section class="rp-section"><h2>6 · Recomendações para o Desenvolvimento</h2>${prosa('f7_recomendacoes')}</section>
     <section class="rp-section"><h2>7 · Plano de Ação Individual</h2>
-        <ol class="rp-plan">${plano}</ol>
-        ${prosa(ia.conclusao)}</section>`;
+        <ol class="rp-plan" data-ia="f8_plano">${Engine.planoIA(ia.f8_plano)}</ol>
+        ${prosa('conclusao')}</section>`;
 };
