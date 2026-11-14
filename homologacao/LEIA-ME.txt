@@ -1,0 +1,49 @@
+IPA — HOMOLOGAÇÃO (relatórios escritos por IA)
+==============================================
+Projeto SEPARADO da produção. Suba a pasta homologacao/ inteira para o
+servidor (ex.: public_html/SUA-PASTA/homologacao/).
+
+COMO FUNCIONA
+  - O texto do relatório é escrito pela IA (Google Gemini, gratuito),
+    fundamentada nos documentos de referência (api/referencia/*.md:
+    Revisões Finais dos 4 estilos + mudança comportamental).
+  - Os números, tabelas e gráficos continuam calculados pelo sistema —
+    a IA nunca calcula.
+  - Regras editoriais embutidas: tom condicional ("pode ser que você…"),
+    sempre o positivo antes do negativo, respeitoso e direto.
+  - Regra dos 6 meses: a mesma pessoa só preenche de novo após 6 meses.
+
+INSTALAÇÃO
+  1. Crie um banco SEPARADO no cPanel (ex.: itthri79_ipahml) e importe
+     api/schema.sql no phpMyAdmin.
+  2. Em api/, copie config.example.php para config.php e preencha:
+     banco, GEMINI_API_KEY (aistudio.google.com/apikey), GESTOR_KEY,
+     N8N_WEBHOOK_URL (abaixo) e BASE_URL (endereço público da pasta).
+  3. Teste: homologacao/api/api.php?action=status → banco ok,
+     referencias: 5, ia: gemini-2.0-flash.
+
+ÁREA DO GESTOR (homologacao/gestor/)
+  - Entra com a GESTOR_KEY.
+  - Cadastra funcionários: nome completo, e-mail, organização,
+    cargo/função, área de atuação, segmento e observações.
+  - Cada cadastro gera um CÓDIGO EXCLUSIVO: o link pessoal
+    (index.html?f=CODIGO) abre o IPA já identificado e travado.
+  - Envio de convites por e-mail VIA N8N: individual (na lista),
+    por área, por segmento ou todos.
+  - Acompanha o status (Pendente/Respondido) e abre cada relatório.
+
+INTEGRAÇÃO N8N (envio dos e-mails)
+  1. No n8n, crie um fluxo com um nó WEBHOOK (método POST) e ative-o.
+     Cole a URL de produção do webhook em N8N_WEBHOOK_URL no config.php.
+  2. O IPA envia um JSON com: assunto, total e destinatarios[] — cada um
+     com nome, email, link (exclusivo) e html (e-mail pronto).
+  3. No fluxo: nó "Split Out" (campo destinatarios) → nó de e-mail
+     (Gmail/SMTP), mapeando Para={{email}}, Assunto={{$json.assunto do
+     webhook}}, HTML={{html}}. Pronto.
+  4. Segurança (opcional): defina N8N_TOKEN no config.php e valide no
+     n8n o cabeçalho X-Ipa-Token no início do fluxo.
+
+TESTES SEM CUSTO
+  - IA_SIMULADA = true gera textos fictícios sem chamar a IA.
+  - EMAIL_SIMULADO = true conta os envios sem chamar o n8n.
+  (Em produção da homologação, deixe os dois como false.)

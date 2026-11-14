@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Área do Gestor — IPA Homologação | VIPEDia</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --ink:#16213a; --ink-2:#4b5772; --ink-3:#8a94ab; --surface:#f6f7f9; --card:#fff;
+                --line:#e4e8ef; --brand:#1e3a8a; --accent:#2952cc; --accent-soft:#eaf0fe; --ok:#0e9f6e; --danger:#c22b1a; }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--surface); color:var(--ink); font-size:14.5px; }
+        .top { background:var(--card); border-bottom:1px solid var(--line); padding:0 22px; height:58px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+        .brand { display:flex; align-items:center; gap:9px; font-weight:800; }
+        .mark { background:var(--brand); color:#fff; width:30px; height:30px; border-radius:8px; display:grid; place-items:center; font-weight:800; }
+        .hml { background:#b45309; color:#fff; text-align:center; font-size:12px; font-weight:700; padding:6px 12px; letter-spacing:.04em; }
+        .wrap { max-width:1150px; margin:0 auto; padding:26px 20px 60px; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:22px; }
+        h1 { font-size:21px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 14px; }
+        .muted { color:var(--ink-3); font-size:13px; }
+        label { display:block; font-weight:700; font-size:12.5px; margin:12px 0 5px; }
+        input, select, textarea { width:100%; font:inherit; padding:11px 13px; border:1.5px solid var(--line); border-radius:10px; background:#fff; outline:none; }
+        input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+        .btn { font:inherit; font-weight:700; border:0; border-radius:10px; padding:11px 18px; cursor:pointer; background:var(--accent); color:#fff; }
+        .btn-ghost { background:transparent; color:var(--accent); border:1.5px solid var(--line); }
+        .btn-sm { padding:6px 11px; font-size:12.5px; border-radius:8px; }
+        .row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+        .row > div { flex:1; min-width:170px; }
+        table { width:100%; border-collapse:collapse; font-size:13px; }
+        th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-3); border-bottom:2px solid var(--line); padding:8px 9px; }
+        td { border-bottom:1px solid var(--line); padding:9px; vertical-align:middle; }
+        .tag { display:inline-block; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:800; }
+        .tag-on { background:#e7f6ef; color:var(--ok); } .tag-off { background:#fdeceb; color:var(--danger); }
+        .tag-pend { background:#fff4d6; color:#8a6400; }
+        .hidden { display:none !important; }
+        .login-box { max-width:430px; margin:60px auto; }
+        .tbl-scroll { overflow-x:auto; }
+        a.lnk { color:var(--accent); font-weight:700; }
+        .envio { background:var(--accent-soft); border-radius:12px; padding:16px 18px; margin-top:16px; }
+    </style>
+</head>
+<body>
+    <div class="top">
+        <div class="brand"><span class="mark">V</span> VIPEDia · <span style="color:var(--ink-3)">Área do Gestor — IPA</span></div>
+        <button class="btn btn-ghost btn-sm hidden" id="btn-sair" onclick="location.reload()">Sair</button>
+    </div>
+    <div class="hml">🧪 AMBIENTE DE HOMOLOGAÇÃO</div>
+
+    <!-- LOGIN -->
+    <div class="wrap login-box" id="tela-login">
+        <div class="card">
+            <h1>Área do Gestor</h1>
+            <p class="muted">Cadastre os funcionários, gere os links exclusivos e envie os convites por e-mail (via n8n).</p>
+            <form onsubmit="Gestor.entrar(event)">
+                <label for="in-key">Chave do gestor</label>
+                <input type="password" id="in-key" required autocomplete="current-password">
+                <div style="margin-top:16px"><button class="btn" type="submit">Entrar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAINEL -->
+    <div class="wrap hidden" id="tela-gestor">
+        <h1>Funcionários</h1>
+        <p class="muted" style="margin-bottom:18px">Cada funcionário cadastrado recebe um <strong>código exclusivo</strong>: o link pessoal abre o IPA já identificado. Dados tratados conforme a LGPD.</p>
+
+        <div class="card">
+            <h2>Cadastrar funcionário</h2>
+            <form onsubmit="Gestor.criar(event)">
+                <div class="row">
+                    <div style="flex:2"><label for="fc-nome">Nome completo</label><input id="fc-nome" required maxlength="200"></div>
+                    <div style="flex:2"><label for="fc-email">E-mail</label><input id="fc-email" type="email" required maxlength="190"></div>
+                </div>
+                <div class="row">
+                    <div><label for="fc-org">Organização</label><input id="fc-org" required maxlength="200"></div>
+                    <div><label for="fc-funcao">Cargo / função</label><input id="fc-funcao" required maxlength="120"></div>
+                    <div><label for="fc-area">Área de atuação</label><input id="fc-area" required maxlength="120" placeholder="ex.: Comercial, Suporte"></div>
+                    <div><label for="fc-seg">Segmento</label><input id="fc-seg" required maxlength="120" placeholder="ex.: Varejo, Saúde"></div>
+                </div>
+                <label for="fc-obs">Observações (opcional)</label>
+                <textarea id="fc-obs" rows="2" maxlength="500"></textarea>
+                <div style="margin-top:16px"><button class="btn" type="submit">Cadastrar e gerar código exclusivo</button></div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>📧 Enviar convites por e-mail <span class="muted" style="font-weight:600">(disparo via n8n)</span></h2>
+            <div class="row">
+                <div>
+                    <label for="env-tipo">Enviar para</label>
+                    <select id="env-tipo" onchange="Gestor.mudaTipoEnvio()">
+                        <option value="todos">Todos os funcionários ativos</option>
+                        <option value="area">Uma área de atuação</option>
+                        <option value="segmento">Um segmento</option>
+                    </select>
+                </div>
+                <div id="env-valor-box" class="hidden">
+                    <label for="env-valor" id="env-valor-label">Área</label>
+                    <select id="env-valor"></select>
+                </div>
+                <div style="flex:0"><button class="btn" onclick="Gestor.enviarEmails()">Enviar e-mails</button></div>
+            </div>
+            <p class="muted" style="margin:10px 0 0">Cada funcionário recebe o próprio link exclusivo. O envio individual está disponível na lista abaixo, linha a linha.</p>
+        </div>
+
+        <div class="card tbl-scroll">
+            <h2>Cadastrados</h2>
+            <table>
+                <thead><tr><th>Nome</th><th>E-mail</th><th>Cargo</th><th>Área</th><th>Segmento</th><th>Status IPA</th><th></th></tr></thead>
+                <tbody id="tb-func"><tr><td colspan="7" class="muted">Carregando…</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+    <script src="../js/msg.js"></script>
+    <script>
+    const API = '../api/api.php';
+    const Gestor = {
+        key: '', rows: [],
+        async post(body) {
+            body.key = this.key;
+            const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+            return r.json();
+        },
+        esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
+        async entrar(ev) {
+            ev.preventDefault();
+            this.key = document.getElementById('in-key').value;
+            const r = await this.post({ action: 'gestor_func_list' });
+            if (!r.ok) {
+                this.key = '';
+                return Msg.fire({ icon: 'error', titulo: 'Chave incorreta',
+                    html: 'Verifique a chave do gestor (GESTOR_KEY no config.php da homologação).' });
+            }
+            document.getElementById('tela-login').classList.add('hidden');
+            document.getElementById('tela-gestor').classList.remove('hidden');
+            document.getElementById('btn-sair').classList.remove('hidden');
+            this.render(r.rows);
+        },
+        async recarregar() {
+            const r = await this.post({ action: 'gestor_func_list' });
+            if (r.ok) this.render(r.rows);
+        },
+        linkPessoal(codigo) { return new URL('../index.html?f=' + codigo, location.href).href; },
+        render(rows) {
+            this.rows = rows;
+            const tb = document.getElementById('tb-func');
+            tb.innerHTML = rows.length ? rows.map(f => `<tr>
+                <td><strong>${this.esc(f.nome)}</strong><br><span class="muted" style="font-size:11.5px">${this.esc(f.organizacao)}</span></td>
+                <td>${this.esc(f.email)}</td>
+                <td>${this.esc(f.funcao)}</td>
+                <td>${this.esc(f.area_atuacao)}</td>
+                <td>${this.esc(f.segmento)}</td>
+                <td>${f.respondido_em
+                    ? `<span class="tag tag-on">Respondido ${this.esc(String(f.respondido_em).slice(0, 10))}</span>` +
+                      (f.link_rel ? `<br><a class="lnk" href="../${f.link_rel}" target="_blank" rel="noopener" style="font-size:12px">Ver relatório →</a>` : '')
+                    : (f.ativo ? '<span class="tag tag-pend">Pendente</span>' : '<span class="tag tag-off">Inativo</span>')}</td>
+                <td style="white-space:nowrap">
+                    <button class="btn btn-ghost btn-sm" onclick="Gestor.copiarLink(${f.id})">Copiar link</button>
+                    <button class="btn btn-ghost btn-sm" onclick="Gestor.emailIndividual(${f.id})">📧 E-mail</button>
+                    <button class="btn btn-ghost btn-sm" onclick="Gestor.toggle(${f.id}, ${f.ativo ? 0 : 1})">${f.ativo ? 'Desativar' : 'Reativar'}</button>
+                </td>
+            </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum funcionário cadastrado ainda.</td></tr>';
+            this.preencherFiltros();
+        },
+        preencherFiltros() {
+            const ativos = this.rows.filter(f => f.ativo);
+            this.areas = [...new Set(ativos.map(f => f.area_atuacao))].sort();
+            this.segmentos = [...new Set(ativos.map(f => f.segmento))].sort();
+            this.mudaTipoEnvio();
+        },
+        mudaTipoEnvio() {
+            const tipo = document.getElementById('env-tipo').value;
+            const box = document.getElementById('env-valor-box');
+            const sel = document.getElementById('env-valor');
+            if (tipo === 'todos') { box.classList.add('hidden'); return; }
+            box.classList.remove('hidden');
+            document.getElementById('env-valor-label').textContent = tipo === 'area' ? 'Área de atuação' : 'Segmento';
+            const lista = tipo === 'area' ? (this.areas || []) : (this.segmentos || []);
+            sel.innerHTML = lista.map(v => `<option>${this.esc(v)}</option>`).join('') || '<option value="">(nenhum)</option>';
+        },
+        async criar(ev) {
+            ev.preventDefault();
+            const r = await this.post({ action: 'gestor_func_create',
+                nome: document.getElementById('fc-nome').value,
+                email: document.getElementById('fc-email').value,
+                organizacao: document.getElementById('fc-org').value,
+                funcao: document.getElementById('fc-funcao').value,
+                area: document.getElementById('fc-area').value,
+                segmento: document.getElementById('fc-seg').value,
+                obs: document.getElementById('fc-obs').value });
+            if (!r.ok) return Msg.fire({ icon: 'error', titulo: 'Não foi possível cadastrar',
+                html: this.esc(r.dica || 'Confira os dados (e-mails não podem se repetir).') });
+            await Msg.fire({ icon: 'success', titulo: 'Funcionário cadastrado!',
+                html: 'Código exclusivo gerado. Link pessoal:<br><br><span style="font-family:monospace;font-size:12px;background:#f6f7f9;padding:6px 10px;border-radius:8px;display:inline-block;word-break:break-all">' +
+                      this.esc(this.linkPessoal(r.codigo)) + '</span><br><br>Use "📧 E-mail" na lista para enviar o convite via n8n.' });
+            ['fc-nome', 'fc-email', 'fc-funcao', 'fc-obs'].forEach(i => { document.getElementById(i).value = ''; });
+            this.recarregar();
+        },
+        async copiarLink(id) {
+            const f = this.rows.find(x => x.id === id);
+            if (!f) return;
+            try { await navigator.clipboard.writeText(this.linkPessoal(f.codigo)); Msg.toast('Link copiado!'); }
+            catch (e) { Msg.fire({ icon: 'info', titulo: 'Copie o link', html: this.esc(this.linkPessoal(f.codigo)) }); }
+        },
+        async toggle(id, ativo) {
+            await this.post({ action: 'gestor_func_toggle', id, ativo });
+            this.recarregar();
+        },
+        async emailIndividual(id) {
+            const f = this.rows.find(x => x.id === id);
+            if (!f) return;
+            const c = await Msg.fire({ icon: 'question', titulo: 'Enviar convite?',
+                html: `O convite com o link exclusivo será enviado via n8n para:<br><strong>${this.esc(f.nome)}</strong> &lt;${this.esc(f.email)}&gt;`,
+                confirmText: 'Enviar', cancelText: 'Cancelar' });
+            if (c !== 'confirm') return;
+            this.resultadoEnvio(await this.post({ action: 'gestor_func_email', tipo: 'individual', id }));
+        },
+        async enviarEmails() {
+            const tipo = document.getElementById('env-tipo').value;
+            const valor = tipo === 'todos' ? '' : document.getElementById('env-valor').value;
+            if (tipo !== 'todos' && !valor) return Msg.fire({ icon: 'info', titulo: 'Escolha o filtro', html: 'Selecione a área ou o segmento.' });
+            const alvo = tipo === 'todos' ? 'todos os funcionários ativos'
+                : (tipo === 'area' ? 'a área "' + valor + '"' : 'o segmento "' + valor + '"');
+            const c = await Msg.fire({ icon: 'question', titulo: 'Enviar convites?',
+                html: `Os convites (cada um com o seu link exclusivo) serão enviados via n8n para <strong>${this.esc(alvo)}</strong>.`,
+                confirmText: 'Enviar', cancelText: 'Cancelar' });
+            if (c !== 'confirm') return;
+            this.resultadoEnvio(await this.post({ action: 'gestor_func_email', tipo, valor }));
+        },
+        resultadoEnvio(r) {
+            if (!r.ok) return Msg.fire({ icon: 'error', titulo: 'Envio não realizado',
+                html: this.esc(r.dica || ('Código: ' + (r.code || 'erro'))) });
+            Msg.fire({ icon: 'success', titulo: r.simulado ? 'Envio simulado (teste local)' : 'Convites entregues ao n8n!',
+                html: `<strong>${r.enviados}</strong> e-mail(s) na fila de envio${r.simulado ? ' (nenhum e-mail real foi disparado)' : ' — o n8n fará o disparo'}.` });
+        }
+    };
+    </script>
+</body>
+</html>
