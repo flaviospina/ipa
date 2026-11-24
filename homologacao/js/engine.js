@@ -494,7 +494,7 @@ Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
     let css = '';
     try {
         // inline do CSS quando servido via http(s); em file:// segue sem estilo externo
-        const res = await fetch('css/app.css?v=2');
+        const res = await fetch('css/app.css?v=3');
         if (res.ok) css = await res.text();
     } catch (e) { /* segue sem css */ }
     return `<!DOCTYPE html>
@@ -646,5 +646,166 @@ Engine.renderRelatorioIA = function (dados, r, ia) {
     <section class="rp-section"><h2>6 · Recomendações para o Desenvolvimento</h2>${prosa('f7_recomendacoes')}</section>
     <section class="rp-section"><h2>7 · Plano de Ação Individual</h2>
         <ol class="rp-plan" data-ia="f8_plano">${Engine.planoIA(ia.f8_plano)}</ol>
-        ${prosa('conclusao')}</section>`;
+        ${prosa('conclusao')}</section>
+    ${Engine.anexoEstilos()}`;
+};
+
+/* ============================================================
+   SÍNTESES DESCRITIVAS DOS 4 ESTILOS (Zuvela, 23/mar/26) —
+   anexo de consulta ao final do relatório Completo.
+   ============================================================ */
+const SINTESES_ESTILOS = {
+    A: {
+        titulo: 'Estilo Centrado na Atenção',
+        intro: 'O Estilo Atenção é caracterizado por focar nas posturas e gestos que demonstram um comportamento atencioso para com o cliente.',
+        blocos: [
+            ['Foco na Relação', 'A atenção se exprime através de comportamentos não verbais, como a maneira de olhar, a postura de ouvir, os gestos de acolhimento e a postura corporal geral. É o ato consciente que determina a disposição de "voltar-se para" o cliente.'],
+            ['Conexão Emocional', 'Esta variável tem conexão direta com as necessidades de autoestima do cliente e com os aspectos mais sutis do comportamento — as simpatias e antipatias. O profissional utiliza o afeto, o carinho e a simpatia para criar um acolhimento empático e manter o cliente calmo e interessado.'],
+            ['Comportamento Evidente', 'Os gestos e falas são os comportamentos mais evidentes, indicadores da atenção despendida. O profissional demonstra uma propensão a ser Atencioso, Acolhedor e Cuidadoso, o que desperta um sentimento de simpatia no cliente e favorece a aproximação e o relacionamento.']
+        ],
+        excesso: 'Embora a Atenção seja vital, o excesso ou exagero em ser agradável indica uma preocupação em controlar ou eliminar todas as angústias do cliente. Uma alta preferência, quando desacompanhada das outras variáveis, pode levar a um atendimento que é caloroso, mas inseguro ou até mesmo ineficaz.',
+        falta: 'Da mesma forma, a falta ou ausência de atenção gera um impacto muito negativo no cliente, uma vez que afeta diretamente a sua autoestima. Essa indiferença pode ocasionar reações de indignação e até mesmo de confronto verbal acalorado.'
+    },
+    C: {
+        titulo: 'Estilo Centrado na Comunicação',
+        intro: 'O Estilo Centrado na Comunicação é caracterizado por priorizar o diálogo como instrumento essencial para construir entendimento entre profissional e cliente.',
+        blocos: [
+            ['Foco no Diálogo', 'A comunicação é compreendida como o processo que torna conscientes dúvidas, necessidades, orientações e expectativas. Falar, ouvir e se fazer entender são ações centrais que permitem ao profissional conduzir o atendimento de forma clara, objetiva e segura. O diálogo funciona como o eixo que organiza a interação e orienta as decisões.'],
+            ['Escuta Ativa como Base da Relação', 'O "ato de ouvir" é considerado mais determinante que o ato de falar. A escuta ativa permite captar nuances, interpretar corretamente as demandas e responder de maneira adequada. Esse comportamento favorece relações mais humanizadas e fortalece a confiança do cliente no processo de atendimento.'],
+            ['Clareza e Troca de Informações', 'O profissional que adota esse estilo busca eliminar ruídos e interferências, garantindo que a troca de informações seja fluida. Estar atento ao ambiente, ao uso de dispositivos e à expressão verbal do cliente são elementos fundamentais. A clareza e a veracidade das informações passadas ao cliente são outros elementos-chave. A comunicação é utilizada como lente para interpretar o cliente e ajustar o atendimento às suas necessidades.']
+        ],
+        excesso: 'O excesso de comunicação pode transformar o atendimento em algo prolixo, disperso ou cansativo. Falar demais, explicar em excesso ou insistir em detalhes irrelevantes pode gerar confusão, perda de foco e até impaciência no cliente. Quando não equilibrado com outros estilos, o atendimento pode se tornar verborrágico e pouco efetivo.',
+        falta: 'A falta de comunicação compromete diretamente o entendimento e a segurança do cliente. Silêncios prolongados, respostas vagas ou ausência de explicações podem gerar insegurança, interpretações equivocadas e retrabalho. A insuficiência de diálogo tende a criar distanciamento e prejudicar a qualidade da relação.'
+    },
+    P: {
+        titulo: 'Estilo Centrado no Procedimento',
+        intro: 'O Estilo Centrado no Procedimento é caracterizado pela valorização do cumprimento rigoroso de protocolos técnicos e administrativos como base para garantir qualidade, segurança e padronização no atendimento.',
+        blocos: [
+            ['Foco no Método e na Execução Correta', 'O procedimento é entendido como o modo adequado de agir, seguindo técnicas, métodos e trâmites estabelecidos pelas normas da profissão e da própria empresa prestadora dos serviços. O profissional acredita que dominar processos, regras e padrões é essencial para assegurar um atendimento consistente e confiável.'],
+            ['Validação Técnica e Organizacional', 'Os procedimentos técnicos são estruturados e validados por critérios científico-profissionais, enquanto os administrativos refletem diretrizes estratégicas das organizações. Ambos orientam a prática e garantem que o serviço seja entregue de forma uniforme, seja no atendimento presencial ou digital.'],
+            ['Padronização como Referência para Decisões', 'O profissional que adota esse estilo utiliza e segue os protocolos padrões estabelecidos como principal referência para interpretar situações e tomar decisões.']
+        ],
+        excesso: 'O excesso de foco no procedimento pode tornar o atendimento rígido, inflexível ou distante. A preocupação exagerada com normas pode levar à perda de sensibilidade diante das necessidades individuais do cliente, gerando sensação de frieza, burocracia ou falta de acolhimento.',
+        falta: 'A ausência de preparação com os procedimentos compromete a qualidade e a segurança do atendimento. Sem seguir métodos claros, o profissional pode cometer erros, gerar inconsistências, descumprir normas institucionais e transmitir insegurança ao cliente. A falta de padronização tende a prejudicar a confiabilidade do serviço.'
+    },
+    E: {
+        titulo: 'Estilo Equilibrado',
+        intro: 'O Estilo Equilibrado caracteriza-se pela capacidade de integrar, de forma simultânea e dinâmica, as três variáveis essenciais do atendimento: Atenção, Comunicação e Procedimento. Esse equilíbrio é resultado de um processo contínuo de aprendizado, construído pela experiência, pela formação técnica e pela reflexão sobre as experiências com o atendimento de clientes e os feedbacks recebidos.',
+        blocos: [
+            ['Integração Harmônica das Três Dimensões', 'O profissional ajusta sua postura conforme as necessidades do cliente, combinando acolhimento, clareza comunicativa e execução técnica adequada. Atenção, Comunicação e Procedimento não competem entre si; ao contrário, são utilizadas de maneira complementar para garantir um atendimento completo e humanizado.'],
+            ['Sensibilidade às Necessidades Individuais', 'Esse estilo se destaca pela capacidade de perceber as reações emocionais do cliente e adaptar o atendimento em tempo real. Uma de suas características é a flexibilidade. O profissional reduz ansiedades, transmite segurança e oferece informações acessíveis, sem perder de vista a importância de seguir corretamente os protocolos.'],
+            ['Foco na Qualidade Percebida pelo Cliente', 'O atendimento equilibrado reconhece que o cliente avalia o serviço não apenas pelo resultado técnico, mas pela forma como suas necessidades são compreendidas e atendidas. O profissional mantém o aspecto humano da interação enquanto cumpre os trâmites técnicos e administrativos necessários com precisão e eficiência.']
+        ],
+        excesso: 'Quando o equilíbrio é buscado de forma artificial ou mecânica, o atendimento pode se tornar indeciso ou pouco autêntico. O esforço exagerado para "agradar em todas as frentes" pode gerar perda de foco, inconsistência nas decisões ou dificuldade em priorizar o que é mais importante em cada situação.',
+        falta: 'A ausência de equilíbrio leva à predominância excessiva de uma das variáveis, comprometendo a experiência do cliente. Sem integrar Atenção, Comunicação e Procedimento, o atendimento pode se tornar frio, confuso ou tecnicamente falho. A falta de harmonia entre as dimensões reduz a qualidade percebida e enfraquece a relação com o cliente.'
+    }
+};
+
+/* Anexo de consulta: síntese descritiva de cada um dos 4 estilos */
+Engine.anexoEstilos = function () {
+    const corpo = ['A', 'C', 'P', 'E'].map(k => {
+        const s = SINTESES_ESTILOS[k], cor = ACP.STYLES[k].cor;
+        return `<div class="rp-anexo-estilo">
+            <h3 style="color:${cor}"><span class="chart-swatch" style="background:${cor}"></span> ${esc(s.titulo)}</h3>
+            <div class="rp-prose"><p>${esc(s.intro)}</p></div>
+            ${s.blocos.map(([t, p]) => `<div class="rp-prose"><p><strong>${esc(t)}:</strong> ${esc(p)}</p></div>`).join('')}
+            <div class="rp-prose"><p><strong>⚠ Risco do excesso:</strong> ${esc(s.excesso)}</p>
+            <p><strong>⚠ Risco da falta:</strong> ${esc(s.falta)}</p></div>
+        </div>`;
+    }).join('');
+    return `<section class="rp-section"><h2>Anexo · Síntese dos 4 Estilos — para consulta</h2>
+        <div class="rp-prose"><p>Guarde este anexo como referência: ele descreve a essência de cada estilo da
+        Abordagem ACP, as características predominantes e os alertas de excesso e de falta de cada variável.</p></div>
+        ${corpo}</section>`;
+};
+
+/* ============================================================
+   RELATÓRIO RESUMIDO (1 página, estilo dashboard) — gerado logo
+   após o preenchimento. Só as informações mais importantes e os
+   gráficos; inclui Flexível / Não flexível; NADA de desenvolvimento.
+   ============================================================ */
+Engine.renderResumo = function (dados, r) {
+    const pred = r.ranking[0];
+    const dataFmt = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const flexivel = r.regra !== 'FORTE_APEGO';
+    const nomeRegra = { FORTE_APEGO: 'Forte apego ao estilo predominante', FLEXIVEL: 'Perfil flexível',
+                        EQUILIBRADO_NATURAL: 'Equilíbrio natural', EQUILIBRADO_MODELO: 'Equilibrado modelo' }[r.regra] || '';
+
+    const tabela = r.ranking.map((s, i) => `<tr class="${i === 0 ? 'hl' : ''}">
+        <td><span class="chart-label"><span class="chart-swatch" style="background:${s.cor}"></span>${esc(s.curto)}</span></td>
+        <td class="num">${s.pontos}</td><td class="num">${s.pct.toFixed(1)}%</td>
+        <td class="num">${i === 0 ? '—' : '−' + r.difs[i - 1]}</td></tr>`).join('');
+
+    const matrizLinhas = ['A', 'C', 'P', 'E'].map(k => {
+        const vals = [1, 2, 3].map(q => r.porMomento[q][k]);
+        return `<tr><td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[k].cor}"></span>${ACP.STYLES[k].curto}</span></td>
+            ${vals.map((v, i) => `<td class="num${v === Math.max(...['A','C','P','E'].map(x => r.porMomento[i+1][x])) ? ' hl-cell' : ''}">${v}</td>`).join('')}
+            <td class="num tot-col">${r.totais[k]}</td></tr>`;
+    }).join('');
+
+    const momentos = [
+        { q: 1, nome: 'Início', esp: 'A' },
+        { q: 2, nome: 'Durante', esp: 'P' },
+        { q: 3, nome: 'Término', esp: 'C' }
+    ].map(m => {
+        const maior = ['A', 'C', 'P', 'E'].reduce((a, b) => r.porMomento[m.q][a] >= r.porMomento[m.q][b] ? a : b);
+        const ok = maior === m.esp;
+        return `<div class="rz-mom ${ok ? 'rz-mom-ok' : 'rz-mom-alerta'}">
+            <div class="rz-mom-nome">${m.nome}</div>
+            <div class="rz-mom-maior"><span class="chart-swatch" style="background:${ACP.STYLES[maior].cor}"></span>${ACP.STYLES[maior].curto} · ${r.porMomento[m.q][maior]} pts</div>
+            <div class="rz-mom-status">${ok ? '✓ alinhado ao que o momento tipicamente pede' : 'o momento tipicamente pede destaque em ' + ACP.STYLES[m.esp].curto}</div>
+        </div>`;
+    }).join('');
+
+    return `<div class="rz-page">
+        <div class="rz-head">
+            <div class="rp-logo rz-logo">IPA</div>
+            <div class="rz-head-tit">
+                <h2>Relatório Resumido · Perfil de Atendimento</h2>
+                <div class="rz-head-sub">Abordagem ACP · Indicador do Perfil de Atendimento</div>
+            </div>
+            <div class="rz-head-meta">
+                <strong>${esc(dados.nome)}</strong><br>${esc(dados.org)}<br>${dataFmt}
+            </div>
+        </div>
+        <div class="rz-grid">
+            <div class="rz-hero" style="background:${pred.cor}">
+                <div class="h-label">Estilo predominante</div>
+                <div class="h-name">${esc(ACP.PERFIS[pred.key].titulo)}</div>
+                <div class="h-pts">${pred.pontos} pontos · ${pred.pct.toFixed(1)}% de ${r.total}</div>
+            </div>
+            <div class="rz-flex ${flexivel ? 'rz-flex-sim' : 'rz-flex-nao'}">
+                <div class="rz-flex-badge">${flexivel ? 'FLEXÍVEL' : 'NÃO FLEXÍVEL'}</div>
+                <div class="rz-flex-nome">${esc(nomeRegra)}</div>
+                <div class="rz-flex-det">Diferença 1º → 2º estilo: <strong>${r.difs[0]} pontos</strong> (critério: 15)</div>
+            </div>
+        </div>
+        <div class="rz-grid">
+            <div class="rz-col">
+                <h4>Pontuação por estilo</h4>
+                <table class="rp-table rp-table-sm">
+                    <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Dif.</th></tr></thead>
+                    <tbody>${tabela}</tbody></table>
+            </div>
+            <div class="rz-col rz-pie">${pieChart(r.ranking, r.total)}</div>
+        </div>
+        <div class="rz-grid">
+            <div class="rz-col">
+                <h4>Estilos em cada momento</h4>
+                <table class="rp-table rp-table-sm rp-matrix">
+                    <thead><tr><th>Estilo</th><th class="num">Q1</th><th class="num">Q2</th><th class="num">Q3</th><th class="num">Total</th></tr></thead>
+                    <tbody>${matrizLinhas}</tbody></table>
+            </div>
+            <div class="rz-col">
+                <h4>Trajetória nos momentos</h4>
+                <div class="rz-line">${lineChartMomentos(r.porMomento)}</div>
+            </div>
+        </div>
+        <h4>Leitura por momento do atendimento</h4>
+        <div class="rz-moms">${momentos}</div>
+        <p class="rz-nota">Este é o resumo do seu IPA. O <strong>relatório completo e personalizado</strong>,
+        com a análise redigida por IA e o anexo de consulta dos 4 estilos, é disponibilizado
+        pelo gestor — por e-mail, link ou arquivo PDF.</p>
+    </div>`;
 };

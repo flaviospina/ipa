@@ -51,6 +51,44 @@ function hml_csrf(): string {
 }
 function hml_gestor_ok(): bool { return !empty($_SESSION['hml_gestor']); }
 
+/* entrega a lista de destinatários ao webhook do n8n (ou simula em teste) */
+function n8n_disparar(string $evento, string $assunto, array $destinatarios, string $tipo, string $filtro): void {
+    if (defined('EMAIL_SIMULADO') && EMAIL_SIMULADO) {
+        out(['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'simulado' => true]);
+    }
+    if (!defined('N8N_WEBHOOK_URL') || N8N_WEBHOOK_URL === '') {
+        out(['ok' => false, 'code' => 'n8n_nao_configurado',
+             'dica' => 'Preencha N8N_WEBHOOK_URL no config.php da homologação.']);
+    }
+    $payloadN8n = [
+        'origem' => 'ipa-homologacao',
+        'evento' => $evento,
+        'tipo_envio' => $tipo,
+        'filtro' => $filtro,
+        'assunto' => $assunto,
+        'total' => count($destinatarios),
+        'destinatarios' => $destinatarios,
+    ];
+    $ch = curl_init(N8N_WEBHOOK_URL);
+    $headers = ['Content-Type: application/json'];
+    if (defined('N8N_TOKEN') && N8N_TOKEN !== '') $headers[] = 'X-Ipa-Token: ' . N8N_TOKEN;
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_POSTFIELDS => json_encode($payloadN8n, JSON_UNESCAPED_UNICODE),
+    ]);
+    $resp = curl_exec($ch);
+    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($resp === false || $http < 200 || $http >= 300) {
+        out(['ok' => false, 'code' => 'n8n_falhou',
+             'dica' => 'O webhook do n8n respondeu HTTP ' . (int)$http . '. Verifique se o fluxo está ativo.']);
+    }
+    out(['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'via' => 'n8n']);
+}
+
 const VERSAO = 'HML-1';
 const MESES_REPETICAO = 6;            // regra Zuvela: novo preenchimento só após 6 meses
 const MAX_RELATORIO_BYTES = 900000;
@@ -337,6 +375,27 @@ try {
             $st->execute([$token]);
             $html = $st->fetchColumn();
             if (!$html) out(['ok' => false, 'code' => 'not_found']);
+            /* injeta o gerador de PDF direto (cores e gráficos preservados):
+               botão flutuante "Baixar PDF" + download automático com &pdf=1 */
+            $auto = !empty($_GET['pdf']) ? 'true' : 'false';
+            $inj = '<link rel="stylesheet" href="../css/app.css?v=3">'
+                 . '<script src="../js/vendor/jspdf.umd.min.js"></script>'
+                 . '<script src="../js/vendor/html2canvas.min.js"></script>'
+                 . '<script src="../js/pdf.js?v=3"></script>'
+                 . '<button class="no-pdf" id="btn-pdf-dl" style="position:fixed;right:22px;bottom:22px;z-index:9999;'
+                 . 'font:700 14px Inter,system-ui,sans-serif;background:#1e3a8a;color:#fff;border:0;border-radius:999px;'
+                 . 'padding:13px 22px;cursor:pointer;box-shadow:0 14px 34px -12px rgba(22,33,58,.6)">⬇️ Baixar PDF</button>'
+                 . '<script>(function(){'
+                 . 'function nomeRel(){var org=(document.querySelector(".rp-meta")||{}).textContent||"";'
+                 . 'var nome=(document.querySelector(".rp-nome")||{}).textContent||"";'
+                 . 'return PdfGen.nome([org,nome,PdfGen.dataBR(),"Completo"]);}'
+                 . 'function baixar(){var capa=document.querySelector(".rp-cover");'
+                 . 'var alvo=capa?capa.parentElement:document.body;'
+                 . 'PdfGen.baixarComAviso(alvo,nomeRel());}'
+                 . 'document.getElementById("btn-pdf-dl").addEventListener("click",baixar);'
+                 . 'if(' . $auto . '){window.addEventListener("load",function(){setTimeout(baixar,600);});}'
+                 . '})();</script>';
+            $html = str_replace('</body>', $inj . '</body>', $html);
             if (!empty($_GET['print'])) {
                 $html = str_replace('</body>', '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},500);});</script></body>', $html);
             }
@@ -526,42 +585,53 @@ try {
                 ];
             }
 
-            /* modo simulado (testes locais): não chama o n8n */
-            if (defined('EMAIL_SIMULADO') && EMAIL_SIMULADO) {
-                out(['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'simulado' => true]);
-            }
-            if (!defined('N8N_WEBHOOK_URL') || N8N_WEBHOOK_URL === '') {
-                out(['ok' => false, 'code' => 'n8n_nao_configurado',
-                     'dica' => 'Preencha N8N_WEBHOOK_URL no config.php da homologação.']);
-            }
+            n8n_disparar('convite_ipa', $assunto, $destinatarios, $tipo, limpar($data['valor'] ?? ''));
+        }
 
-            $payloadN8n = [
-                'origem' => 'ipa-homologacao',
-                'evento' => 'convite_ipa',
-                'tipo_envio' => $tipo,
-                'filtro' => limpar($data['valor'] ?? ''),
-                'assunto' => $assunto,
-                'total' => count($destinatarios),
-                'destinatarios' => $destinatarios,
-            ];
-            $ch = curl_init(N8N_WEBHOOK_URL);
-            $headers = ['Content-Type: application/json'];
-            if (defined('N8N_TOKEN') && N8N_TOKEN !== '') $headers[] = 'X-Ipa-Token: ' . N8N_TOKEN;
-            curl_setopt_array($ch, [
-                CURLOPT_POST => true,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 60,
-                CURLOPT_HTTPHEADER => $headers,
-                CURLOPT_POSTFIELDS => json_encode($payloadN8n, JSON_UNESCAPED_UNICODE),
-            ]);
-            $resp = curl_exec($ch);
-            $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            if ($resp === false || $http < 200 || $http >= 300) {
-                out(['ok' => false, 'code' => 'n8n_falhou',
-                     'dica' => 'O webhook do n8n respondeu HTTP ' . (int)$http . '. Verifique se o fluxo está ativo.']);
-            }
-            out(['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'via' => 'n8n']);
+        /* envio do RELATÓRIO COMPLETO por e-mail (via n8n): o funcionário
+           recebe o link do relatório arquivado e o link de download em PDF */
+        if ($action === 'gestor_rel_email') {
+            $st = db()->prepare(
+                "SELECT f.nome, f.email, f.organizacao, f.area_atuacao, f.segmento,
+                        (SELECT r.token FROM ipa_respostas r WHERE r.funcionario_id = f.id AND r.relatorio IS NOT NULL
+                          ORDER BY r.criado_em DESC LIMIT 1) AS token_rel
+                 FROM ipa_funcionarios f WHERE f.id = ? LIMIT 1");
+            $st->execute([(int)($data['id'] ?? 0)]);
+            $f2 = $st->fetch();
+            if (!$f2) out(['ok' => false, 'code' => 'nao_encontrado']);
+            if (empty($f2['token_rel'])) out(['ok' => false, 'code' => 'sem_relatorio',
+                'dica' => 'O relatório completo deste funcionário ainda não foi arquivado — ele precisa concluir o preenchimento com a página aberta até o aviso de pronto.']);
+
+            $base = (defined('BASE_URL') && BASE_URL !== '')
+                ? rtrim(BASE_URL, '/')
+                : ((!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+                   . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/'));
+            $linkVer = $base . '/api/api.php?action=relatorio&token=' . $f2['token_rel'];
+            $linkPdf = $linkVer . '&pdf=1';
+            $nomeH = htmlspecialchars($f2['nome'], ENT_QUOTES, 'UTF-8');
+            $assunto = 'Seu Relatório IPA completo — Perfil de Atendimento';
+            $destinatarios = [[
+                'nome' => $f2['nome'],
+                'email' => $f2['email'],
+                'organizacao' => $f2['organizacao'],
+                'area' => $f2['area_atuacao'],
+                'segmento' => $f2['segmento'],
+                'link' => $linkVer,
+                'link_pdf' => $linkPdf,
+                'html' => '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#16213a">'
+                    . '<div style="background:#1e3a8a;color:#fff;border-radius:12px 12px 0 0;padding:18px 24px;font-size:18px;font-weight:bold">IPA — Relatório do Perfil de Atendimento</div>'
+                    . '<div style="border:1px solid #e4e8ef;border-top:0;border-radius:0 0 12px 12px;padding:24px">'
+                    . '<p>Olá, <strong>' . $nomeH . '</strong>!</p>'
+                    . '<p>O seu <strong>relatório completo e personalizado</strong> do IPA está pronto. Ele traz a análise '
+                    . 'redigida especialmente para você e, ao final, o anexo de consulta com a síntese dos 4 estilos da Abordagem ACP.</p>'
+                    . '<p style="text-align:center;margin:26px 0">'
+                    . '<a href="' . $linkVer . '" style="background:#2952cc;color:#fff;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:bold">Abrir o relatório</a>'
+                    . '&nbsp;&nbsp;<a href="' . $linkPdf . '" style="background:#0e9f6e;color:#fff;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:bold">Baixar em PDF</a></p>'
+                    . '<p style="font-size:13px;color:#4b5772">Se os botões não funcionarem, copie e cole este endereço no navegador:<br>' . $linkVer . '</p>'
+                    . '<p style="font-size:12px;color:#8a94ab">Este link é pessoal. Seus dados são tratados conforme a LGPD.</p>'
+                    . '</div></div>',
+            ]];
+            n8n_disparar('relatorio_ipa', $assunto, $destinatarios, 'individual', '');
         }
 
         out(['ok' => false, 'code' => 'acao_desconhecida']);

@@ -250,11 +250,13 @@
                 <td>${this.esc(f.segmento)}</td>
                 <td>${f.respondido_em
                     ? `<span class="tag tag-on">Respondido ${this.esc(String(f.respondido_em).slice(0, 10))}</span>` +
-                      (f.link_rel ? `<br><a class="lnk" href="../${f.link_rel}" target="_blank" rel="noopener" style="font-size:12px">Ver relatório →</a>` : '')
+                      (f.link_rel ? `<br><a class="lnk" href="../${f.link_rel}" target="_blank" rel="noopener" style="font-size:12px">Ver relatório →</a>
+                       &nbsp;<a class="lnk" href="../${f.link_rel}&pdf=1" target="_blank" rel="noopener" style="font-size:12px">Baixar PDF ⤓</a>` : '')
                     : (f.ativo ? '<span class="tag tag-pend">Pendente</span>' : '<span class="tag tag-off">Inativo</span>')}</td>
                 <td style="white-space:nowrap">
                     <button class="btn btn-ghost btn-sm" onclick="Gestor.copiarLink(${f.id})">Copiar link</button>
-                    <button class="btn btn-ghost btn-sm" onclick="Gestor.emailIndividual(${f.id})">📧 E-mail</button>
+                    <button class="btn btn-ghost btn-sm" onclick="Gestor.emailIndividual(${f.id})">📧 Convite</button>
+                    ${f.link_rel ? `<button class="btn btn-ghost btn-sm" onclick="Gestor.enviarRelatorio(${f.id})">📧 Relatório</button>` : ''}
                     <button class="btn btn-ghost btn-sm" onclick="Gestor.toggle(${f.id}, ${f.ativo ? 0 : 1})">${f.ativo ? 'Desativar' : 'Reativar'}</button>
                 </td>
             </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum funcionário cadastrado ainda.</td></tr>';
@@ -303,6 +305,15 @@
         async toggle(id, ativo) {
             await this.post({ action: 'gestor_func_toggle', id, ativo });
             this.recarregar();
+        },
+        async enviarRelatorio(id) {
+            const f = this.rows.find(x => x.id === id);
+            if (!f) return;
+            const c = await Msg.fire({ icon: 'question', titulo: 'Enviar o relatório completo?',
+                html: `O relatório completo (com o link e o download em PDF) será enviado via n8n para:<br><strong>${this.esc(f.nome)}</strong> &lt;${this.esc(f.email)}&gt;`,
+                confirmText: 'Enviar', cancelText: 'Cancelar' });
+            if (c !== 'confirm') return;
+            this.resultadoEnvio(await this.post({ action: 'gestor_rel_email', id }));
         },
         async emailIndividual(id) {
             const f = this.rows.find(x => x.id === id);

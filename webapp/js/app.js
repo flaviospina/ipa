@@ -229,7 +229,7 @@ const App = {
             Msg.fire({ icon: 'warning', titulo: 'Envio pendente',
                 html: motivo + '<br><br><strong>Suas respostas não se perderam:</strong> ficaram salvas neste navegador e serão reenviadas automaticamente. Você já pode baixar o relatório em PDF.',
                 confirmText: '📄 Baixar em PDF', denyText: 'Ver relatório no site' })
-                .then(e => { if (e === 'confirm') this.imprimirRelatorio(); });
+                .then(e => { if (e === 'confirm') this.baixarPDF(); });
             return;
         }
 
@@ -265,6 +265,14 @@ const App = {
     /* Impressão segura do relatório: espera o modal fechar por completo e
        remove qualquer resíduo do SweetAlert no <body> (classes/estilos que
        travam a altura da página e fazem o navegador imprimir SÓ a capa). */
+    /* PDF direto (cores e gráficos preservados), nome modelo:
+       "Organização-Nome-dd-mm-aaaa HHhMM-Completo.pdf" */
+    baixarPDF() {
+        const d = this.state.dados || {};
+        PdfGen.baixarComAviso(document.getElementById('report'),
+            PdfGen.nome([d.org, d.nome, PdfGen.dataBR(), 'Completo']));
+    },
+
     imprimirRelatorio() {
         const limpar = () => {
             document.querySelectorAll('.swal2-container, .msgv-overlay').forEach(el => el.remove());
@@ -294,7 +302,7 @@ const App = {
             confirmText: '📄 Baixar em PDF',
             denyText: 'Ver relatório no site'
         });
-        if (escolha === 'confirm') this.imprimirRelatorio();
+        if (escolha === 'confirm') this.baixarPDF();
     },
 
     async send(payload) {

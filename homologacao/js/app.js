@@ -249,11 +249,13 @@ const App = {
         this.gerarIA(id, r);
     },
 
-    /* renderiza o relatório com placeholders de prosa + banner de progresso no topo */
+    /* renderiza o RELATÓRIO RESUMIDO (1 página) na hora + banner de progresso
+       do relatório completo, que a IA escreve em segundo plano */
     mostrarRelatorioParcial(r) {
         const rep = document.getElementById('report');
         rep.innerHTML = `<div id="ia-banner" class="ia-banner">${this.bannerEscrevendo()}</div>` +
-            Engine.renderRelatorioIA(this.state.dados, r, null);
+            `<div id="rel-area">${Engine.renderResumo(this.state.dados, r)}</div>`;
+        this.vista = 'resumo';
         window.scrollTo({ top: 0 });
     },
 
@@ -261,12 +263,14 @@ const App = {
         return `<div class="ia-banner-in">
             <div class="spinner spinner-sm" aria-hidden="true"></div>
             <div class="ia-banner-txt">
-                <strong>Seu relatório já está pronto abaixo — a IA está escrevendo os textos personalizados…</strong>
+                <strong>Seu relatório resumido está pronto abaixo — a IA está escrevendo o relatório completo…</strong>
                 <span class="muted" id="ia-etapa">Preparando…</span>
             </div>
             <div class="ia-banner-cron" id="ia-cronometro">00:00</div>
+            <button class="btn btn-ghost btn-sm" onclick="App.baixarResumido()">📄 Resumido em PDF</button>
         </div>
-        <p class="muted ia-banner-nota">Os números, tabelas e gráficos já são definitivos. Os textos chegam sozinhos em instantes — <strong>não feche esta página</strong>.</p>`;
+        <p class="muted ia-banner-nota">O resumo abaixo já é definitivo e pode ser baixado em PDF. O relatório completo
+        (análise personalizada pela IA + anexo dos 4 estilos) chega sozinho em instantes — <strong>não feche esta página</strong>.</p>`;
     },
 
     bannerSet(html) {
@@ -377,18 +381,21 @@ const App = {
         }
         this.autoTentativas = 0;
 
-        /* preenche os textos da IA no relatório que já está na tela */
-        if (document.querySelector('#report [data-ia]')) {
-            Engine.preencherProsaIA(out.ia);
-        } else {
-            document.getElementById('report').innerHTML = Engine.renderRelatorioIA(this.state.dados, r, out.ia);
-            window.scrollTo({ top: 0 });
-        }
-        const banner = document.getElementById('ia-banner');
-        if (banner) banner.remove();
+        /* monta o relatório COMPLETO (textos da IA + anexo dos 4 estilos);
+           a tela continua no resumido — o completo fica disponível em PDF,
+           pelo link arquivado e para visualização */
+        this.completoHtml = Engine.renderRelatorioIA(this.state.dados, r, out.ia);
+        this.bannerSet(`<div class="ia-banner-in">
+            <div class="ia-banner-txt">
+                <strong>✅ Relatório completo pronto!</strong>
+                <span class="muted">Análise personalizada pela IA + anexo de consulta dos 4 estilos.</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="App.baixarResumido()">📄 Resumido (PDF)</button>
+            <button class="btn btn-primary btn-sm" onclick="App.baixarCompleto()">📄 Completo (PDF)</button>
+            <button class="btn btn-ghost btn-sm" id="btn-vista" onclick="App.alternarVista()">Ver completo</button></div>`);
         ind.textContent = '✓ Relatório escrito pela IA · arquivando…';
 
-        const standalone = await Engine.relatorioStandalone(document.getElementById('report').innerHTML, this.state.dados);
+        const standalone = await Engine.relatorioStandalone(this.completoHtml, this.state.dados);
         const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id, relatorio: standalone, website: '' };
         const out2 = await this.send(arch);
         if (out2 && out2.ok === true) {
@@ -400,6 +407,42 @@ const App = {
             ind.textContent = '✓ Relatório gerado (o arquivamento será reenviado automaticamente)';
         }
         this.dialogoFinal(r, true);
+    },
+
+    /* ---------- PDF direto (nome modelo) e alternância resumo/completo ---------- */
+    nomePDF(tipo) {
+        return PdfGen.nome([this.state.dados.org, this.state.dados.nome, PdfGen.dataBR(), tipo]);
+    },
+    baixarResumido() {
+        if (!this.ultimoR) return;
+        PdfGen.baixarComAviso(Engine.renderResumo(this.state.dados, this.ultimoR),
+            this.nomePDF('Resumido'), { ajustarPagina: true });
+    },
+    baixarCompleto() {
+        if (!this.completoHtml) {
+            return Msg.fire({ icon: 'info', titulo: 'Quase lá',
+                html: 'O relatório completo ainda está sendo escrito pela IA — aguarde o aviso de pronto no topo da página.' });
+        }
+        PdfGen.baixarComAviso(this.completoHtml, this.nomePDF('Completo'));
+    },
+    baixarPDFAtual() {
+        if (!this.ultimoR) return window.print();
+        if (this.vista === 'completo' && this.completoHtml) this.baixarCompleto();
+        else this.baixarResumido();
+    },
+    alternarVista() {
+        const area = document.getElementById('rel-area');
+        if (!area || !this.ultimoR) return;
+        if (this.vista !== 'completo' && this.completoHtml) {
+            area.innerHTML = this.completoHtml;
+            this.vista = 'completo';
+        } else {
+            area.innerHTML = Engine.renderResumo(this.state.dados, this.ultimoR);
+            this.vista = 'resumo';
+        }
+        const b = document.getElementById('btn-vista');
+        if (b) b.textContent = this.vista === 'completo' ? 'Ver resumido' : 'Ver completo';
+        window.scrollTo({ top: 0 });
     },
 
     tentarIA() {
@@ -427,7 +470,7 @@ const App = {
         }, 350);
     },
 
-    /* janela de conclusão: baixar o PDF dali mesmo ou ver no site */
+    /* janela de conclusão: PDFs diretos (Resumido / Completo) ou ver no site */
     async dialogoFinal(r, comIA) {
         const pred = r.ranking[0];
         const escolha = await Msg.fire({
@@ -437,11 +480,13 @@ const App = {
                    Seu estilo predominante é
                    <strong style="color:${pred.cor}">${pred.nome}</strong>
                    (${pred.pontos} pontos · ${pred.pct.toFixed(1)}%).` +
-                  (comIA ? '<br>O relatório inclui a análise personalizada do consultor IA.' : ''),
-            confirmText: '📄 Baixar em PDF',
-            denyText: 'Ver relatório no site'
+                  (comIA ? '<br>O relatório completo inclui a análise personalizada da IA e o anexo dos 4 estilos.' : ''),
+            confirmText: '📄 Resumido (PDF)',
+            denyText: '📄 Completo (PDF)',
+            cancelText: 'Ver no site'
         });
-        if (escolha === 'confirm') this.imprimirRelatorio();
+        if (escolha === 'confirm') this.baixarResumido();
+        else if (escolha === 'deny') this.baixarCompleto();
     },
 
     async send(payload) {

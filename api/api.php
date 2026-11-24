@@ -281,8 +281,28 @@ try {
             $row = $st->fetch();
             if (!$row || !$row['relatorio']) out(['ok' => false, 'code' => 'not_found']);
             $html = $row['relatorio'];
-            /* &print=1: abre o relatório já com o diálogo de impressão
-               (Salvar como PDF) — o link de download usado nos painéis */
+            /* injeta o gerador de PDF direto (cores e gráficos preservados):
+               botão flutuante "Baixar PDF" + download automático com &pdf=1 */
+            $auto = !empty($_GET['pdf']) ? 'true' : 'false';
+            $inj = '<link rel="stylesheet" href="../webapp/css/app.css?v=12">'
+                 . '<script src="../webapp/js/vendor/jspdf.umd.min.js"></script>'
+                 . '<script src="../webapp/js/vendor/html2canvas.min.js"></script>'
+                 . '<script src="../webapp/js/pdf.js?v=12"></script>'
+                 . '<button class="no-pdf" id="btn-pdf-dl" style="position:fixed;right:22px;bottom:22px;z-index:9999;'
+                 . 'font:700 14px Inter,system-ui,sans-serif;background:#1e3a8a;color:#fff;border:0;border-radius:999px;'
+                 . 'padding:13px 22px;cursor:pointer;box-shadow:0 14px 34px -12px rgba(22,33,58,.6)">⬇️ Baixar PDF</button>'
+                 . '<script>(function(){'
+                 . 'function nomeRel(){var org=(document.querySelector(".rp-meta")||{}).textContent||"";'
+                 . 'var nome=(document.querySelector(".rp-nome")||{}).textContent||"";'
+                 . 'return PdfGen.nome([org,nome,PdfGen.dataBR(),"Completo"]);}'
+                 . 'function baixar(){var capa=document.querySelector(".rp-cover");'
+                 . 'var alvo=capa?capa.parentElement:document.body;'
+                 . 'PdfGen.baixarComAviso(alvo,nomeRel());}'
+                 . 'document.getElementById("btn-pdf-dl").addEventListener("click",baixar);'
+                 . 'if(' . $auto . '){window.addEventListener("load",function(){setTimeout(baixar,600);});}'
+                 . '})();</script>';
+            $html = str_replace('</body>', $inj . '</body>', $html);
+            /* &print=1 (compatibilidade): diálogo de impressão do navegador */
             if (!empty($_GET['print'])) {
                 $html = str_replace('</body>',
                     '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},500);});</script></body>',

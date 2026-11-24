@@ -42,13 +42,37 @@ INSTALAÇÃO
 INTEGRAÇÃO N8N (envio dos e-mails)
   1. No n8n, crie um fluxo com um nó WEBHOOK (método POST) e ative-o.
      Cole a URL de produção do webhook em N8N_WEBHOOK_URL no config.php.
-  2. O IPA envia um JSON com: assunto, total e destinatarios[] — cada um
-     com nome, email, link (exclusivo) e html (e-mail pronto).
+  2. O IPA envia um JSON com: evento ('convite_ipa' ou 'relatorio_ipa'),
+     assunto, total e destinatarios[] — cada um com nome, email, link
+     (exclusivo) e html (e-mail pronto; no relatorio_ipa vai também
+     link_pdf, que baixa o PDF automaticamente).
   3. No fluxo: nó "Split Out" (campo destinatarios) → nó de e-mail
      (Gmail/SMTP), mapeando Para={{email}}, Assunto={{$json.assunto do
      webhook}}, HTML={{html}}. Pronto.
   4. Segurança (opcional): defina N8N_TOKEN no config.php e valide no
      n8n o cabeçalho X-Ipa-Token no início do fluxo.
+
+RELATÓRIOS: RESUMIDO + COMPLETO, EM PDF DIRETO
+  - Logo após o preenchimento o funcionário vê o RELATÓRIO RESUMIDO
+    (1 página, estilo dashboard): estilo predominante, Flexível/Não
+    flexível, tabelas e gráficos — sem informações de desenvolvimento.
+    Ele aparece NA HORA, sem esperar a IA.
+  - O RELATÓRIO COMPLETO (textos 100% da IA + anexo com a síntese dos
+    4 estilos) é escrito em segundo plano e, quando pronto, fica
+    disponível: na tela ("Ver completo"), em PDF, pelo link arquivado
+    e por e-mail (botão "📧 Relatório" na área do gestor, via n8n).
+  - PDF DIRETO (sem diálogo de impressão): cores, gráficos e layout
+    preservados. Bibliotecas locais em js/vendor/ (jsPDF + html2canvas)
+    — suba a pasta js/vendor/ junto com o projeto.
+  - Nomes dos arquivos (data e hora do Brasil):
+      Organização-Nome do Funcionário-dd-mm-aaaa HHhMM-Resumido.pdf
+      Organização-Nome do Funcionário-dd-mm-aaaa HHhMM-Completo.pdf
+    (na produção, a Visão Coletiva do admin baixa como
+      Organização-análise da equipe-dd-mm-aaaa HHhMM.pdf)
+    Acentos são removidos do NOME DO ARQUIVO por compatibilidade.
+  - Nos relatórios arquivados, o link "…&pdf=1" baixa o PDF
+    automaticamente; sem o parâmetro, a página abre com um botão
+    flutuante "⬇️ Baixar PDF".
 
 RELATÓRIO INSTANTÂNEO (velocidade)
   - Como na produção: ao enviar as respostas, o relatório aparece NA HORA
@@ -66,3 +90,11 @@ TESTES SEM CUSTO
   - IA_SIMULADA = true gera textos fictícios sem chamar a IA.
   - EMAIL_SIMULADO = true conta os envios sem chamar o n8n.
   (Em produção da homologação, deixe os dois como false.)
+
+ATENÇÃO AO ATUALIZAR NO SERVIDOR
+  - Suba a pasta homologacao/ INTEIRA (inclusive gestor/index.html e
+    js/vendor/) — a página do gestor contém, numa página só: login,
+    cadastro de funcionários, envio de convites, lista com relatórios
+    e contas de acesso. Se o cartão "Cadastrar funcionário" não
+    aparecer, o arquivo gestor/index.html no servidor está antigo:
+    reenvie-o e recarregue com Ctrl+F5 (limpa o cache do navegador).

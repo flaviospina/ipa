@@ -107,7 +107,15 @@
             .card, table, .est-bar-row { break-inside:avoid; }
             h3.est { break-after:avoid; }
         }
-    </style>
+            /* PdfGen (PDF direto) */
+        .pdfgen-aviso { position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:99999;
+            background:#16213a; color:#fff; font-weight:700; font-size:14px; padding:13px 22px; border-radius:999px;
+            display:flex; align-items:center; gap:10px; box-shadow:0 14px 34px -12px rgba(22,33,58,.6); }
+        .pdfgen-spin { width:17px; height:17px; border:2.5px solid rgba(255,255,255,.35); border-top-color:#fff;
+            border-radius:50%; animation:pdfspin .8s linear infinite; display:inline-block; }
+        @keyframes pdfspin { to { transform:rotate(360deg); } }
+        .pdfgen-area .no-print { display:none !important; }
+</style>
 </head>
 <body>
     <div class="top">
@@ -225,14 +233,14 @@
                 <h2 id="rel-titulo">Profissionais</h2>
                 <table><thead><tr><th>Nome</th><th>Função</th><th>Data</th><th>Predominante</th><th>Perfil</th><th class="center">360°</th><th>Relatório individual</th></tr></thead>
                 <tbody id="tb-rel"><tr><td colspan="7" class="muted">Selecione uma empresa acima.</td></tr></tbody></table>
-                <p class="muted" style="margin:10px 0 0;font-size:12.5px">💡 "Baixar PDF" abre o relatório já com o diálogo de impressão — escolha <strong>Salvar como PDF</strong>.</p>
+                <p class="muted" style="margin:10px 0 0;font-size:12.5px">💡 "Baixar PDF" abre o relatório e baixa o arquivo PDF automaticamente, com cores e gráficos preservados.</p>
             </div>
 
             <!-- ESTUDO COLETIVO (gerado dos dados já carregados; somente leitura) -->
             <div class="card estudo-card hidden" id="card-estudo">
                 <div class="row no-print" style="justify-content:space-between;align-items:center">
                     <h2 style="margin:0" id="estudo-titulo">Visão coletiva</h2>
-                    <div style="flex:0"><button class="btn btn-sm" onclick="window.print()">Baixar estudo em PDF</button></div>
+                    <div style="flex:0"><button class="btn btn-sm" onclick="Admin.baixarEstudoPDF()">Baixar estudo em PDF</button></div>
                 </div>
                 <div id="estudo-corpo"></div>
             </div>
@@ -265,10 +273,21 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+    <script src="../webapp/js/vendor/jspdf.umd.min.js"></script>
+    <script src="../webapp/js/vendor/html2canvas.min.js"></script>
+    <script src="../webapp/js/pdf.js?v=12"></script>
     <script src="../webapp/js/msg.js"></script>
     <script>
     const API = '../api/admin.php';
     const Admin = {
+        /* Visão coletiva em PDF direto:
+           "Organização-análise da equipe-dd-mm-aaaa HHhMM.pdf" */
+        baixarEstudoPDF() {
+            const corpo = document.getElementById('estudo-corpo');
+            if (!corpo || !corpo.innerHTML.trim()) return;
+            PdfGen.baixarComAviso(corpo,
+                PdfGen.nome([this.estudoEmpresa || 'IPA', 'análise da equipe', PdfGen.dataBR()]), { fluxo: true });
+        },
         csrf: '',
         async post(body) {
             const r = await fetch(API, { method: 'POST', credentials: 'same-origin',
@@ -496,7 +515,7 @@
                 <td class="center">${n360[x.nome] || 0}</td>
                 <td style="white-space:nowrap">${x.link
                     ? `<a href="${x.link}" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Abrir →</a>
-                       &nbsp;·&nbsp;<a href="${x.link}&print=1" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Baixar PDF ⤓</a>`
+                       &nbsp;·&nbsp;<a href="${x.link}&pdf=1" target="_blank" rel="noopener" style="color:var(--accent);font-weight:700">Baixar PDF ⤓</a>`
                     : '<span class="muted">sem relatório arquivado</span>'}</td>
             </tr>`).join('') : '<tr><td colspan="7" class="muted">Nenhum profissional desta empresa respondeu o IPA ainda.</td></tr>';
             this.renderEstudo(r);
@@ -511,6 +530,7 @@
             if (!f.length) { card.classList.add('hidden'); return; }
             card.classList.remove('hidden');
             document.getElementById('estudo-titulo').textContent = 'Visão coletiva — ' + r.empresa.nome;
+            this.estudoEmpresa = r.empresa.nome;
 
             const K = ['A', 'C', 'P', 'E'];
             const NOMES = { A: 'Atenção', C: 'Comunicação', P: 'Procedimento', E: 'Equilibrado' };
