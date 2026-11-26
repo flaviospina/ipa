@@ -145,6 +145,23 @@
             <p class="muted" style="margin:10px 0 0">Cada funcionário recebe o próprio link exclusivo. O envio individual está disponível na lista abaixo, linha a linha.</p>
         </div>
 
+        <div class="card">
+            <h2>📬 Entrega do relatório completo</h2>
+            <p class="muted" style="margin:0 0 10px">O <strong>relatório resumido</strong> é sempre gerado na hora, na tela do funcionário.
+            Aqui você define como o <strong>relatório completo</strong> chega até ele:</p>
+            <label style="display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:0 0 10px;cursor:pointer">
+                <input type="radio" name="cfg-rel" value="auto" style="width:auto;margin-top:3px" onchange="Gestor.salvarConfig()">
+                <span><strong>Automaticamente, por e-mail, ao final do preenchimento</strong><br>
+                <span class="muted" style="font-weight:400">Assim que o funcionário conclui o IPA, o sistema envia o relatório completo para o e-mail dele (via n8n), sem você precisar fazer nada.</span></span>
+            </label>
+            <label style="display:flex;gap:10px;align-items:flex-start;font-weight:600;margin:0;cursor:pointer">
+                <input type="radio" name="cfg-rel" value="gestor" style="width:auto;margin-top:3px" onchange="Gestor.salvarConfig()" checked>
+                <span><strong>Somente quando eu enviar</strong><br>
+                <span class="muted" style="font-weight:400">O relatório completo fica arquivado e você decide o momento do envio, pelo botão "📧 Relatório" na lista abaixo (como já funciona hoje).</span></span>
+            </label>
+            <p class="muted" id="cfg-rel-status" style="margin:10px 0 0;font-size:12px"></p>
+        </div>
+
         <div class="card tbl-scroll">
             <h2>Cadastrados</h2>
             <table>
@@ -228,6 +245,28 @@
             document.getElementById('btn-sair').classList.remove('hidden');
             this.recarregar();
             this.recarregarContas();
+            this.carregarConfig();
+        },
+        async carregarConfig() {
+            const r = await this.post({ action: 'gestor_config_get' }).catch(() => null);
+            if (r && r.ok) {
+                const el = document.querySelector(`input[name="cfg-rel"][value="${r.rel_envio}"]`);
+                if (el) el.checked = true;
+            }
+        },
+        async salvarConfig() {
+            const v = (document.querySelector('input[name="cfg-rel"]:checked') || {}).value;
+            if (!v) return;
+            const st = document.getElementById('cfg-rel-status');
+            const r = await this.post({ action: 'gestor_config_set', rel_envio: v }).catch(() => null);
+            if (r && r.ok) {
+                st.textContent = '✓ Preferência salva: ' + (v === 'auto'
+                    ? 'o funcionário recebe o relatório completo por e-mail ao concluir.'
+                    : 'o envio do relatório completo é feito por você, quando quiser.');
+            } else {
+                st.textContent = '⚠ ' + ((r && r.dica) || 'Não foi possível salvar — confira se a migração api/migracao-config.sql foi importada.');
+                this.carregarConfig();
+            }
         },
         async sair() {
             await this.post({ action: 'gestor_logout' }).catch(() => null);

@@ -51,14 +51,37 @@ function hml_csrf(): string {
 }
 function hml_gestor_ok(): bool { return !empty($_SESSION['hml_gestor']); }
 
-/* entrega a lista de destinatários ao webhook do n8n (ou simula em teste) */
-function n8n_disparar(string $evento, string $assunto, array $destinatarios, string $tipo, string $filtro): void {
+/* configuração simples (tabela ipa_hml_config). rel_envio: 'gestor' (padrão —
+   o gestor envia o relatório completo quando quiser) ou 'auto' (o funcionário
+   recebe por e-mail automaticamente ao concluir o preenchimento). */
+function cfg_get(string $chave, string $padrao): string {
+    try {
+        $st = db()->prepare('SELECT valor FROM ipa_hml_config WHERE chave = ? LIMIT 1');
+        $st->execute([$chave]);
+        $v = $st->fetchColumn();
+        return ($v === false || $v === null || $v === '') ? $padrao : (string)$v;
+    } catch (Throwable $e) { return $padrao; }
+}
+function cfg_set(string $chave, string $valor): bool {
+    try {
+        $st = db()->prepare('UPDATE ipa_hml_config SET valor = ? WHERE chave = ?');
+        $st->execute([$valor, $chave]);
+        if (!$st->rowCount()) {
+            db()->prepare('INSERT INTO ipa_hml_config (chave, valor) VALUES (?,?)')->execute([$chave, $valor]);
+        }
+        return true;
+    } catch (Throwable $e) { return false; }
+}
+
+/* entrega a lista de destinatários ao webhook do n8n (ou simula em teste);
+   devolve o resultado SEM encerrar a resposta */
+function n8n_post(string $evento, string $assunto, array $destinatarios, string $tipo, string $filtro): array {
     if (defined('EMAIL_SIMULADO') && EMAIL_SIMULADO) {
-        out(['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'simulado' => true]);
+        return ['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'simulado' => true];
     }
     if (!defined('N8N_WEBHOOK_URL') || N8N_WEBHOOK_URL === '') {
-        out(['ok' => false, 'code' => 'n8n_nao_configurado',
-             'dica' => 'Preencha N8N_WEBHOOK_URL no config.php da homologação.']);
+        return ['ok' => false, 'code' => 'n8n_nao_configurado',
+                'dica' => 'Preencha N8N_WEBHOOK_URL no config.php da homologação.'];
     }
     $payloadN8n = [
         'origem' => 'ipa-homologacao',
@@ -83,10 +106,50 @@ function n8n_disparar(string $evento, string $assunto, array $destinatarios, str
     $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     if ($resp === false || $http < 200 || $http >= 300) {
-        out(['ok' => false, 'code' => 'n8n_falhou',
-             'dica' => 'O webhook do n8n respondeu HTTP ' . (int)$http . '. Verifique se o fluxo está ativo.']);
+        return ['ok' => false, 'code' => 'n8n_falhou',
+                'dica' => 'O webhook do n8n respondeu HTTP ' . (int)$http . '. Verifique se o fluxo está ativo.'];
     }
-    out(['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'via' => 'n8n']);
+    return ['ok' => true, 'enviados' => count($destinatarios), 'falhas' => [], 'via' => 'n8n'];
+}
+function n8n_disparar(string $evento, string $assunto, array $destinatarios, string $tipo, string $filtro): void {
+    out(n8n_post($evento, $assunto, $destinatarios, $tipo, $filtro));
+}
+
+/* base pública dos links (BASE_URL do config ou deduzida da requisição) */
+function base_publica(): string {
+    return (defined('BASE_URL') && BASE_URL !== '')
+        ? rtrim(BASE_URL, '/')
+        : ((!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+           . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/'));
+}
+
+/* e-mail do RELATÓRIO COMPLETO para um funcionário (usado pelo envio manual
+   do gestor e pelo envio automático ao concluir o preenchimento) */
+function email_relatorio(array $f2, string $token): array {
+    $linkVer = base_publica() . '/api/api.php?action=relatorio&token=' . $token;
+    $linkPdf = $linkVer . '&pdf=1';
+    $nomeH = htmlspecialchars($f2['nome'], ENT_QUOTES, 'UTF-8');
+    return [
+        'nome' => $f2['nome'],
+        'email' => $f2['email'],
+        'organizacao' => $f2['organizacao'],
+        'area' => $f2['area_atuacao'],
+        'segmento' => $f2['segmento'],
+        'link' => $linkVer,
+        'link_pdf' => $linkPdf,
+        'html' => '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#16213a">'
+            . '<div style="background:#1e3a8a;color:#fff;border-radius:12px 12px 0 0;padding:18px 24px;font-size:18px;font-weight:bold">IPA — Relatório do Perfil de Atendimento</div>'
+            . '<div style="border:1px solid #e4e8ef;border-top:0;border-radius:0 0 12px 12px;padding:24px">'
+            . '<p>Olá, <strong>' . $nomeH . '</strong>!</p>'
+            . '<p>O seu <strong>relatório completo e personalizado</strong> do IPA está pronto. Ele traz a análise '
+            . 'do seu perfil de atendimento e, ao final, o anexo de consulta com a síntese dos 4 estilos da Abordagem ACP.</p>'
+            . '<p style="text-align:center;margin:26px 0">'
+            . '<a href="' . $linkVer . '" style="background:#2952cc;color:#fff;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:bold">Abrir o relatório</a>'
+            . '&nbsp;&nbsp;<a href="' . $linkPdf . '" style="background:#0e9f6e;color:#fff;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:bold">Baixar em PDF</a></p>'
+            . '<p style="font-size:13px;color:#4b5772">Se os botões não funcionarem, copie e cole este endereço no navegador:<br>' . $linkVer . '</p>'
+            . '<p style="font-size:12px;color:#8a94ab">Este link é pessoal. Seus dados são tratados conforme a LGPD.</p>'
+            . '</div></div>',
+    ];
 }
 
 const VERSAO = 'HML-1';
@@ -464,7 +527,7 @@ try {
 
     if (strpos($action, 'gestor_') === 0) {
         if (!hml_gestor_ok()) out(['ok' => false, 'code' => 'nao_autorizado']);
-        if (!in_array($action, ['gestor_func_list', 'gestor_conta_list'], true)
+        if (!in_array($action, ['gestor_func_list', 'gestor_conta_list', 'gestor_config_get'], true)
             && !hash_equals($_SESSION['csrf'] ?? '', (string)($data['csrf'] ?? ''))) {
             out(['ok' => false, 'code' => 'csrf_invalido']);
         }
@@ -601,37 +664,20 @@ try {
             if (!$f2) out(['ok' => false, 'code' => 'nao_encontrado']);
             if (empty($f2['token_rel'])) out(['ok' => false, 'code' => 'sem_relatorio',
                 'dica' => 'O relatório completo deste funcionário ainda não foi arquivado — ele precisa concluir o preenchimento com a página aberta até o aviso de pronto.']);
+            n8n_disparar('relatorio_ipa', 'Seu Relatório IPA completo — Perfil de Atendimento',
+                [email_relatorio($f2, $f2['token_rel'])], 'individual', '');
+        }
 
-            $base = (defined('BASE_URL') && BASE_URL !== '')
-                ? rtrim(BASE_URL, '/')
-                : ((!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-                   . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/'));
-            $linkVer = $base . '/api/api.php?action=relatorio&token=' . $f2['token_rel'];
-            $linkPdf = $linkVer . '&pdf=1';
-            $nomeH = htmlspecialchars($f2['nome'], ENT_QUOTES, 'UTF-8');
-            $assunto = 'Seu Relatório IPA completo — Perfil de Atendimento';
-            $destinatarios = [[
-                'nome' => $f2['nome'],
-                'email' => $f2['email'],
-                'organizacao' => $f2['organizacao'],
-                'area' => $f2['area_atuacao'],
-                'segmento' => $f2['segmento'],
-                'link' => $linkVer,
-                'link_pdf' => $linkPdf,
-                'html' => '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#16213a">'
-                    . '<div style="background:#1e3a8a;color:#fff;border-radius:12px 12px 0 0;padding:18px 24px;font-size:18px;font-weight:bold">IPA — Relatório do Perfil de Atendimento</div>'
-                    . '<div style="border:1px solid #e4e8ef;border-top:0;border-radius:0 0 12px 12px;padding:24px">'
-                    . '<p>Olá, <strong>' . $nomeH . '</strong>!</p>'
-                    . '<p>O seu <strong>relatório completo e personalizado</strong> do IPA está pronto. Ele traz a análise '
-                    . 'redigida especialmente para você e, ao final, o anexo de consulta com a síntese dos 4 estilos da Abordagem ACP.</p>'
-                    . '<p style="text-align:center;margin:26px 0">'
-                    . '<a href="' . $linkVer . '" style="background:#2952cc;color:#fff;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:bold">Abrir o relatório</a>'
-                    . '&nbsp;&nbsp;<a href="' . $linkPdf . '" style="background:#0e9f6e;color:#fff;text-decoration:none;padding:13px 24px;border-radius:10px;font-weight:bold">Baixar em PDF</a></p>'
-                    . '<p style="font-size:13px;color:#4b5772">Se os botões não funcionarem, copie e cole este endereço no navegador:<br>' . $linkVer . '</p>'
-                    . '<p style="font-size:12px;color:#8a94ab">Este link é pessoal. Seus dados são tratados conforme a LGPD.</p>'
-                    . '</div></div>',
-            ]];
-            n8n_disparar('relatorio_ipa', $assunto, $destinatarios, 'individual', '');
+        /* configuração de entrega do relatório completo */
+        if ($action === 'gestor_config_get') {
+            out(['ok' => true, 'rel_envio' => cfg_get('rel_envio', 'gestor')]);
+        }
+        if ($action === 'gestor_config_set') {
+            $v = (string)($data['rel_envio'] ?? '');
+            if (!in_array($v, ['auto', 'gestor'], true)) out(['ok' => false, 'code' => 'valor_invalido']);
+            if (!cfg_set('rel_envio', $v)) out(['ok' => false, 'code' => 'config_tabela_ausente',
+                'dica' => 'A tabela ipa_hml_config ainda não existe — importe api/migracao-config.sql no phpMyAdmin.']);
+            out(['ok' => true, 'rel_envio' => $v]);
         }
 
         out(['ok' => false, 'code' => 'acao_desconhecida']);
@@ -666,7 +712,35 @@ try {
         if (strlen($html) > MAX_RELATORIO_BYTES) out(['ok' => false, 'code' => 'too_large']);
         $st = db()->prepare('UPDATE ipa_respostas SET relatorio = ? WHERE cliente_id = ?');
         $st->execute([$html, $cid]);
-        out(['ok' => $st->rowCount() > 0, 'code' => $st->rowCount() > 0 ? 'archived' : 'not_found']);
+        $okArq = $st->rowCount() > 0;
+        $resposta = ['ok' => $okArq, 'code' => $okArq ? 'archived' : 'not_found'];
+
+        /* envio AUTOMÁTICO do relatório completo ao funcionário, se o gestor
+           configurou assim (rel_envio = 'auto'). Dispara uma única vez. */
+        if ($okArq && !empty($data['notificar']) && cfg_get('rel_envio', 'gestor') === 'auto') {
+            try {
+                $st = db()->prepare(
+                    "SELECT r.token, r.funcionario_id, r.rel_email_em,
+                            f.nome, f.email, f.organizacao, f.area_atuacao, f.segmento
+                     FROM ipa_respostas r JOIN ipa_funcionarios f ON f.id = r.funcionario_id
+                     WHERE r.cliente_id = ? LIMIT 1");
+                $st->execute([$cid]);
+                $rf = $st->fetch();
+                if ($rf && empty($rf['rel_email_em'])) {
+                    $envio = n8n_post('relatorio_ipa', 'Seu Relatório IPA completo — Perfil de Atendimento',
+                        [email_relatorio($rf, $rf['token'])], 'automatico', '');
+                    if (!empty($envio['ok'])) {
+                        db()->prepare('UPDATE ipa_respostas SET rel_email_em = ? WHERE cliente_id = ?')
+                            ->execute([gmdate('Y-m-d H:i:s'), $cid]);
+                        $resposta['email_auto'] = 'enviado';
+                        if (!empty($envio['simulado'])) $resposta['email_auto'] = 'simulado';
+                    } else {
+                        $resposta['email_auto'] = 'falhou';
+                    }
+                }
+            } catch (Throwable $e) { $resposta['email_auto'] = 'indisponivel'; }
+        }
+        out($resposta);
     }
 
     /* ----- registro do diagnóstico (com a regra dos 6 meses) ----- */

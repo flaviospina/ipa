@@ -241,12 +241,60 @@ const App = {
                 motivo + ' Suas respostas ficaram salvas neste navegador — recarregue a página para reenviar.');
             return;
         }
-        // Relatório instantâneo (como na produção): estrutura, números e
-        // gráficos aparecem NA HORA; os textos da IA preenchem em seguida.
+        // Tudo NA HORA: o resumido aparece na tela e o relatório completo
+        // (mesmo modelo da produção + anexo dos 4 estilos) já é montado e
+        // arquivado. A IA acrescenta a análise personalizada em segundo plano.
         this.ultimoId = id;
         this.ultimoR = r;
+        this.iaTextos = null;
+        this.montarCompleto();
         this.mostrarRelatorioParcial(r);
+        this.arquivarCompleto(id, true); // notificar=1: e-mail automático, se o gestor configurou
+        this.dialogoFinal(r, false);
         this.gerarIA(id, r);
+    },
+
+    /* COMPLETO = modelo do relatório individual da produção + anexo dos 4
+       estilos. Quando a IA responde, os blocos de análise personalizada
+       entram no mesmo modelo. */
+    montarCompleto() {
+        const ia = this.iaTextos || {};
+        const junta = (...t) => t.filter(Boolean).join('\n\n');
+        const mapa = {
+            interpretacao: junta(ia.f4_predominante, ia.f4_secundario),
+            momentos: junta(ia.f5_momentos, ia.f5_grafico),
+            talentos: ia.f6_talentos || '',
+            desenvolvimento: ia.f6_desenvolver || '',
+            recomendacoes: ia.f7_recomendacoes || '',
+            conclusao: ia.conclusao || ''
+        };
+        this.completoHtml = Engine.renderRelatorio(this.state.dados, this.ultimoR, mapa) + Engine.anexoEstilos();
+        if (this.vista === 'completo') {
+            const area = document.getElementById('rel-area');
+            if (area) area.innerHTML = this.completoHtml;
+        }
+    },
+
+    /* arquiva o completo no servidor (o link do gestor/e-mail sempre serve a
+       versão mais recente). notificar=true: o servidor dispara o e-mail
+       automático ao funcionário, se o gestor tiver configurado assim. */
+    async arquivarCompleto(id, notificar) {
+        const ind = document.getElementById('sync-indicator');
+        const standalone = await Engine.relatorioStandalone(this.completoHtml, this.state.dados);
+        const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id,
+                       relatorio: standalone, notificar: notificar ? 1 : 0, website: '' };
+        const out2 = await this.send(arch);
+        if (out2 && out2.ok === true) {
+            ind.className = 'sync-indicator ok';
+            ind.textContent = out2.email_auto === 'enviado'
+                ? '✓ Relatório arquivado · completo enviado por e-mail'
+                : '✓ Relatório pronto e arquivado';
+        } else {
+            this.enqueue(arch);
+            ind.className = 'sync-indicator ok';
+            ind.textContent = '✓ Relatório pronto (o arquivamento será reenviado automaticamente)';
+        }
+        return out2;
     },
 
     /* renderiza o RELATÓRIO RESUMIDO (1 página) na hora + banner de progresso
@@ -261,16 +309,19 @@ const App = {
 
     bannerEscrevendo() {
         return `<div class="ia-banner-in">
-            <div class="spinner spinner-sm" aria-hidden="true"></div>
-            <div class="ia-banner-txt">
-                <strong>Seu relatório resumido está pronto abaixo — a IA está escrevendo o relatório completo…</strong>
-                <span class="muted" id="ia-etapa">Preparando…</span>
+            <div class="ia-banner-txt" id="ia-banner-status">
+                <strong>✅ Relatório pronto! O resumido está abaixo e o completo já pode ser baixado.</strong>
+                <span class="muted">A IA está acrescentando a análise personalizada ao relatório completo — ela entra sozinha, sem você precisar fazer nada.</span>
             </div>
-            <div class="ia-banner-cron" id="ia-cronometro">00:00</div>
-            <button class="btn btn-ghost btn-sm" onclick="App.baixarResumido()">📄 Resumido em PDF</button>
-        </div>
-        <p class="muted ia-banner-nota">O resumo abaixo já é definitivo e pode ser baixado em PDF. O relatório completo
-        (análise personalizada pela IA + anexo dos 4 estilos) chega sozinho em instantes — <strong>não feche esta página</strong>.</p>`;
+            <button class="btn btn-ghost btn-sm" onclick="App.baixarResumido()">📄 Resumido (PDF)</button>
+            <button class="btn btn-primary btn-sm" onclick="App.baixarCompleto()">📄 Completo (PDF)</button>
+            <button class="btn btn-ghost btn-sm" id="btn-vista" onclick="App.alternarVista()">Ver completo</button>
+        </div>`;
+    },
+
+    bannerStatus(html) {
+        const el = document.getElementById('ia-banner-status');
+        if (el) el.innerHTML = html;
     },
 
     bannerSet(html) {
@@ -329,37 +380,18 @@ const App = {
             <button class="btn btn-primary" onclick="App.tentarIA()">Tentar novamente</button></div>`;
     },
 
-    /* geração dos textos do relatório pela IA (com nova tentativa manual) */
+    /* enriquecimento pela IA (análise personalizada no modelo da produção).
+       O relatório completo já existe — aqui só acrescentamos os blocos. */
     async gerarIA(id, r) {
         this.ultimoId = id;
         this.ultimoR = r;
-        const ind = document.getElementById('sync-indicator');
-        const st = document.getElementById('ia-status');
-        if (st) st.textContent = 'Respostas registradas. A IA está escrevendo o seu relatório personalizado…';
-        ind.className = 'sync-indicator pending';
-        ind.textContent = 'Gerando o relatório com a IA…';
-
-        this.iniciarCronometro();
         const out = await this.send({ schema: IPA_CONFIG.SCHEMA_VERSION, action: 'ia', id, website: '' });
-        this.pararCronometro();
         if (!out || out.ok !== true || !out.ia) {
-            // alta demanda OU conexão encerrada no meio: re-tenta sozinho (até 6 vezes).
-            // Se o servidor tiver concluído nesse meio-tempo, a re-tentativa pega o
-            // relatório pronto do cache instantaneamente.
             const reTentavel = !out || out.code === 'ia_ocupada' || out.code === 'ia_sem_conexao';
             if (reTentavel && (this.autoTentativas = (this.autoTentativas || 0) + 1) <= 6) {
-                ind.className = 'sync-indicator pending';
-                ind.textContent = 'Nova tentativa automática em instantes…';
-                const semResposta = !out || out.code === 'ia_sem_conexao';
-                const segundos = semResposta ? 12 : 20 + 8 * this.autoTentativas;
-                this.bannerSet(`<div class="ia-banner-in">
-                    <div class="spinner spinner-sm" aria-hidden="true"></div>
-                    <div class="ia-banner-txt">
-                        <strong>${semResposta ? 'A resposta da IA demorou — verificando se o texto já ficou pronto…' : 'A IA está com alta demanda (pico no serviço do Google)…'}</strong>
-                        <span class="muted">Nova verificação automática em <strong id="ia-contagem">${segundos}</strong> s (tentativa ${this.autoTentativas} de 6).
-                        O relatório abaixo já está pronto — só os textos personalizados estão pendentes.</span>
-                    </div>
-                    <button class="btn btn-ghost btn-sm" onclick="App.tentarIA()">Tentar agora</button></div>`);
+                const segundos = (!out || out.code === 'ia_sem_conexao') ? 15 : 20 + 10 * this.autoTentativas;
+                this.bannerStatus(`<strong>✅ Relatório pronto! O resumido está abaixo e o completo já pode ser baixado.</strong>
+                    <span class="muted">A análise personalizada da IA será acrescentada em instantes (nova tentativa em <strong id="ia-contagem">${segundos}</strong> s)…</span>`);
                 let restante = segundos;
                 this.contagemIA = setInterval(() => {
                     restante--;
@@ -369,44 +401,16 @@ const App = {
                 }, 1000);
                 return;
             }
-            ind.className = 'sync-indicator err';
-            ind.textContent = 'Falha na geração dos textos pela IA.';
-            this.bannerSet(`<div class="ia-banner-in ia-banner-err">
-                <div class="ia-banner-txt">
-                    <strong>Não foi possível gerar os textos personalizados agora.</strong>
-                    <span class="muted">${((out && out.dica) ? String(out.dica).replace(/[<>]/g, '') + ' ' : '')}Suas respostas e o relatório abaixo estão registrados com segurança.</span>
-                </div>
-                <button class="btn btn-primary btn-sm" onclick="App.tentarIA()">Tentar novamente</button></div>`);
+            this.bannerStatus(`<strong>✅ Relatório completo disponível.</strong>
+                <span class="muted">A análise personalizada da IA não pôde ser incluída agora — o relatório já está completo mesmo assim, e o gestor poderá reenviá-lo depois.</span>`);
             return;
         }
         this.autoTentativas = 0;
-
-        /* monta o relatório COMPLETO (textos da IA + anexo dos 4 estilos);
-           a tela continua no resumido — o completo fica disponível em PDF,
-           pelo link arquivado e para visualização */
-        this.completoHtml = Engine.renderRelatorioIA(this.state.dados, r, out.ia);
-        this.bannerSet(`<div class="ia-banner-in">
-            <div class="ia-banner-txt">
-                <strong>✅ Relatório completo pronto!</strong>
-                <span class="muted">Análise personalizada pela IA + anexo de consulta dos 4 estilos.</span>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="App.baixarResumido()">📄 Resumido (PDF)</button>
-            <button class="btn btn-primary btn-sm" onclick="App.baixarCompleto()">📄 Completo (PDF)</button>
-            <button class="btn btn-ghost btn-sm" id="btn-vista" onclick="App.alternarVista()">Ver completo</button></div>`);
-        ind.textContent = '✓ Relatório escrito pela IA · arquivando…';
-
-        const standalone = await Engine.relatorioStandalone(this.completoHtml, this.state.dados);
-        const arch = { schema: IPA_CONFIG.SCHEMA_VERSION, action: 'relatorio', id, relatorio: standalone, website: '' };
-        const out2 = await this.send(arch);
-        if (out2 && out2.ok === true) {
-            ind.className = 'sync-indicator ok';
-            ind.textContent = '✓ Relatório personalizado gerado pela IA e arquivado';
-        } else {
-            this.enqueue(arch);
-            ind.className = 'sync-indicator ok';
-            ind.textContent = '✓ Relatório gerado (o arquivamento será reenviado automaticamente)';
-        }
-        this.dialogoFinal(r, true);
+        this.iaTextos = out.ia;
+        this.montarCompleto();
+        this.arquivarCompleto(id, false); // re-arquiva a versão enriquecida (sem novo e-mail)
+        this.bannerStatus(`<strong>✦ Análise personalizada da IA incluída no relatório completo!</strong>
+            <span class="muted">Baixe o PDF novamente ou toque em "Ver completo" para ler a análise.</span>`);
     },
 
     /* ---------- PDF direto (nome modelo) e alternância resumo/completo ---------- */
@@ -419,10 +423,7 @@ const App = {
             this.nomePDF('Resumido'), { ajustarPagina: true });
     },
     baixarCompleto() {
-        if (!this.completoHtml) {
-            return Msg.fire({ icon: 'info', titulo: 'Quase lá',
-                html: 'O relatório completo ainda está sendo escrito pela IA — aguarde o aviso de pronto no topo da página.' });
-        }
+        if (!this.completoHtml) return;
         PdfGen.baixarComAviso(this.completoHtml, this.nomePDF('Completo'));
     },
     baixarPDFAtual() {
@@ -448,7 +449,8 @@ const App = {
     tentarIA() {
         if (this.contagemIA) { clearInterval(this.contagemIA); this.contagemIA = null; }
         if (!this.ultimoId || !this.ultimoR) { location.reload(); return; }
-        this.bannerSet(this.bannerEscrevendo());
+        this.bannerStatus(`<strong>✅ Relatório pronto!</strong>
+            <span class="muted">Consultando a IA para a análise personalizada…</span>`);
         this.gerarIA(this.ultimoId, this.ultimoR);
     },
 
@@ -480,7 +482,7 @@ const App = {
                    Seu estilo predominante é
                    <strong style="color:${pred.cor}">${pred.nome}</strong>
                    (${pred.pontos} pontos · ${pred.pct.toFixed(1)}%).` +
-                  (comIA ? '<br>O relatório completo inclui a análise personalizada da IA e o anexo dos 4 estilos.' : ''),
+                  '<br>O relatório completo (modelo integral + anexo dos 4 estilos) já está disponível; a análise personalizada da IA entra nele automaticamente em instantes.',
             confirmText: '📄 Resumido (PDF)',
             denyText: '📄 Completo (PDF)',
             cancelText: 'Ver no site'

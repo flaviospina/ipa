@@ -726,70 +726,68 @@ Engine.anexoEstilos = function () {
    ============================================================ */
 Engine.renderResumo = function (dados, r) {
     const pred = r.ranking[0];
-    const dataFmt = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const agora = new Date();
+    const dataFmt = agora.toLocaleDateString('pt-BR') + ' ' +
+        agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const flexivel = r.regra !== 'FORTE_APEGO';
     const nomeRegra = { FORTE_APEGO: 'Forte apego ao estilo predominante', FLEXIVEL: 'Perfil flexível',
                         EQUILIBRADO_NATURAL: 'Equilíbrio natural', EQUILIBRADO_MODELO: 'Equilibrado modelo' }[r.regra] || '';
 
-    const tabela = r.ranking.map((s, i) => `<tr class="${i === 0 ? 'hl' : ''}">
+    /* tabela "Pontuação por estilo" (ordem decrescente — o ranking) */
+    const tabela = r.ranking.map((s, i2) => `<tr class="${i2 === 0 ? 'hl' : ''}">
         <td><span class="chart-label"><span class="chart-swatch" style="background:${s.cor}"></span>${esc(s.curto)}</span></td>
         <td class="num">${s.pontos}</td><td class="num">${s.pct.toFixed(1)}%</td>
-        <td class="num">${i === 0 ? '—' : '−' + r.difs[i - 1]}</td></tr>`).join('');
+        <td class="num">${i2 === 0 ? '—' : '−' + r.difs[i2 - 1]}</td></tr>`).join('');
 
-    const matrizLinhas = ['A', 'C', 'P', 'E'].map(k => {
+    /* "Estilos em cada momento" — MESMA ORDEM da tabela de pontuação */
+    const matrizLinhas = r.ranking.map(s => {
+        const k = s.key;
         const vals = [1, 2, 3].map(q => r.porMomento[q][k]);
-        return `<tr><td><span class="chart-label"><span class="chart-swatch" style="background:${ACP.STYLES[k].cor}"></span>${ACP.STYLES[k].curto}</span></td>
-            ${vals.map((v, i) => `<td class="num${v === Math.max(...['A','C','P','E'].map(x => r.porMomento[i+1][x])) ? ' hl-cell' : ''}">${v}</td>`).join('')}
+        return `<tr><td><span class="chart-label"><span class="chart-swatch" style="background:${s.cor}"></span>${esc(s.curto)}</span></td>
+            ${vals.map((v, i2) => `<td class="num${v === Math.max(...['A','C','P','E'].map(x => r.porMomento[i2+1][x])) ? ' hl-cell' : ''}">${v}</td>`).join('')}
             <td class="num tot-col">${r.totais[k]}</td></tr>`;
     }).join('');
 
-    const momentos = [
-        { q: 1, nome: 'Início', esp: 'A' },
-        { q: 2, nome: 'Durante', esp: 'P' },
-        { q: 3, nome: 'Término', esp: 'C' }
-    ].map(m => {
-        const maior = ['A', 'C', 'P', 'E'].reduce((a, b) => r.porMomento[m.q][a] >= r.porMomento[m.q][b] ? a : b);
-        const ok = maior === m.esp;
-        return `<div class="rz-mom ${ok ? 'rz-mom-ok' : 'rz-mom-alerta'}">
-            <div class="rz-mom-nome">${m.nome}</div>
-            <div class="rz-mom-maior"><span class="chart-swatch" style="background:${ACP.STYLES[maior].cor}"></span>${ACP.STYLES[maior].curto} · ${r.porMomento[m.q][maior]} pts</div>
-            <div class="rz-mom-status">${ok ? '✓ alinhado ao que o momento tipicamente pede' : 'o momento tipicamente pede destaque em ' + ACP.STYLES[m.esp].curto}</div>
-        </div>`;
-    }).join('');
+    /* descrições do sistema: estilo predominante + flexibilidade */
+    const descEstilo = (SINTESES_ESTILOS[pred.key] || {}).intro || '';
 
     return `<div class="rz-page">
-        <div class="rz-head">
-            <div class="rp-logo rz-logo">IPA</div>
-            <div class="rz-head-tit">
+        <div class="rz-top">
+            <div class="rz-top-c">
                 <h2>Relatório Resumido · Perfil de Atendimento</h2>
                 <div class="rz-head-sub">Abordagem ACP · Indicador do Perfil de Atendimento</div>
+                <div class="rz-empresa">${esc(dados.org)}</div>
             </div>
-            <div class="rz-head-meta">
-                <strong>${esc(dados.nome)}</strong><br>${esc(dados.org)}<br>${dataFmt}
-            </div>
+            <div class="rz-data">${dataFmt}</div>
         </div>
-        <div class="rz-grid">
-            <div class="rz-hero" style="background:${pred.cor}">
-                <div class="h-label">Estilo predominante</div>
-                <div class="h-name">${esc(ACP.PERFIS[pred.key].titulo)}</div>
-                <div class="h-pts">${pred.pontos} pontos · ${pred.pct.toFixed(1)}% de ${r.total}</div>
-            </div>
-            <div class="rz-flex ${flexivel ? 'rz-flex-sim' : 'rz-flex-nao'}">
-                <div class="rz-flex-badge">${flexivel ? 'FLEXÍVEL' : 'NÃO FLEXÍVEL'}</div>
-                <div class="rz-flex-nome">${esc(nomeRegra)}</div>
-                <div class="rz-flex-det">Diferença 1º → 2º estilo: <strong>${r.difs[0]} pontos</strong> (critério: 15)</div>
-            </div>
+        <div class="rz-ident">
+            <div>${esc(dados.nome)}</div>
+            <div>${esc(dados.funcao || '')}</div>
         </div>
-        <div class="rz-grid">
-            <div class="rz-col">
+        <div class="rz-grid rz-main">
+            <div class="rz-col rz-col-esq">
+                <p class="rz-desc">${esc(descEstilo)}</p>
+                <div class="rz-pie">${pieChart(r.ranking, r.total)}</div>
+                <p class="rz-desc">${r.diagnostico}</p>
+            </div>
+            <div class="rz-col rz-col-dir">
+                <div class="rz-hero" style="background:${pred.cor}">
+                    <div class="h-label">Estilo predominante</div>
+                    <div class="h-name">${esc(ACP.PERFIS[pred.key].titulo)}</div>
+                    <div class="h-pts">${pred.pontos} pontos · ${pred.pct.toFixed(1)}% de ${r.total}</div>
+                </div>
                 <h4>Pontuação por estilo</h4>
                 <table class="rp-table rp-table-sm">
                     <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Dif.</th></tr></thead>
                     <tbody>${tabela}</tbody></table>
+                <div class="rz-flex ${flexivel ? 'rz-flex-sim' : 'rz-flex-nao'}">
+                    <div class="rz-flex-badge">${flexivel ? 'FLEXÍVEL' : 'NÃO FLEXÍVEL'}</div>
+                    <div class="rz-flex-nome">${esc(nomeRegra)}</div>
+                    <div class="rz-flex-det">Diferença 1º → 2º estilo: <strong>${r.difs[0]} pontos</strong> (critério: 15)</div>
+                </div>
             </div>
-            <div class="rz-col rz-pie">${pieChart(r.ranking, r.total)}</div>
         </div>
+        <h3 class="rz-mid">Distribuição das suas preferências em cada momento do atendimento</h3>
         <div class="rz-grid">
             <div class="rz-col">
                 <h4>Estilos em cada momento</h4>
@@ -802,10 +800,8 @@ Engine.renderResumo = function (dados, r) {
                 <div class="rz-line">${lineChartMomentos(r.porMomento)}</div>
             </div>
         </div>
-        <h4>Leitura por momento do atendimento</h4>
-        <div class="rz-moms">${momentos}</div>
         <p class="rz-nota">Este é o resumo do seu IPA. O <strong>relatório completo e personalizado</strong>,
-        com a análise redigida por IA e o anexo de consulta dos 4 estilos, é disponibilizado
-        pelo gestor — por e-mail, link ou arquivo PDF.</p>
+        com a análise detalhada do seu perfil e o anexo de consulta dos 4 estilos,
+        é disponibilizado pelo gestor, por e-mail.</p>
     </div>`;
 };

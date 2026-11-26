@@ -20,7 +20,7 @@ INSTALAÇÃO
      banco, GEMINI_API_KEY (aistudio.google.com/apikey), GESTOR_KEY,
      N8N_WEBHOOK_URL (abaixo) e BASE_URL (endereço público da pasta).
   3. Já tem o banco antigo? Importe TAMBÉM api/migracao-login-gestor.sql
-     (cria só a tabela ipa_gestores — não mexe em nada existente).
+     e api/migracao-config.sql (aditivas — não mexem em nada existente).
   4. Teste: homologacao/api/api.php?action=status → banco ok,
      referencias: 5, ia: gemini-3.8-flash.
 
@@ -53,6 +53,19 @@ INTEGRAÇÃO N8N (envio dos e-mails)
      n8n o cabeçalho X-Ipa-Token no início do fluxo.
 
 RELATÓRIOS: RESUMIDO + COMPLETO, EM PDF DIRETO
+  - NOVO (26/nov): o Resumido segue o modelo de 1 página do Zuvela
+    (descrição do estilo + pizza + descrição de flexibilidade à esquerda;
+    estilo predominante, pontuação por estilo e selo Flexível/Não
+    flexível à direita; momentos abaixo, na MESMA ORDEM da tabela de
+    pontuação). O Completo usa o MESMO MODELO do relatório individual
+    da produção (Fases 1 a 8) + anexo dos 4 estilos, fica pronto NA
+    HORA, e a análise personalizada da IA entra nele automaticamente
+    assim que o Gemini responde (sem travar nada se demorar).
+  - ENTREGA DO COMPLETO: configurável na área do gestor (cartão
+    "📬 Entrega do relatório completo"): automaticamente por e-mail ao
+    final do preenchimento, OU somente quando o gestor enviar (botão
+    "📧 Relatório"). Requer importar api/migracao-config.sql.
+
   - Logo após o preenchimento o funcionário vê o RELATÓRIO RESUMIDO
     (1 página, estilo dashboard): estilo predominante, Flexível/Não
     flexível, tabelas e gráficos — sem informações de desenvolvimento.
