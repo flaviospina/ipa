@@ -739,6 +739,15 @@ Engine.renderResumo = function (dados, r) {
         <td class="num">${s.pontos}</td><td class="num">${s.pct.toFixed(1)}%</td>
         <td class="num">${i2 === 0 ? '—' : '−' + r.difs[i2 - 1]}</td></tr>`).join('');
 
+    /* "Estilos em cada momento" — MESMA ORDEM da tabela de pontuação */
+    const matrizLinhas = r.ranking.map(s => {
+        const k = s.key;
+        const vals = [1, 2, 3].map(q => r.porMomento[q][k]);
+        return `<tr><td><span class="chart-label"><span class="chart-swatch" style="background:${s.cor}"></span>${esc(s.curto)}</span></td>
+            ${vals.map((v, i2) => `<td class="num${v === Math.max(...['A','C','P','E'].map(x => r.porMomento[i2+1][x])) ? ' hl-cell' : ''}">${v}</td>`).join('')}
+            <td class="num tot-col">${r.totais[k]}</td></tr>`;
+    }).join('');
+
     /* descrições do sistema: estilo predominante + flexibilidade */
     const descEstilo = (SINTESES_ESTILOS[pred.key] || {}).intro || '';
 
@@ -781,9 +790,17 @@ Engine.renderResumo = function (dados, r) {
             </div>
         </div>
         <h3 class="rz-mid">Distribuição das suas preferências em cada momento do atendimento</h3>
-        <div class="rz-traj">
-            <h4>Trajetória nos momentos</h4>
-            <div class="rz-line">${lineChartMomentos(r.porMomento)}</div>
+        <div class="rz-grid">
+            <div class="rz-col">
+                <h4>Estilos em cada momento</h4>
+                <table class="rp-table rp-table-sm rp-matrix">
+                    <thead><tr><th>Estilo</th><th class="num">Q1</th><th class="num">Q2</th><th class="num">Q3</th><th class="num">Total</th></tr></thead>
+                    <tbody>${matrizLinhas}</tbody></table>
+            </div>
+            <div class="rz-col">
+                <h4>Trajetória nos momentos</h4>
+                <div class="rz-line">${lineChartMomentos(r.porMomento)}</div>
+            </div>
         </div>
         <p class="rz-nota">Este é o resumo do seu IPA. O <strong>relatório completo e personalizado</strong>,
         com a análise detalhada do seu perfil e o anexo de consulta dos 4 estilos,
