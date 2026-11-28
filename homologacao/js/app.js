@@ -440,7 +440,8 @@ const App = {
     },
     baixarCompleto() {
         if (!this.completoHtml || !this.podeCompleto()) return;
-        PdfGen.baixarComAviso(this.completoHtml, this.nomePDF('Completo'));
+        PdfGen.baixarComAviso(this.completoHtml, this.nomePDF('Completo'),
+            { rodape: 'Relatório IPA - ' + this.state.dados.nome });
     },
     baixarPDFAtual() {
         if (!this.ultimoR) return window.print();
