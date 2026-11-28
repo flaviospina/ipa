@@ -392,3 +392,18 @@ main { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
 .rz-col-dir .rz-pie { flex:1; align-items:center; }
 .rz-traj { max-width:680px; margin:0 auto 14px; }
 .rz-traj .rz-line .line-legend { display:none; }
+
+/* Resumido v5: linhas alinhadas do modelo (esquerda larga, direita estreita) */
+.rz-row { display:grid; grid-template-columns:1.35fr 1fr; gap:14px 34px; align-items:center; margin-bottom:20px; }
+.rz-row > * { min-width:0; margin:0; }
+.rz-row h4 { margin-top:0; }
+.rz-desc-estilo { padding-left:6px; }
+.rz-row .rz-pie { display:flex; justify-content:center; }
+.rz-row .rz-pie .pie-legend { display:none; }
+.rz-row .rz-pie svg { width:176px; height:176px; }
+@media (max-width:640px) { .rz-row { grid-template-columns:1fr; } }
+.rz-row .rz-hero { padding:14px 18px; }
+.rz-row .rz-hero .h-name { font-size:16.5px; white-space:nowrap; }
+.rz-row .rz-hero .h-pts { font-size:12px; }
+.rz-row .rz-flex { padding:14px 18px; }
+.rz-row .rz-flex-det { font-size:11.8px; white-space:nowrap; }

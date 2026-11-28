@@ -494,7 +494,7 @@ Engine.relatorioStandalone = async function (reportInnerHtml, dados) {
     let css = '';
     try {
         // inline do CSS quando servido via http(s); em file:// segue sem estilo externo
-        const res = await fetch('css/app.css?v=3');
+        const res = await fetch('css/app.css?v=4');
         if (res.ok) css = await res.text();
     } catch (e) { /* segue sem css */ }
     return `<!DOCTYPE html>
@@ -724,7 +724,7 @@ Engine.anexoEstilos = function () {
    após o preenchimento. Só as informações mais importantes e os
    gráficos; inclui Flexível / Não flexível; NADA de desenvolvimento.
    ============================================================ */
-Engine.renderResumo = function (dados, r) {
+Engine.renderResumo = function (dados, r, opts) {
     const pred = r.ranking[0];
     const agora = new Date();
     const dataFmt = agora.toLocaleDateString('pt-BR') + ' ' +
@@ -748,6 +748,11 @@ Engine.renderResumo = function (dados, r) {
             <td class="num tot-col">${r.totais[k]}</td></tr>`;
     }).join('');
 
+    /* rodapé conforme a orientação do gestor (cartão "Entrega do relatório completo") */
+    const entregaTxt = (opts && opts.entrega === 'auto')
+        ? 'será enviado automaticamente para o seu e-mail em instantes.'
+        : 'será enviado pelo gestor, por e-mail, no momento definido por ele.';
+
     /* descrições do sistema: estilo predominante + flexibilidade */
     const descEstilo = (SINTESES_ESTILOS[pred.key] || {}).intro || '';
 
@@ -764,29 +769,30 @@ Engine.renderResumo = function (dados, r) {
             <div>${esc(dados.nome)}</div>
             <div>${esc(dados.funcao || '')}</div>
         </div>
-        <div class="rz-grid rz-main">
-            <div class="rz-col rz-col-esq">
-                <p class="rz-desc">${esc(descEstilo)}</p>
-                <div>
-                    <h4>Pontuação por estilo</h4>
-                    <table class="rp-table rp-table-sm">
-                        <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Dif.</th></tr></thead>
-                        <tbody>${tabela}</tbody></table>
-                </div>
-                <p class="rz-desc">${r.diagnostico}</p>
+        <!-- três linhas alinhadas, como no modelo: texto/tabela à esquerda, destaque à direita -->
+        <div class="rz-row">
+            <p class="rz-desc rz-desc-estilo">${esc(descEstilo)}</p>
+            <div class="rz-hero" style="background:${pred.cor}">
+                <div class="h-label">Estilo predominante</div>
+                <div class="h-name">${esc(ACP.PERFIS[pred.key].titulo)}</div>
+                <div class="h-pts">${pred.pontos} pontos · ${pred.pct.toFixed(1)}% de ${r.total}</div>
             </div>
-            <div class="rz-col rz-col-dir">
-                <div class="rz-hero" style="background:${pred.cor}">
-                    <div class="h-label">Estilo predominante</div>
-                    <div class="h-name">${esc(ACP.PERFIS[pred.key].titulo)}</div>
-                    <div class="h-pts">${pred.pontos} pontos · ${pred.pct.toFixed(1)}% de ${r.total}</div>
-                </div>
-                <div class="rz-pie">${pieChart(r.ranking, r.total)}</div>
-                <div class="rz-flex ${flexivel ? 'rz-flex-sim' : 'rz-flex-nao'}">
-                    <div class="rz-flex-badge">${flexivel ? 'FLEXÍVEL' : 'NÃO FLEXÍVEL'}</div>
-                    <div class="rz-flex-nome">${esc(nomeRegra)}</div>
-                    <div class="rz-flex-det">Diferença 1º → 2º estilo: <strong>${r.difs[0]} pontos</strong> (critério: 15)</div>
-                </div>
+        </div>
+        <div class="rz-row">
+            <div>
+                <h4>Pontuação por estilo</h4>
+                <table class="rp-table rp-table-sm">
+                    <thead><tr><th>Estilo</th><th class="num">Pontos</th><th class="num">%</th><th class="num">Dif.</th></tr></thead>
+                    <tbody>${tabela}</tbody></table>
+            </div>
+            <div class="rz-pie">${pieChart(r.ranking, r.total)}</div>
+        </div>
+        <div class="rz-row">
+            <p class="rz-desc">${r.diagnostico}</p>
+            <div class="rz-flex ${flexivel ? 'rz-flex-sim' : 'rz-flex-nao'}">
+                <div class="rz-flex-badge">${flexivel ? 'FLEXÍVEL' : 'NÃO FLEXÍVEL'}</div>
+                <div class="rz-flex-nome">${esc(nomeRegra)}</div>
+                <div class="rz-flex-det">Diferença 1º → 2º estilo: <strong>${r.difs[0]} pontos</strong> (critério: 15)</div>
             </div>
         </div>
         <h3 class="rz-mid">Distribuição das suas preferências em cada momento do atendimento</h3>
@@ -803,7 +809,6 @@ Engine.renderResumo = function (dados, r) {
             </div>
         </div>
         <p class="rz-nota">Este é o resumo do seu IPA. O <strong>relatório completo e personalizado</strong>,
-        com a análise detalhada do seu perfil e o anexo de consulta dos 4 estilos,
-        é disponibilizado pelo gestor, por e-mail.</p>
+        com a análise detalhada do seu perfil e o anexo de consulta dos 4 estilos, ${entregaTxt}</p>
     </div>`;
 };

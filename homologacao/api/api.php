@@ -441,10 +441,10 @@ try {
             /* injeta o gerador de PDF direto (cores e gráficos preservados):
                botão flutuante "Baixar PDF" + download automático com &pdf=1 */
             $auto = !empty($_GET['pdf']) ? 'true' : 'false';
-            $inj = '<link rel="stylesheet" href="../css/app.css?v=3">'
+            $inj = '<link rel="stylesheet" href="../css/app.css?v=4">'
                  . '<script src="../js/vendor/jspdf.umd.min.js"></script>'
                  . '<script src="../js/vendor/html2canvas.min.js"></script>'
-                 . '<script src="../js/pdf.js?v=3"></script>'
+                 . '<script src="../js/pdf.js?v=4"></script>'
                  . '<button class="no-pdf" id="btn-pdf-dl" style="position:fixed;right:22px;bottom:22px;z-index:9999;'
                  . 'font:700 14px Inter,system-ui,sans-serif;background:#1e3a8a;color:#fff;border:0;border-radius:999px;'
                  . 'padding:13px 22px;cursor:pointer;box-shadow:0 14px 34px -12px rgba(22,33,58,.6)">⬇️ Baixar PDF</button>'
@@ -800,7 +800,10 @@ try {
                   array_sum($s), $predominante, $regra, $ip, $funcionarioId]);
     gravar_palavras((int)db()->lastInsertId(), $data['respostas']);
     db()->commit();
-    out(['ok' => true, 'code' => 'saved']);
+    /* orientação do gestor para a entrega do completo: 'auto' só vale para
+       funcionário cadastrado (é dele o e-mail de destino) */
+    $entrega = ($funcionarioId && cfg_get('rel_envio', 'gestor') === 'auto') ? 'auto' : 'gestor';
+    out(['ok' => true, 'code' => 'saved', 'entrega' => $entrega]);
 
 } catch (PDOException $e) {
     try { if (db()->inTransaction()) db()->rollBack(); } catch (Throwable $x) {}

@@ -246,6 +246,7 @@ const App = {
         // arquivado. A IA acrescenta a análise personalizada em segundo plano.
         this.ultimoId = id;
         this.ultimoR = r;
+        this.entrega = (out && out.entrega === 'auto') ? 'auto' : 'gestor';
         this.iaTextos = null;
         this.montarCompleto();
         this.mostrarRelatorioParcial(r);
@@ -302,16 +303,30 @@ const App = {
     mostrarRelatorioParcial(r) {
         const rep = document.getElementById('report');
         rep.innerHTML = `<div id="ia-banner" class="ia-banner">${this.bannerEscrevendo()}</div>` +
-            `<div id="rel-area">${Engine.renderResumo(this.state.dados, r)}</div>`;
+            `<div id="rel-area">${Engine.renderResumo(this.state.dados, r, { entrega: this.entrega })}</div>`;
         this.vista = 'resumo';
         window.scrollTo({ top: 0 });
     },
 
+    /* o funcionário só acessa o COMPLETO na tela quando o gestor configurou a
+       entrega automática; em "somente quando eu enviar" ele vê apenas o
+       resumido (o completo é montado e arquivado em silêncio para o gestor) */
+    podeCompleto() { return this.entrega === 'auto'; },
+
     bannerEscrevendo() {
+        if (!this.podeCompleto()) {
+            return `<div class="ia-banner-in">
+                <div class="ia-banner-txt" id="ia-banner-status">
+                    <strong>✅ Seu relatório resumido está pronto!</strong>
+                    <span class="muted">O relatório completo será enviado pelo gestor, por e-mail, no momento definido por ele.</span>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="App.baixarResumido()">📄 Resumido (PDF)</button>
+            </div>`;
+        }
         return `<div class="ia-banner-in">
             <div class="ia-banner-txt" id="ia-banner-status">
-                <strong>✅ Relatório pronto! O resumido está abaixo e o completo já pode ser baixado.</strong>
-                <span class="muted">A IA está acrescentando a análise personalizada ao relatório completo — ela entra sozinha, sem você precisar fazer nada.</span>
+                <strong>✅ Relatório pronto! O resumido está abaixo e o completo será enviado para o seu e-mail.</strong>
+                <span class="muted">Você também pode baixar o completo aqui. A IA está acrescentando a análise personalizada — ela entra sozinha, sem você precisar fazer nada.</span>
             </div>
             <button class="btn btn-ghost btn-sm" onclick="App.baixarResumido()">📄 Resumido (PDF)</button>
             <button class="btn btn-primary btn-sm" onclick="App.baixarCompleto()">📄 Completo (PDF)</button>
@@ -320,6 +335,7 @@ const App = {
     },
 
     bannerStatus(html) {
+        if (!this.podeCompleto()) return; // sem menção ao completo/IA na tela do funcionário
         const el = document.getElementById('ia-banner-status');
         if (el) el.innerHTML = html;
     },
@@ -419,26 +435,26 @@ const App = {
     },
     baixarResumido() {
         if (!this.ultimoR) return;
-        PdfGen.baixarComAviso(Engine.renderResumo(this.state.dados, this.ultimoR),
+        PdfGen.baixarComAviso(Engine.renderResumo(this.state.dados, this.ultimoR, { entrega: this.entrega }),
             this.nomePDF('Resumido'), { ajustarPagina: true });
     },
     baixarCompleto() {
-        if (!this.completoHtml) return;
+        if (!this.completoHtml || !this.podeCompleto()) return;
         PdfGen.baixarComAviso(this.completoHtml, this.nomePDF('Completo'));
     },
     baixarPDFAtual() {
         if (!this.ultimoR) return window.print();
-        if (this.vista === 'completo' && this.completoHtml) this.baixarCompleto();
+        if (this.vista === 'completo' && this.completoHtml && this.podeCompleto()) this.baixarCompleto();
         else this.baixarResumido();
     },
     alternarVista() {
         const area = document.getElementById('rel-area');
-        if (!area || !this.ultimoR) return;
+        if (!area || !this.ultimoR || !this.podeCompleto()) return;
         if (this.vista !== 'completo' && this.completoHtml) {
             area.innerHTML = this.completoHtml;
             this.vista = 'completo';
         } else {
-            area.innerHTML = Engine.renderResumo(this.state.dados, this.ultimoR);
+            area.innerHTML = Engine.renderResumo(this.state.dados, this.ultimoR, { entrega: this.entrega });
             this.vista = 'resumo';
         }
         const b = document.getElementById('btn-vista');
@@ -472,17 +488,28 @@ const App = {
         }, 350);
     },
 
-    /* janela de conclusão: PDFs diretos (Resumido / Completo) ou ver no site */
+    /* janela de conclusão: o que é oferecido segue a orientação do gestor */
     async dialogoFinal(r, comIA) {
         const pred = r.ranking[0];
+        const base = `Suas respostas foram registradas com sucesso.<br>
+                   Seu estilo predominante é
+                   <strong style="color:${pred.cor}">${pred.nome}</strong>
+                   (${pred.pontos} pontos · ${pred.pct.toFixed(1)}%).`;
+        if (!this.podeCompleto()) {
+            const e = await Msg.fire({
+                icon: 'success',
+                titulo: 'Diagnóstico concluído!',
+                html: base + '<br>O seu relatório resumido já está na tela. O relatório completo será enviado pelo gestor, por e-mail, no momento definido por ele.',
+                confirmText: '📄 Resumido (PDF)',
+                cancelText: 'Ver no site'
+            });
+            if (e === 'confirm') this.baixarResumido();
+            return;
+        }
         const escolha = await Msg.fire({
             icon: 'success',
             titulo: 'Diagnóstico concluído!',
-            html: `Suas respostas foram registradas com sucesso.<br>
-                   Seu estilo predominante é
-                   <strong style="color:${pred.cor}">${pred.nome}</strong>
-                   (${pred.pontos} pontos · ${pred.pct.toFixed(1)}%).` +
-                  '<br>O relatório completo (modelo integral + anexo dos 4 estilos) já está disponível; a análise personalizada da IA entra nele automaticamente em instantes.',
+            html: base + '<br>O relatório completo será enviado para o seu e-mail e também já pode ser baixado aqui.',
             confirmText: '📄 Resumido (PDF)',
             denyText: '📄 Completo (PDF)',
             cancelText: 'Ver no site'

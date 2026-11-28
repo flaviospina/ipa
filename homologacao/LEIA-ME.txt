@@ -61,6 +61,11 @@ RELATÓRIOS: RESUMIDO + COMPLETO, EM PDF DIRETO
     da produção (Fases 1 a 8) + anexo dos 4 estilos, fica pronto NA
     HORA, e a análise personalizada da IA entra nele automaticamente
     assim que o Gemini responde (sem travar nada se demorar).
+  - O QUE O FUNCIONÁRIO VÊ segue a configuração do gestor: em "Somente
+    quando eu enviar" ele vê e baixa APENAS o resumido (o completo é
+    arquivado em silêncio para o gestor); em "Automaticamente" ele
+    também pode ver/baixar o completo. O rodapé do resumido informa a
+    forma de entrega correspondente.
   - ENTREGA DO COMPLETO: configurável na área do gestor (cartão
     "📬 Entrega do relatório completo"): automaticamente por e-mail ao
     final do preenchimento, OU somente quando o gestor enviar (botão
